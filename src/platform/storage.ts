@@ -29,3 +29,14 @@ export function readNumber(store: KeyValueStore, key: string, fallback = 0): num
   const value = parseInt(store.getItem(key) ?? '', 10);
   return Number.isFinite(value) ? value : fallback;
 }
+
+/**
+ * Merges this window's best score with the stored one and returns the higher.
+ * Another window of the game (the installed app next to a browser tab) may have
+ * stored a higher record in the meantime; a lower stored value is overwritten.
+ */
+export function syncBestScore(store: KeyValueStore, best: number): number {
+  const stored = readNumber(store, STORAGE_KEYS.bestScore);
+  if (best > stored) store.setItem(STORAGE_KEYS.bestScore, String(best));
+  return Math.max(best, stored);
+}
