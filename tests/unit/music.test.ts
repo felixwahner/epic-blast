@@ -30,8 +30,8 @@ describe('background music', () => {
       createMediaElementSource: () => ({ connect() {}, disconnect() {} }),
       createGain: () => ({ gain: { value: 0, cancelScheduledValues() {}, setTargetAtTime: (v: number) => levels.push(v) }, connect() {}, disconnect() {} }),
     } as unknown as AudioContext;
-    const audio: { ctx: AudioContext | null; volume: number; adMuted: boolean; isMuted: boolean; announcer?: { active: unknown } } =
-      { ctx: null, volume: 0.25, isMuted: false, adMuted: false };
+    const audio: { ctx: AudioContext | null; volume: number; isMuted: boolean; announcer?: { active: unknown } } =
+      { ctx: null, volume: 0.25, isMuted: false };
     const music = new BackgroundMusic(audio, memoryStorage());
     clearInterval(music.timer!);
 
@@ -58,17 +58,15 @@ describe('background music', () => {
     assert.equal(music.playing, true, 'muting sound effects keeps music playing');
     audio.isMuted = false;
 
-    for (const reason of ['adMuted', 'hidden', 'toggle'] as const) {
+    for (const reason of ['hidden', 'toggle'] as const) {
       if (reason === 'hidden') document.visibilityState = 'hidden';
-      else if (reason === 'toggle') music.toggle();
-      else audio.adMuted = true;
+      else music.toggle();
       music.tick();
       assert.equal(music.playing, false, reason);
       await wait(70);
       assert(counters.pauses > 0);
       if (reason === 'hidden') document.visibilityState = 'visible';
-      else if (reason === 'toggle') music.toggle();
-      else audio.adMuted = false;
+      else music.toggle();
       music.tick();
       assert.equal(music.playing, true);
       assert.equal(music.media!.currentTime, 12, 'resume position retained');
@@ -98,7 +96,7 @@ describe('background music', () => {
 
   it('remembers the music preference', () => {
     const storage = memoryStorage({ epic_blast_music: 'off' });
-    const music = new BackgroundMusic({ ctx: null, adMuted: false, volume: 0.25 }, storage);
+    const music = new BackgroundMusic({ ctx: null, volume: 0.25 }, storage);
     clearInterval(music.timer!);
     assert.equal(music.enabled, false);
     music.toggle();

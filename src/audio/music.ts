@@ -12,7 +12,6 @@ const TICK_MS = 50;
 /** The parts of the audio engine the music player depends on. */
 export interface MusicAudioSource {
   ctx: AudioContext | null;
-  adMuted: boolean;
   volume: number;
   announcer?: { active: unknown };
 }
@@ -72,8 +71,8 @@ export class BackgroundMusic {
   }
 
   tick(): void {
-    const { ctx, adMuted, volume } = this.audio;
-    if (!this.enabled || !ctx || ctx.state !== 'running' || adMuted || document.visibilityState !== 'visible') {
+    const { ctx, volume } = this.audio;
+    if (!this.enabled || !ctx || ctx.state !== 'running' || document.visibilityState !== 'visible') {
       this.stop();
       return;
     }

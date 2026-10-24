@@ -3,7 +3,7 @@ import { pwaPlugin } from './build/pwa-plugin.ts';
 
 export default defineConfig({
   plugins: [pwaPlugin()],
-  // Relative base path ensures the game works in any portal subdirectory / iframe.
+  // Relative base path lets the game run from any subdirectory.
   base: './',
   server: {
     port: 3000,

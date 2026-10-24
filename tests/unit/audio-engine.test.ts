@@ -47,16 +47,6 @@ describe('audio engine activation', () => {
     assert.equal(audio.ctx!.state, 'running');
   });
 
-  it('suspends for ads and resumes afterwards, independent of the SFX mute', () => {
-    const { audio } = engine(true);
-    audio.init();
-    audio.setMutedByAd(true);
-    assert.equal(audio.ctx!.state, 'suspended');
-    audio.setMutedByAd(false);
-    assert.equal(audio.ctx!.state, 'running');
-    assert.equal(audio.isMuted, true);
-  });
-
   it('works without Web Audio support', () => {
     const audio = new AudioEngine({ storage: memoryStorage(), contextClass: () => undefined });
     audio.init();

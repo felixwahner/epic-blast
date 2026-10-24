@@ -9,7 +9,6 @@ import { BackgroundMusic } from '../audio/music.ts';
 import { predictClears, type FullLines } from '../core/board.ts';
 import { progression, worldProgress } from '../core/progression.ts';
 import { GameSession, type DealOutcome, type PlacementOutcome } from '../core/session.ts';
-import { showInterstitialAd, listenForAdEvents } from '../platform/ads.ts';
 import { Haptics } from '../platform/haptics.ts';
 import { STORAGE_KEYS, readNumber, safeStorage, syncBestScore, type KeyValueStore } from '../platform/storage.ts';
 import { BlockTextures } from '../render/block-textures.ts';
@@ -418,22 +417,17 @@ export class Game {
     this.effects.bindToggle(document.getElementById('btn-effects')!);
     new RestartConfirm(() => {
       audio.init();
-      showInterstitialAd(() => this.startNewGame());
+      this.startNewGame();
     });
 
     document.getElementById('btn-play-again')!.addEventListener('click', () => {
       audio.init();
-      showInterstitialAd(() => this.startNewGame());
+      this.startNewGame();
     });
     this.hud.reviveButton.addEventListener('click', () => this.revive());
     document.getElementById('btn-recover-streak')!.addEventListener('click', () => this.finishRecovery(true));
     document.getElementById('btn-skip-recovery')!.addEventListener('click', () => this.finishRecovery(false));
     this.hud.recoveryDialog.addEventListener('cancel', event => { event.preventDefault(); this.finishRecovery(false); });
-
-    listenForAdEvents({
-      pause: () => { this.app.ticker.stop(); audio.setMutedByAd(true); },
-      resume: () => { this.app.ticker.start(); audio.setMutedByAd(false); },
-    });
 
     // Touch pointerdown can precede Chrome's user activation. Retry from
     // native touchend/click events, including after returning to the app.

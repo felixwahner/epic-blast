@@ -1,7 +1,6 @@
 /**
  * EPIC BLAST - Pixi.js HTML5 Edition
  * Faithful Block Blast mechanics with 8-bit / 16-bit pixel art visual juice.
- * Built for HTML5 game portals (Poki, CrazyGames, GameDistribution, itch.io).
  */
 import './styles/main.css';
 import { AudioEngine } from './audio/audio-engine.ts';
