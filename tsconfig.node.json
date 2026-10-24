@@ -1,0 +1,9 @@
+{
+  // Tests, build tooling and configs (run in Node / Playwright).
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "types": ["node", "vite/client"]
+  },
+  "include": ["tests", "build/**/*.ts", "vite.config.ts", "playwright.config.ts"]
+}

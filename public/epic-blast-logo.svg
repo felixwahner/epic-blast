@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 560 112" fill="none">
+  <defs>
+    <linearGradient id="gold" x1="0" y1="15" x2="0" y2="86" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fffce0"/><stop offset=".2" stop-color="#fff58a"/><stop offset=".44" stop-color="#ffce35"/>
+      <stop offset=".48" stop-color="#ffad18"/><stop offset=".55" stop-color="#ff652c"/><stop offset=".83" stop-color="#ff316e"/><stop offset="1" stop-color="#ffb5b7"/>
+    </linearGradient>
+    <linearGradient id="ice" x1="0" y1="15" x2="0" y2="86" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fff"/><stop offset=".22" stop-color="#b7ffff"/><stop offset=".44" stop-color="#39eaff"/>
+      <stop offset=".48" stop-color="#1dc8ff"/><stop offset=".55" stop-color="#1292f4"/><stop offset=".83" stop-color="#3262ec"/><stop offset="1" stop-color="#9acfff"/>
+    </linearGradient>
+    <linearGradient id="warmEdge" x2="0" y2="1"><stop stop-color="#fff8b2"/><stop offset=".45" stop-color="#ff9a37"/><stop offset="1" stop-color="#ff55dc"/></linearGradient>
+    <linearGradient id="coolEdge" x2="0" y2="1"><stop stop-color="#f4ffff"/><stop offset=".45" stop-color="#7effff"/><stop offset="1" stop-color="#4f87ff"/></linearGradient>
+    <filter id="glow" x="-15%" y="-40%" width="130%" height="190%"><feGaussianBlur stdDeviation="4"/></filter>
+    <filter id="bevel" x="-10%" y="-20%" width="120%" height="150%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="1.4" result="relief"/>
+      <feSpecularLighting in="relief" surfaceScale="3" specularConstant=".75" specularExponent="22" lighting-color="#ffffff" result="light"><feDistantLight azimuth="235" elevation="48"/></feSpecularLighting>
+      <feComposite in="light" in2="SourceAlpha" operator="in" result="shine"/>
+      <feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="shine"/></feMerge>
+    </filter>
+    <g id="epic"><text x="14" y="84" font-family="Arial, Helvetica, sans-serif" font-weight="900" font-style="italic" font-size="86" letter-spacing="-2" textLength="211" lengthAdjust="spacingAndGlyphs">EPIC</text></g>
+    <g id="blast"><text x="236" y="84" font-family="Arial, Helvetica, sans-serif" font-weight="900" font-style="italic" font-size="86" letter-spacing="-2" textLength="300" lengthAdjust="spacingAndGlyphs">BLAST</text></g>
+  </defs>
+  <g filter="url(#glow)" opacity=".75" stroke-width="4"><use xlink:href="#epic" stroke="#ff239e"/><use xlink:href="#blast" stroke="#008dff"/></g>
+  <g stroke-linejoin="round" stroke-width="5" transform="translate(1 7)"><use xlink:href="#epic" fill="#651348" stroke="#651348"/><use xlink:href="#blast" fill="#10296c" stroke="#10296c"/></g>
+  <g stroke-linejoin="round" stroke-width="3">
+    <g transform="translate(1 5)"><use xlink:href="#epic" fill="#b42575" stroke="#b42575"/><use xlink:href="#blast" fill="#2153b7" stroke="#2153b7"/></g>
+    <g transform="translate(.5 3)"><use xlink:href="#epic" fill="#ed49a2" stroke="#ed49a2"/><use xlink:href="#blast" fill="#478cff" stroke="#478cff"/></g>
+  </g>
+  <g stroke-width="3.5" stroke-linejoin="round" paint-order="stroke fill"><use xlink:href="#epic" fill="url(#gold)" stroke="url(#warmEdge)"/><use xlink:href="#blast" fill="url(#ice)" stroke="url(#coolEdge)"/></g>
+  <g filter="url(#bevel)" stroke-width=".6" paint-order="stroke fill"><use xlink:href="#epic" fill="url(#gold)" stroke="#ffffc9"/><use xlink:href="#blast" fill="url(#ice)" stroke="#dfffff"/></g>
+</svg>
