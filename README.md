@@ -162,13 +162,13 @@ src/
   platform/             Safe localStorage, haptics, PWA registration, GameDistribution ad hooks
   styles/main.css
   assets/               Images, font (Press Start 2P), announcer clips, music
-public/                 Manifest, icons, logo (copied as-is)
+public/                 Manifest, PWA icons, favicon, install screenshots (copied as-is; regenerate with tools/generate_icons.py)
 build/                  Vite PWA plugin and service worker template
 tests/
   unit/                 Unit tests for rules, solver, audio, rendering math, platform code
   build/                Checks on the production build
   e2e/                  Playwright browser tests (with small test pages in harness/)
-tools/                  Promo image generator, voice clip tools, portal zip script
+tools/                  Promo + icon generators, voice clip tools, portal zip script
 design/                 Source material that doesn't ship (voice takes, prompts, references)
 marketing/promo_images/ Portal thumbnails (1280×720, 1280×550, 512×512, 512×384, 200×120)
 ```
