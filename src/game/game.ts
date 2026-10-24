@@ -11,7 +11,7 @@ import { progression, worldProgress } from '../core/progression.ts';
 import { GameSession, type DealOutcome, type PlacementOutcome } from '../core/session.ts';
 import { showInterstitialAd, listenForAdEvents } from '../platform/ads.ts';
 import { Haptics } from '../platform/haptics.ts';
-import { STORAGE_KEYS, readNumber, safeStorage, type KeyValueStore } from '../platform/storage.ts';
+import { STORAGE_KEYS, readNumber, safeStorage, syncBestScore, type KeyValueStore } from '../platform/storage.ts';
 import { BlockTextures } from '../render/block-textures.ts';
 import { BoardView } from '../render/board-view.ts';
 import { CHARGE_TIME } from '../render/clear-animation.ts';
@@ -325,8 +325,7 @@ export class Game {
   }
 
   private saveBestScore(): void {
-    if (readNumber(this.storage, STORAGE_KEYS.bestScore) >= this.session.bestScore) return;
-    this.storage.setItem(STORAGE_KEYS.bestScore, String(this.session.bestScore));
+    this.session.bestScore = syncBestScore(this.storage, this.session.bestScore);
     this.hud.setBest(this.session.bestScore);
   }
 
@@ -392,6 +391,10 @@ export class Game {
     document.addEventListener('visibilitychange', () => music.tick());
     window.addEventListener('pagehide', () => music.suspend());
     window.addEventListener('pageshow', event => { if (event.persisted) music.resume(); });
+    // Another window of the game set a new record.
+    window.addEventListener('storage', event => {
+      if (event.key === STORAGE_KEYS.bestScore) this.saveBestScore();
+    });
 
     new OptionsMenu({
       soundMuted: () => audio.isMuted,

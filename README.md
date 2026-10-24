@@ -1,6 +1,16 @@
+<p align="center">
+  <img src="src/assets/branding/epic-blast-logo-concept.png" alt="EPIC BLAST logo" width="420">
+</p>
+
 # EPIC BLAST
 
 A Block Blast–style puzzle game for the browser, built with **TypeScript**, **Pixi.js 7** and **Vite**. You drag pieces onto an 8×8 board and clear full rows and columns. It has neon "jewel" blocks, nine themed worlds, a combo system, revives, a recorded stadium announcer and background music. It installs as a PWA and is packaged for HTML5 game portals (GameDistribution).
+
+<p align="center">
+  <img src="marketing/gameplay/neon-arcade-combo16.png" alt="Neon Arcade world with a 16x combo" width="250">
+  <img src="marketing/gameplay/neon-arcade-combo10-blast.png" alt="Line clear with a 10x combo in Neon Arcade" width="250">
+  <img src="marketing/gameplay/cosmic-overdrive-combo8.png" alt="Cosmic Overdrive world with an 8x combo" width="250">
+</p>
 
 ---
 
