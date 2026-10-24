@@ -847,11 +847,11 @@ body::after {
 #btn-new-game, #btn-options {
   width: 38px; height: 38px; min-height: 0; margin-top: 4px;
   color: #ffffffe6; text-shadow: none;
-  background: linear-gradient(180deg, #2a1745cc, #120a26cc); border: 1px solid #ff36d999;
-  box-shadow: 0 2px 0 #080315, 0 0 8px #ff36d940;
+  background: linear-gradient(180deg, #2a1745cc, #120a26cc); border: 1px solid #ffffff4d;
+  box-shadow: 0 2px 0 #080315;
 }
 #btn-new-game svg, #btn-options svg { width: 20px; height: 20px; }
-#btn-new-game:hover, #btn-options:hover { color: #fff; border-color: #ff36d9; box-shadow: 0 2px 0 #080315, 0 0 12px #ff36d980; }
+#btn-new-game:hover, #btn-options:hover { color: #fff; border-color: #ffffff99; box-shadow: 0 2px 0 #080315; }
 .scoreboard { margin-top: -6px; padding-inline: var(--board-left, 4px) var(--board-right, 4px); }
 .scoreboard .best {
   position: absolute; right: var(--board-right, 4px); top: 50%; transform: translateY(-50%);
