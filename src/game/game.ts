@@ -183,6 +183,7 @@ export class Game {
     this.app.renderer.resize(Math.floor(rect.width), Math.floor(rect.height));
     const layout = this.layout = computeLayout(rect.width, rect.height);
     this.hud.positionComboBox(layout);
+    this.hud.alignHeader(layout);
     this.trayBackdrop.clear();
     this.trayBackdrop.beginFill(0x080714, 0.78);
     this.trayBackdrop.drawRoundedRect(layout.gridX, layout.trayY - 4, layout.gridWidth, Math.min(layout.trayHeight + 8, layout.viewHeight - layout.trayY), 12);
