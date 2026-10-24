@@ -20,7 +20,10 @@
 	<body>
 		<div id="game-container">
 			<!-- Top Header / Scoreboard -->
-			<header class="game-header">
+			<header id="game-header" class="game-header">
+				<div class="header-start">
+					<button id="btn-new-game" class="pixel-btn" aria-haspopup="dialog" aria-controls="restart-confirm" aria-expanded="false" aria-label="Neues Spiel" title="Neues Spiel"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 3.5v5h-5"/></svg></button>
+				</div>
 				<div class="header-left">
 					<h1 class="game-title"><img class="game-logo" src="./src/assets/branding/epic-blast-logo-concept.png" alt="EPIC BLAST" width="1536" height="1024" /></h1>
 				</div>
@@ -78,6 +81,18 @@
 						</div>
 					</div>
 				</div>
+
+				<!-- Overlay confirming a new game -->
+				<div id="restart-confirm" class="modal-overlay hidden" role="alertdialog" aria-modal="true" aria-labelledby="restart-title" aria-describedby="restart-message" inert>
+					<div class="modal-box pixel-border restart-box">
+						<h2 id="restart-title" class="modal-title">NEUES SPIEL?</h2>
+						<p id="restart-message" class="restart-message">Dein aktueller Spielfortschritt geht verloren.</p>
+						<div class="modal-actions">
+							<button id="btn-confirm-restart" class="pixel-btn restart-confirm-btn">NEU STARTEN</button>
+							<button id="btn-cancel-restart" class="pixel-btn play-again-btn">WEITERSPIELEN</button>
+						</div>
+					</div>
+				</div>
 			</div>
 		<div class="level-status">
 <div id="world-label" class="world-label">NEON ARCADE</div>
@@ -95,7 +110,6 @@
   <div class="option-row"><span>Hintergrundmusik</span><button id="btn-music" class="pixel-btn" aria-label="Hintergrundmusik" aria-pressed="true">AN</button></div>
 <div class="option-row"><span>Vibration</span><button id="btn-vibration" class="pixel-btn" title="Vibration ausschalten" aria-label="Vibration ausschalten" aria-pressed="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="8" y="4" width="8" height="16" rx="2"/><path d="M4 8v8M1 10v4m19-6v8m3-6v4"/><path class="vibration-slash" d="m3 3 18 18"/></svg></button></div>
   <div class="option-row"><span>Visuelle Effekte</span><button id="btn-effects" aria-pressed="false">EFFEKTE: VOLL</button></div>
-  <div class="option-row option-restart"><span>Neues Spiel</span><button id="btn-restart" class="pixel-btn" title="Restart Game" aria-label="Restart">🔄</button></div>
 </dialog>
 <dialog id="streak-recovery" class="options-menu" aria-labelledby="recovery-title">
   <div class="options-heading"><h2 id="recovery-title">KOMBO RETTEN</h2></div>

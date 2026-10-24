@@ -26,6 +26,7 @@ import { Celebrations } from '../ui/celebrations.ts';
 import { VisualEffects, pulse } from '../ui/effects.ts';
 import { Hud } from '../ui/hud.ts';
 import { OptionsMenu } from '../ui/options-menu.ts';
+import { RestartConfirm } from '../ui/restart-confirm.ts';
 import { createScoreAnimator, type ScoreAnimator } from '../ui/score-animator.ts';
 import { applyTheme } from '../ui/theme-dom.ts';
 
@@ -182,6 +183,7 @@ export class Game {
     this.app.renderer.resize(Math.floor(rect.width), Math.floor(rect.height));
     const layout = this.layout = computeLayout(rect.width, rect.height);
     this.hud.positionComboBox(layout);
+    this.hud.alignHeader(layout);
     this.trayBackdrop.clear();
     this.trayBackdrop.beginFill(0x080714, 0.78);
     this.trayBackdrop.drawRoundedRect(layout.gridX, layout.trayY - 4, layout.gridWidth, Math.min(layout.trayHeight + 8, layout.viewHeight - layout.trayY), 12);
@@ -411,10 +413,13 @@ export class Game {
         if (enabled) this.haptics.lineClear();
         return enabled;
       },
-      restart: () => { audio.init(); showInterstitialAd(() => this.startNewGame()); },
       resized: () => this.resize(),
     });
     this.effects.bindToggle(document.getElementById('btn-effects')!);
+    new RestartConfirm(() => {
+      audio.init();
+      showInterstitialAd(() => this.startNewGame());
+    });
 
     document.getElementById('btn-play-again')!.addEventListener('click', () => {
       audio.init();

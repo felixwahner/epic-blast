@@ -1,4 +1,4 @@
-// The options dialog: sound, music, vibration, effects, fullscreen and restart.
+// The options dialog: sound, music, vibration, effects and fullscreen.
 import { byId } from './hud.ts';
 
 export interface OptionsHandlers {
@@ -8,7 +8,6 @@ export interface OptionsHandlers {
   toggleVibration(): boolean;
   vibrationEnabled(): boolean;
   soundMuted(): boolean;
-  restart(): void;
   /** Called after fullscreen changes so the canvas can re-measure. */
   resized(): void;
 }
@@ -49,12 +48,6 @@ export class OptionsMenu {
     this.vibrationButton.addEventListener('click', () => {
       handlers.toggleVibration();
       this.syncVibration();
-    });
-
-    byId('btn-restart').addEventListener('click', () => {
-      if (!window.confirm('Spiel wirklich neu starten? Dein aktueller Spielfortschritt geht verloren.')) return;
-      this.dialog.close();
-      handlers.restart();
     });
 
     this.bindFullscreen();

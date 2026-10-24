@@ -26,6 +26,7 @@ export class Hud {
   private readonly levelProgress = byId<HTMLProgressElement>('level-progress');
   private readonly reviveCount = byId('revive-count');
   private readonly gameOverModal = byId('game-over-modal');
+  private readonly header = byId('game-header');
   private readonly finalScore = byId('final-score');
   private readonly finalBest = byId('final-best');
   private readonly newRecordBadge = byId('new-record-badge');
@@ -56,6 +57,18 @@ export class Hud {
       left: `${layout.gridX}px`, top: `${layout.trayY - 2}px`,
       width: `${layout.gridWidth}px`, height: `${TRAY_LABEL_HEIGHT}px`,
     });
+  }
+
+  /** Lines the header buttons up with the left and right edges of the board. */
+  alignHeader(layout: Layout): void {
+    const header = this.header.getBoundingClientRect();
+    const view = this.pixiMount.getBoundingClientRect();
+    // The board's lit rim is drawn 2-3px outside the grid itself.
+    const rim = 3;
+    const left = view.left + layout.gridX - rim - header.left;
+    const right = header.right - (view.left + layout.gridX + layout.gridWidth + rim);
+    this.header.style.paddingLeft = `${Math.max(0, left)}px`;
+    this.header.style.paddingRight = `${Math.max(0, right)}px`;
   }
 
   setProgress(score: number, state: LevelProgress, revives: number): void {
