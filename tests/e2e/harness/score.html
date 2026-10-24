@@ -1,0 +1,17 @@
+<!doctype html>
+<!-- Test harness for the score animator (served by the Vite dev server). -->
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="/src/styles/main.css" />
+<div id="game-container"><div class="scoreboard"><span id="score-display">0</span></div></div>
+<script type="module">
+  import { createScoreAnimator } from '/src/ui/score-animator.ts';
+  window.gentle = false;
+  window.animator = createScoreAnimator(document.getElementById('score-display'), {
+    host: document.getElementById('game-container'), reducedMotion: () => window.gentle,
+  });
+  window.flightOrigin = () => {
+    const r = document.getElementById('game-container').getBoundingClientRect();
+    return { x: r.left + r.width / 2, y: r.top + 400 };
+  };
+</script>

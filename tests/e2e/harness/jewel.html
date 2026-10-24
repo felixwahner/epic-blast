@@ -1,0 +1,27 @@
+<!doctype html>
+<!-- Test harness for the procedural jewel shading (served by the Vite dev server). -->
+<meta charset="utf-8" />
+<script type="module">
+  import { jewelSurface } from '/src/render/jewel-surface.ts';
+  window.measureJewel = async () => {
+    const image = new Image();
+    image.src = '/src/assets/images/neon-jewel.png';
+    await image.decode();
+    const canvas = jewelSurface(image, 0xff1290, 256, 'ice');
+    const ctx = canvas.getContext('2d');
+    const mean = (x, y, w, h) => {
+      const d = ctx.getImageData(x, y, w, h).data;
+      let sum = 0;
+      for (let i = 0; i < d.length; i += 4) sum += (d[i] + d[i + 1] + d[i + 2]) / 3;
+      return sum / (d.length / 4);
+    };
+    const center = Array.from(ctx.getImageData(128, 128, 1, 1).data);
+    return {
+      faceBrightness: Math.max(...center.slice(0, 3)),
+      top: mean(70, 9, 100, 14),
+      bottom: mean(70, 226, 100, 14),
+      corner: ctx.getImageData(2, 2, 1, 1).data[3],
+      center: center[3],
+    };
+  };
+</script>
