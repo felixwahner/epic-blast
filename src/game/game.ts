@@ -26,6 +26,7 @@ import { Celebrations } from '../ui/celebrations.ts';
 import { VisualEffects, pulse } from '../ui/effects.ts';
 import { Hud } from '../ui/hud.ts';
 import { OptionsMenu } from '../ui/options-menu.ts';
+import { RestartConfirm } from '../ui/restart-confirm.ts';
 import { createScoreAnimator, type ScoreAnimator } from '../ui/score-animator.ts';
 import { applyTheme } from '../ui/theme-dom.ts';
 
@@ -411,10 +412,13 @@ export class Game {
         if (enabled) this.haptics.lineClear();
         return enabled;
       },
-      restart: () => { audio.init(); showInterstitialAd(() => this.startNewGame()); },
       resized: () => this.resize(),
     });
     this.effects.bindToggle(document.getElementById('btn-effects')!);
+    new RestartConfirm(() => {
+      audio.init();
+      showInterstitialAd(() => this.startNewGame());
+    });
 
     document.getElementById('btn-play-again')!.addEventListener('click', () => {
       audio.init();
