@@ -775,6 +775,12 @@ export class Game {
         if (!muted) audio.playPickup();
         return muted;
       },
+      soundWorldLabel: () => t(`soundWorld.${audio.soundWorld}`),
+      cycleSoundWorld: () => {
+        const world = audio.cycleSoundWorld();
+        audio.playSoundWorldPreview();
+        return t(`soundWorld.${world}`);
+      },
       musicEnabled: () => music.enabled,
       toggleMusic: () => {
         audio.init();

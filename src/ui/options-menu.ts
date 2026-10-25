@@ -1,9 +1,12 @@
-// The options dialog: sound, music, vibration, effects and fullscreen.
+// The options dialog: sound, sound world, music, vibration, effects and fullscreen.
 import { t } from '../i18n/index.ts';
 import { byId } from './hud.ts';
 
 export interface OptionsHandlers {
   toggleSound(): boolean;
+  /** Switches to the next sound world and returns its label. */
+  cycleSoundWorld(): string;
+  soundWorldLabel(): string;
   toggleMusic(): boolean;
   musicEnabled(): boolean;
   toggleVibration(): boolean;
@@ -17,6 +20,7 @@ export class OptionsMenu {
   readonly dialog = byId<HTMLDialogElement>('options-menu');
   readonly effectsButton = byId('btn-effects');
   private readonly soundButton = byId('btn-sound');
+  private readonly soundWorldButton = byId('btn-sound-world');
   private readonly musicButton = byId('btn-music');
   private readonly vibrationButton = byId('btn-vibration');
   private readonly fullscreenButton = byId('btn-fullscreen');
@@ -43,6 +47,11 @@ export class OptionsMenu {
     this.soundButton.addEventListener('click', () => {
       handlers.toggleSound();
       this.syncSound();
+    });
+
+    this.soundWorldButton.textContent = handlers.soundWorldLabel();
+    this.soundWorldButton.addEventListener('click', () => {
+      this.soundWorldButton.textContent = handlers.cycleSoundWorld();
     });
 
     this.syncMusic();
