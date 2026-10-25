@@ -3,7 +3,7 @@ import { beforeEach, describe, it } from 'node:test';
 import { boardQuality } from '../../src/ai/solver.ts';
 import { encodeGrid, isGridEmpty } from '../../src/core/board.ts';
 import { levelStart } from '../../src/core/progression.ts';
-import { allClearBonus, clearScore } from '../../src/core/scoring.ts';
+import { allClearBonus, clearScore, comboClearScore } from '../../src/core/scoring.ts';
 import { GameSession, type DealOutcome, type SessionOptions } from '../../src/core/session.ts';
 import { noHelp, seededRandom } from '../helpers/fakes.ts';
 
@@ -174,6 +174,22 @@ describe('GameSession: placing pieces', () => {
     const events = four.place(0, 0, 0)!.events;
     assert(events.includes('blockbuster'));
     assert(!events.includes('triple'));
+  });
+
+  it('raises the combo by one per cleared line', () => {
+    const session = newSession();
+    session.combo = 2;
+    fill(session, [...row(0, range(0, 6)), ...row(1, range(0, 6)), ...row(2, range(0, 6))]);
+    fill(session, [[5, 5]]);
+    session.deal([bar3, dot, dot]);
+    const outcome = session.place(0, 7, 0)!;
+    assert.equal(outcome.clear!.lines, 3);
+    assert.equal(outcome.clear!.combo, 5);
+    assert.equal(session.combo, 5);
+    assert.equal(session.maxCombo, 5);
+    assert.equal(outcome.clear!.points, comboClearScore(2, 3));
+    assert(outcome.events.includes('unstoppable'), 'a jump from 2 to 5 still reaches the milestone');
+    assert(!outcome.events.includes('fire'), 'only the highest milestone of a move is celebrated');
   });
 
   it('announces combo milestones at 3, 5 and 10', () => {

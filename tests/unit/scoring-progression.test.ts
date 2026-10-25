@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { levelStart, progression, worldProgress } from '../../src/core/progression.ts';
-import { clearScore } from '../../src/core/scoring.ts';
+import { clearScore, comboClearScore, comboMilestone } from '../../src/core/scoring.ts';
 import { canRecoverStreak } from '../../src/core/streak-recovery.ts';
 import { themeFor } from '../../src/theme/themes.ts';
 
@@ -11,6 +11,24 @@ describe('clear scoring', () => {
     assert.equal(clearScore(18, 2) + 12, 2988);
     assert.equal(clearScore(17, 2) + 16, 2832);
     assert.equal(clearScore(1, 0), 0);
+  });
+
+  it('scores each line of a multi-line clear at its own combo step', () => {
+    assert.equal(comboClearScore(0, 1), clearScore(1, 1));
+    assert.equal(comboClearScore(0, 3), clearScore(1, 1) + clearScore(2, 1) + clearScore(3, 1));
+    assert.equal(comboClearScore(4, 2), clearScore(5, 1) + clearScore(6, 1));
+    assert.equal(comboClearScore(7, 0), 0);
+  });
+
+  it('finds combo milestones that a multi-line clear jumps over', () => {
+    assert.equal(comboMilestone(4, 5), 5);
+    assert.equal(comboMilestone(3, 6), 5);
+    assert.equal(comboMilestone(8, 11), 10);
+    assert.equal(comboMilestone(3, 12), 10);
+    assert.equal(comboMilestone(19, 21), 20);
+    assert.equal(comboMilestone(5, 7), null);
+    assert.equal(comboMilestone(10, 13), null);
+    assert.equal(comboMilestone(0, 2), null);
   });
 });
 

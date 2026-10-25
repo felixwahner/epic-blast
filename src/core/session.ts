@@ -6,7 +6,7 @@ import {
   lineCells, placeShape, shapeCells, shapeSize, type CellPosition, type Grid, type Matrix,
 } from './board.ts';
 import { progression } from './progression.ts';
-import { allClearBonus, allClearMultiplier, clearScore, jewelBonus } from './scoring.ts';
+import { allClearBonus, allClearMultiplier, comboClearScore, jewelBonus } from './scoring.ts';
 import { SHAPE_DEFINITIONS, isSatisfyingShape, pickWeightedShape, type RandomSource, type ShapeDefinition } from './shapes.ts';
 import { canRecoverStreak } from './streak-recovery.ts';
 import { createHelpDealer, type HelpDealer } from '../ai/helpful-dealer.ts';
@@ -378,13 +378,16 @@ export class GameSession {
     if (rows.length && cols.length) this.events.push('cross');
 
     this.turnHasClear = true;
-    this.combo++;
+    // Every cleared line is a combo step, so a triple adds three at once.
+    const previousCombo = this.combo;
+    this.combo += lines;
     this.maxCombo = Math.max(this.maxCombo, this.combo);
-    if (this.combo === 3) this.events.push('fire');
-    if (this.combo === 5) this.events.push('unstoppable');
-    if (this.combo === 10) this.events.push('legendary');
+    const crossed = (step: number) => previousCombo < step && this.combo >= step;
+    if (crossed(10)) this.events.push('legendary');
+    else if (crossed(5)) this.events.push('unstoppable');
+    else if (crossed(3)) this.events.push('fire');
 
-    const points = clearScore(this.combo, lines);
+    const points = comboClearScore(previousCombo, lines);
     const cells = lineCells({ rows, cols }).map(cell => ({
       ...cell, color: this.grid[cell.row][cell.col]!, jewel: this.jewels.has(cell.row * 8 + cell.col),
     }));
