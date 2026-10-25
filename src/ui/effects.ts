@@ -1,6 +1,7 @@
 // DOM/CSS layer effects (impact rings, clear beams, combo mood) and the
 // "reduced effects" preference shared by every visual system.
 import { lineCells, type FullLines } from '../core/board.ts';
+import { t } from '../i18n/index.ts';
 import { cellsCentroid, type Layout } from '../render/layout.ts';
 import { STORAGE_KEYS, safeStorage, type KeyValueStore } from '../platform/storage.ts';
 
@@ -55,7 +56,7 @@ export class VisualEffects {
   bindToggle(button: HTMLElement): void {
     document.body.classList.toggle('reduced-effects', this.reduced);
     const sync = () => {
-      button.textContent = this.reduced ? 'EFFEKTE: WENIG' : 'EFFEKTE: VOLL';
+      button.textContent = this.reduced ? t('options.effectsReduced') : t('options.effectsFull');
       button.setAttribute('aria-pressed', String(this.reduced));
     };
     sync();

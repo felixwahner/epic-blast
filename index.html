@@ -37,8 +37,10 @@
             class="pixel-btn"
             aria-haspopup="dialog"
             aria-controls="options-menu"
-            aria-label="Menü öffnen"
-            title="Menü"
+            aria-label="Open menu"
+            title="Menu"
+            data-i18n-aria-label="header.openMenu"
+            data-i18n-title="header.menu"
           >
             <svg
               width="22"
@@ -54,7 +56,15 @@
             </svg>
           </button>
         </div>
-        <button id="btn-close-app" class="pixel-btn" aria-label="App schließen" title="App schließen" hidden>
+        <button
+          id="btn-close-app"
+          class="pixel-btn"
+          aria-label="Close app"
+          title="Close app"
+          data-i18n-aria-label="header.closeApp"
+          data-i18n-title="header.closeApp"
+          hidden
+        >
           <svg
             width="22"
             height="22"
@@ -72,11 +82,11 @@
 
       <div class="scoreboard">
         <div class="score-card">
-          <span class="score-label">SCORE</span>
+          <span class="score-label" data-i18n="score.score">SCORE</span>
           <span id="score-display" class="score-value">0</span>
         </div>
         <div class="score-card best">
-          <span class="score-label">BEST</span>
+          <span class="score-label" data-i18n="score.best">BEST</span>
           <span id="best-score-display" class="score-value">0</span>
         </div>
       </div>
@@ -85,7 +95,7 @@
       <div id="canvas-wrapper">
         <div id="pixi-view">
           <div class="combo-box tray-combo" id="combo-box">
-            <span class="score-label">COMBO</span>
+            <span class="score-label" data-i18n="score.combo">COMBO</span>
             <span id="combo-display" class="score-value highlight">0</span>
             <span id="combo-fuse" class="combo-fuse" hidden><i></i><i></i><i></i></span>
           </div>
@@ -98,12 +108,19 @@
           type="button"
           aria-haspopup="dialog"
           aria-controls="world-gallery"
-          title="Welten ansehen"
+          title="View worlds"
+          data-i18n-title="status.viewWorlds"
         >
           <span id="world-name">NEON ARCADE</span><span id="world-count" class="world-count">1/19</span>
         </button>
         <div class="level-summary"><span id="level-label">LEVEL 1</span><span id="revive-count">REVIVES: 1</span></div>
-        <progress id="level-progress" max="1" value="0" aria-label="Level progress"></progress>
+        <progress
+          id="level-progress"
+          max="1"
+          value="0"
+          aria-label="Level progress"
+          data-i18n-aria-label="status.levelProgress"
+        ></progress>
         <span id="level-target">0 / 10,000 · +1 REVIVE</span>
       </div>
     </div>
@@ -111,29 +128,33 @@
     <!-- Overlay for Game Over -->
     <div id="game-over-modal" class="modal-overlay hidden">
       <div class="modal-box overlay-panel">
-        <h2 class="overlay-title flash-text">GAME OVER</h2>
+        <h2 class="overlay-title flash-text" data-i18n="gameOver.title">GAME OVER</h2>
         <div class="modal-scores">
           <div class="modal-row">
-            <span>SCORE:</span>
+            <span data-i18n="gameOver.score">SCORE:</span>
             <span id="final-score" class="score-highlight">0</span>
           </div>
           <div class="modal-row">
-            <span>BEST:</span>
+            <span data-i18n="gameOver.best">BEST:</span>
             <span id="final-best" class="score-highlight">0</span>
           </div>
         </div>
-        <div id="new-record-badge" class="badge hidden">✨ NEW RECORD! ✨</div>
+        <div id="new-record-badge" class="badge hidden" data-i18n="gameOver.newRecord">✨ NEW RECORD! ✨</div>
         <ul id="game-over-hints" class="near-miss" hidden></ul>
         <dl id="game-over-stats" class="game-stats"></dl>
         <div class="overlay-actions">
           <button
             id="btn-revive"
             class="pixel-btn overlay-btn overlay-btn--primary revive-btn"
-            title="Einen Revive einsetzen und weiterspielen"
+            title="Use a revive and keep playing"
           >
             REVIVE (1)
           </button>
-          <button id="btn-play-again" class="pixel-btn overlay-btn overlay-btn--secondary play-again-btn">
+          <button
+            id="btn-play-again"
+            class="pixel-btn overlay-btn overlay-btn--secondary play-again-btn"
+            data-i18n="gameOver.playAgain"
+          >
             PLAY AGAIN
           </button>
           <button
@@ -142,7 +163,7 @@
             aria-haspopup="dialog"
             aria-controls="world-gallery"
           >
-            WELTEN
+            WORLDS
           </button>
         </div>
       </div>
@@ -159,41 +180,59 @@
       inert
     >
       <div class="modal-box overlay-panel restart-box">
-        <h2 id="restart-title" class="overlay-title">NEUES SPIEL?</h2>
-        <p id="restart-message" class="overlay-text">Dein aktueller Spielfortschritt geht verloren.</p>
+        <h2 id="restart-title" class="overlay-title" data-i18n="restart.title">NEW GAME?</h2>
+        <p id="restart-message" class="overlay-text" data-i18n="restart.message">Your current progress will be lost.</p>
         <div class="overlay-actions">
-          <button id="btn-confirm-restart" class="pixel-btn overlay-btn overlay-btn--primary">NEU STARTEN</button>
-          <button id="btn-cancel-restart" class="pixel-btn overlay-btn overlay-btn--secondary">WEITERSPIELEN</button>
+          <button
+            id="btn-confirm-restart"
+            class="pixel-btn overlay-btn overlay-btn--primary"
+            data-i18n="restart.confirm"
+          >
+            RESTART
+          </button>
+          <button
+            id="btn-cancel-restart"
+            class="pixel-btn overlay-btn overlay-btn--secondary"
+            data-i18n="restart.cancel"
+          >
+            KEEP PLAYING
+          </button>
         </div>
       </div>
     </div>
 
     <dialog id="options-menu" class="overlay-dialog overlay-panel options-menu" aria-labelledby="options-title">
       <div class="options-heading">
-        <h2 id="options-title" class="overlay-title">MENÜ</h2>
-        <button id="btn-close-options" class="pixel-btn" aria-label="Menü schließen">✕</button>
+        <h2 id="options-title" class="overlay-title" data-i18n="options.title">MENU</h2>
+        <button id="btn-close-options" class="pixel-btn" aria-label="Close menu" data-i18n-aria-label="options.close">
+          ✕
+        </button>
       </div>
-      <p class="options-subtitle">TUNE YOUR BLAST</p>
+      <p class="options-subtitle" data-i18n="options.subtitle">TUNE YOUR BLAST</p>
       <div class="option-row">
-        <span>Neues Spiel</span
+        <span data-i18n="options.newGame">New game</span
         ><button
           id="btn-new-game"
           class="pixel-btn"
-          aria-label="Neues Spiel"
+          aria-label="New game"
+          data-i18n="options.restart"
+          data-i18n-aria-label="options.newGame"
           aria-haspopup="dialog"
           aria-controls="restart-confirm"
           aria-expanded="false"
         >
-          NEU STARTEN
+          RESTART
         </button>
       </div>
       <div id="fullscreen-option" class="option-row" hidden>
-        <span>Vollbild</span
+        <span data-i18n="options.fullscreen">Fullscreen</span
         ><button
           id="btn-fullscreen"
           class="pixel-btn"
-          title="Vollbild aktivieren"
-          aria-label="Vollbild aktivieren"
+          title="Enter fullscreen"
+          aria-label="Enter fullscreen"
+          data-i18n-title="options.fullscreenEnter"
+          data-i18n-aria-label="options.fullscreenEnter"
           aria-pressed="false"
         >
           <svg
@@ -210,20 +249,37 @@
         </button>
       </div>
       <div class="option-row">
-        <span>Sound</span
-        ><button id="btn-sound" class="pixel-btn" title="Toggle Sound" aria-label="Toggle Sound">🔊</button>
+        <span data-i18n="options.sound">Sound</span
+        ><button
+          id="btn-sound"
+          class="pixel-btn"
+          title="Toggle sound"
+          aria-label="Toggle sound"
+          data-i18n-title="options.toggleSound"
+          data-i18n-aria-label="options.toggleSound"
+        >
+          🔊
+        </button>
       </div>
       <div class="option-row">
-        <span>Hintergrundmusik</span
-        ><button id="btn-music" class="pixel-btn" aria-label="Hintergrundmusik" aria-pressed="true">AN</button>
+        <span data-i18n="options.music">Background music</span
+        ><button
+          id="btn-music"
+          class="pixel-btn"
+          aria-label="Background music"
+          data-i18n-aria-label="options.music"
+          aria-pressed="true"
+        >
+          ON
+        </button>
       </div>
       <div class="option-row">
-        <span>Vibration</span
+        <span data-i18n="options.vibration">Vibration</span
         ><button
           id="btn-vibration"
           class="pixel-btn"
-          title="Vibration ausschalten"
-          aria-label="Vibration ausschalten"
+          title="Turn vibration off"
+          aria-label="Turn vibration off"
           aria-pressed="true"
         >
           <svg
@@ -242,42 +298,72 @@
         </button>
       </div>
       <div class="option-row">
-        <span>Visuelle Effekte</span><button id="btn-effects" aria-pressed="false">EFFEKTE: VOLL</button>
+        <span data-i18n="options.effects">Visual effects</span
+        ><button id="btn-effects" aria-pressed="false">EFFECTS: FULL</button>
       </div>
       <div class="option-row">
-        <span>Welten</span
-        ><button id="btn-options-worlds" class="pixel-btn" aria-haspopup="dialog" aria-controls="world-gallery">
-          ANSEHEN
+        <span data-i18n="options.worlds">Worlds</span
+        ><button
+          id="btn-options-worlds"
+          class="pixel-btn"
+          aria-haspopup="dialog"
+          aria-controls="world-gallery"
+          data-i18n="options.viewWorlds"
+        >
+          VIEW
         </button>
       </div>
     </dialog>
     <dialog id="world-gallery" class="overlay-dialog overlay-panel world-gallery" aria-labelledby="gallery-title">
       <div class="options-heading">
-        <h2 id="gallery-title" class="overlay-title">WELTEN</h2>
-        <button id="btn-close-gallery" class="pixel-btn" aria-label="Welten schließen">✕</button>
+        <h2 id="gallery-title" class="overlay-title" data-i18n="gallery.title">WORLDS</h2>
+        <button id="btn-close-gallery" class="pixel-btn" aria-label="Close worlds" data-i18n-aria-label="gallery.close">
+          ✕
+        </button>
       </div>
       <p id="gallery-summary" class="gallery-summary"></p>
       <div id="world-grid" class="world-grid"></div>
-      <p class="gallery-hint">
-        Neue Welten schaltest du frei, indem du sie im Spiel erreichst oder insgesamt genug Linien räumst. Tippe auf
-        eine freie Welt, um künftig mit ihr zu starten.
+      <p class="gallery-hint" data-i18n="gallery.hint">
+        Unlock new worlds by reaching them in a game or by clearing enough lines in total. Tap an unlocked world to
+        start with it from now on.
       </p>
     </dialog>
     <dialog id="streak-recovery" class="overlay-dialog overlay-panel recovery-dialog" aria-labelledby="recovery-title">
-      <h2 id="recovery-title" class="overlay-title">KOMBO RETTEN</h2>
+      <h2 id="recovery-title" class="overlay-title" data-i18n="recovery.title">SAVE COMBO</h2>
       <p id="recovery-message" class="overlay-text"></p>
       <div class="overlay-actions">
-        <button id="btn-recover-streak" class="pixel-btn overlay-btn overlay-btn--primary">RETTEN · 1 REVIVE</button>
-        <button id="btn-skip-recovery" class="pixel-btn overlay-btn overlay-btn--secondary">WEITER OHNE RETTUNG</button>
+        <button id="btn-recover-streak" class="pixel-btn overlay-btn overlay-btn--primary" data-i18n="recovery.accept">
+          SAVE · 1 REVIVE
+        </button>
+        <button id="btn-skip-recovery" class="pixel-btn overlay-btn overlay-btn--secondary" data-i18n="recovery.skip">
+          CONTINUE WITHOUT SAVING
+        </button>
       </div>
     </dialog>
-    <div id="install-banner" class="install-banner" role="region" aria-label="App installieren" hidden>
+    <div
+      id="install-banner"
+      class="install-banner"
+      role="region"
+      aria-label="Install app"
+      data-i18n-aria-label="install.region"
+      hidden
+    >
       <img class="install-icon" src="./icons/icon-192.png" alt="" width="40" height="40" />
       <p class="install-text">
-        <strong>EPIC BLAST ALS APP</strong><span id="install-hint">Im Vollbild und offline spielen</span>
+        <strong data-i18n="install.title">EPIC BLAST AS AN APP</strong
+        ><span id="install-hint">Play fullscreen and offline</span>
       </p>
-      <button id="btn-install" class="pixel-btn">INSTALLIEREN</button>
-      <button id="btn-install-close" class="pixel-btn" aria-label="Hinweis schließen" title="Schließen">✕</button>
+      <button id="btn-install" class="pixel-btn" data-i18n="install.button">INSTALL</button>
+      <button
+        id="btn-install-close"
+        class="pixel-btn"
+        aria-label="Dismiss hint"
+        title="Close"
+        data-i18n-aria-label="install.dismiss"
+        data-i18n-title="install.close"
+      >
+        ✕
+      </button>
     </div>
     <script type="module" src="./src/main.ts"></script>
   </body>

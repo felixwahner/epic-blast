@@ -1,4 +1,5 @@
 // A small banner that offers installing the game as an app (fullscreen, offline).
+import { t } from '../i18n/index.ts';
 import { browserEnvironment, isInstalledApp } from '../platform/pwa.ts';
 import {
   installMode,
@@ -57,8 +58,7 @@ export class InstallBanner {
     const mode = this.mode();
     if (!mode) return;
     this.installButton.hidden = mode !== 'prompt';
-    this.hint.textContent =
-      mode === 'prompt' ? 'Im Vollbild und offline spielen' : 'Tippe auf „Teilen“ und dann „Zum Home-Bildschirm“';
+    this.hint.textContent = mode === 'prompt' ? t('install.hint') : t('install.iosHint');
     this.banner.hidden = false;
   }
 

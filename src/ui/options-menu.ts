@@ -1,4 +1,5 @@
 // The options dialog: sound, music, vibration, effects and fullscreen.
+import { t } from '../i18n/index.ts';
 import { byId } from './hud.ts';
 
 export interface OptionsHandlers {
@@ -65,13 +66,13 @@ export class OptionsMenu {
 
   private syncMusic(): void {
     const enabled = this.handlers.musicEnabled();
-    this.musicButton.textContent = enabled ? 'AN' : 'AUS';
+    this.musicButton.textContent = enabled ? t('options.on') : t('options.off');
     this.musicButton.setAttribute('aria-pressed', String(enabled));
   }
 
   private syncVibration(): void {
     const enabled = this.handlers.vibrationEnabled();
-    const label = enabled ? 'Vibration ausschalten' : 'Vibration einschalten';
+    const label = enabled ? t('options.vibrationOff') : t('options.vibrationOn');
     this.vibrationButton.setAttribute('aria-pressed', String(enabled));
     this.vibrationButton.setAttribute('aria-label', label);
     this.vibrationButton.title = label;
@@ -83,7 +84,7 @@ export class OptionsMenu {
     byId('fullscreen-option').hidden = !document.fullscreenEnabled;
     document.addEventListener('fullscreenchange', () => {
       const active = Boolean(document.fullscreenElement);
-      const label = active ? 'Vollbild beenden' : 'Vollbild aktivieren';
+      const label = active ? t('options.fullscreenExit') : t('options.fullscreenEnter');
       button.title = label;
       button.setAttribute('aria-label', label);
       button.setAttribute('aria-pressed', String(active));
@@ -95,7 +96,7 @@ export class OptionsMenu {
         else await document.documentElement.requestFullscreen();
       } catch (error) {
         console.warn('Fullscreen request failed:', error);
-        button.title = 'Fullscreen unavailable — try again';
+        button.title = t('options.fullscreenFailed');
       }
     });
   }
