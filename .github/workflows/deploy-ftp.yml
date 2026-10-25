@@ -1,10 +1,23 @@
-# Builds the game on every push to main and uploads dist/ to an FTP server.
+# Builds the game when a push to main changes what ships (code, assets, build setup)
+# and uploads dist/ to an FTP server. Docs, tests and tooling changes don't deploy.
 # Setup (secret and variable names): see "Deployment" in README.md.
 name: Deploy to FTP
 
 on:
   push:
     branches: [main]
+    # Only files that end up in dist/ or change how it is built.
+    paths:
+      - 'src/**'
+      - 'public/**'
+      - 'index.html'
+      - 'build/**'
+      - 'vite.config.ts'
+      - 'tsconfig*.json'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/deploy-ftp.yml'
+  # Manual run from the Actions tab, e.g. after changing FTP settings.
   workflow_dispatch:
 
 # One deploy at a time; a newer push waits for the running upload instead of cutting it off.
