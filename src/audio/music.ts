@@ -39,7 +39,10 @@ export class BackgroundMusic {
     this.storage = storage;
     this.enabled = storage.getItem(STORAGE_KEYS.music) !== 'off';
     this.timer = setInterval(() => this.tick(), TICK_MS);
-    document.addEventListener('pointerdown', () => { this.blocked = false; this.tick(); });
+    document.addEventListener('pointerdown', () => {
+      this.blocked = false;
+      this.tick();
+    });
   }
 
   toggle(): boolean {

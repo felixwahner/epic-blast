@@ -12,7 +12,11 @@ async function placeFirstPiece(page: Page) {
   const { box, layout } = await canvasLayout(page);
   await page.mouse.move(box.x + layout.gridX + layout.gridWidth / 6, box.y + layout.trayY + layout.trayHeight / 2);
   await page.mouse.down();
-  await page.mouse.move(box.x + layout.gridX + layout.gridWidth / 2, box.y + layout.gridY + layout.gridWidth * 0.58 + 80, { steps: 12 });
+  await page.mouse.move(
+    box.x + layout.gridX + layout.gridWidth / 2,
+    box.y + layout.gridY + layout.gridWidth * 0.58 + 80,
+    { steps: 12 },
+  );
   await page.mouse.up();
   await expect(page.locator('#score-display')).not.toHaveText('0');
 }

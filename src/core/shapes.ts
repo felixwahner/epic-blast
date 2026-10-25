@@ -33,52 +33,246 @@ export const SHAPE_DEFINITIONS: readonly ShapeDefinition[] = [
   { matrix: [[1], [1], [1], [1], [1]], weight: 6 },
 
   // 2x2 Square
-  { matrix: [[1, 1], [1, 1]], weight: 12 },
+  {
+    matrix: [
+      [1, 1],
+      [1, 1],
+    ],
+    weight: 12,
+  },
 
   // 3x3 Square
-  { matrix: [[1, 1, 1], [1, 1, 1], [1, 1, 1]], weight: 7 },
+  {
+    matrix: [
+      [1, 1, 1],
+      [1, 1, 1],
+      [1, 1, 1],
+    ],
+    weight: 7,
+  },
 
   // 2x3 Rectangles
-  { matrix: [[1, 1, 1], [1, 1, 1]], weight: 7 },
-  { matrix: [[1, 1], [1, 1], [1, 1]], weight: 7 },
+  {
+    matrix: [
+      [1, 1, 1],
+      [1, 1, 1],
+    ],
+    weight: 7,
+  },
+  {
+    matrix: [
+      [1, 1],
+      [1, 1],
+      [1, 1],
+    ],
+    weight: 7,
+  },
 
   // Small corner 2x2 (3 blocks)
-  { matrix: [[1, 0], [1, 1]], weight: 5 },
-  { matrix: [[0, 1], [1, 1]], weight: 5 },
-  { matrix: [[1, 1], [1, 0]], weight: 5 },
-  { matrix: [[1, 1], [0, 1]], weight: 5 },
+  {
+    matrix: [
+      [1, 0],
+      [1, 1],
+    ],
+    weight: 5,
+  },
+  {
+    matrix: [
+      [0, 1],
+      [1, 1],
+    ],
+    weight: 5,
+  },
+  {
+    matrix: [
+      [1, 1],
+      [1, 0],
+    ],
+    weight: 5,
+  },
+  {
+    matrix: [
+      [1, 1],
+      [0, 1],
+    ],
+    weight: 5,
+  },
 
   // Big corner 3x3 (5 blocks)
-  { matrix: [[1, 0, 0], [1, 0, 0], [1, 1, 1]], weight: 4 },
-  { matrix: [[0, 0, 1], [0, 0, 1], [1, 1, 1]], weight: 4 },
-  { matrix: [[1, 1, 1], [1, 0, 0], [1, 0, 0]], weight: 4 },
-  { matrix: [[1, 1, 1], [0, 0, 1], [0, 0, 1]], weight: 4 },
+  {
+    matrix: [
+      [1, 0, 0],
+      [1, 0, 0],
+      [1, 1, 1],
+    ],
+    weight: 4,
+  },
+  {
+    matrix: [
+      [0, 0, 1],
+      [0, 0, 1],
+      [1, 1, 1],
+    ],
+    weight: 4,
+  },
+  {
+    matrix: [
+      [1, 1, 1],
+      [1, 0, 0],
+      [1, 0, 0],
+    ],
+    weight: 4,
+  },
+  {
+    matrix: [
+      [1, 1, 1],
+      [0, 0, 1],
+      [0, 0, 1],
+    ],
+    weight: 4,
+  },
 
   // L-shapes (3x2, 4 blocks)
-  { matrix: [[1, 0], [1, 0], [1, 1]], weight: 4 },
-  { matrix: [[0, 1], [0, 1], [1, 1]], weight: 4 },
-  { matrix: [[1, 1], [1, 0], [1, 0]], weight: 4 },
-  { matrix: [[1, 1], [0, 1], [0, 1]], weight: 4 },
-  { matrix: [[1, 1, 1], [1, 0, 0]], weight: 4 },
-  { matrix: [[1, 1, 1], [0, 0, 1]], weight: 4 },
-  { matrix: [[1, 0, 0], [1, 1, 1]], weight: 4 },
-  { matrix: [[0, 0, 1], [1, 1, 1]], weight: 4 },
+  {
+    matrix: [
+      [1, 0],
+      [1, 0],
+      [1, 1],
+    ],
+    weight: 4,
+  },
+  {
+    matrix: [
+      [0, 1],
+      [0, 1],
+      [1, 1],
+    ],
+    weight: 4,
+  },
+  {
+    matrix: [
+      [1, 1],
+      [1, 0],
+      [1, 0],
+    ],
+    weight: 4,
+  },
+  {
+    matrix: [
+      [1, 1],
+      [0, 1],
+      [0, 1],
+    ],
+    weight: 4,
+  },
+  {
+    matrix: [
+      [1, 1, 1],
+      [1, 0, 0],
+    ],
+    weight: 4,
+  },
+  {
+    matrix: [
+      [1, 1, 1],
+      [0, 0, 1],
+    ],
+    weight: 4,
+  },
+  {
+    matrix: [
+      [1, 0, 0],
+      [1, 1, 1],
+    ],
+    weight: 4,
+  },
+  {
+    matrix: [
+      [0, 0, 1],
+      [1, 1, 1],
+    ],
+    weight: 4,
+  },
 
   // T-shapes (3x2, 4 blocks)
-  { matrix: [[1, 1, 1], [0, 1, 0]], weight: 4 },
-  { matrix: [[0, 1, 0], [1, 1, 1]], weight: 4 },
-  { matrix: [[1, 0], [1, 1], [1, 0]], weight: 4 },
-  { matrix: [[0, 1], [1, 1], [0, 1]], weight: 4 },
+  {
+    matrix: [
+      [1, 1, 1],
+      [0, 1, 0],
+    ],
+    weight: 4,
+  },
+  {
+    matrix: [
+      [0, 1, 0],
+      [1, 1, 1],
+    ],
+    weight: 4,
+  },
+  {
+    matrix: [
+      [1, 0],
+      [1, 1],
+      [1, 0],
+    ],
+    weight: 4,
+  },
+  {
+    matrix: [
+      [0, 1],
+      [1, 1],
+      [0, 1],
+    ],
+    weight: 4,
+  },
 
   // Z and S shapes
-  { matrix: [[1, 1, 0], [0, 1, 1]], weight: 3 },
-  { matrix: [[0, 1, 1], [1, 1, 0]], weight: 3 },
-  { matrix: [[1, 0], [1, 1], [0, 1]], weight: 3 },
-  { matrix: [[0, 1], [1, 1], [1, 0]], weight: 3 },
+  {
+    matrix: [
+      [1, 1, 0],
+      [0, 1, 1],
+    ],
+    weight: 3,
+  },
+  {
+    matrix: [
+      [0, 1, 1],
+      [1, 1, 0],
+    ],
+    weight: 3,
+  },
+  {
+    matrix: [
+      [1, 0],
+      [1, 1],
+      [0, 1],
+    ],
+    weight: 3,
+  },
+  {
+    matrix: [
+      [0, 1],
+      [1, 1],
+      [1, 0],
+    ],
+    weight: 3,
+  },
 
   // Diagonal 2
-  { matrix: [[1, 0], [0, 1]], weight: 1 },
-  { matrix: [[0, 1], [1, 0]], weight: 1 },
+  {
+    matrix: [
+      [1, 0],
+      [0, 1],
+    ],
+    weight: 1,
+  },
+  {
+    matrix: [
+      [0, 1],
+      [1, 0],
+    ],
+    weight: 1,
+  },
 ];
 
 /** Solid rectangles of three or more blocks: lines, 2x2, 2x3 and 3x3. */

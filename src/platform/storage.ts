@@ -21,10 +21,18 @@ export interface KeyValueStore {
 /** A store backed by `globalThis.localStorage` that swallows access errors. */
 export const safeStorage: KeyValueStore = {
   getItem(key) {
-    try { return globalThis.localStorage?.getItem(key) ?? null; } catch { return null; }
+    try {
+      return globalThis.localStorage?.getItem(key) ?? null;
+    } catch {
+      return null;
+    }
   },
   setItem(key, value) {
-    try { globalThis.localStorage?.setItem(key, value); } catch { /* Storage unavailable. */ }
+    try {
+      globalThis.localStorage?.setItem(key, value);
+    } catch {
+      /* Storage unavailable. */
+    }
   },
 };
 

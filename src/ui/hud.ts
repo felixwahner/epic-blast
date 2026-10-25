@@ -83,8 +83,10 @@ export class Hud {
   /** Keeps the combo label aligned with the top edge of the tray. */
   positionComboBox(layout: Layout): void {
     Object.assign(this.comboBox.style, {
-      left: `${layout.gridX}px`, top: `${layout.trayY - 2}px`,
-      width: `${layout.gridWidth}px`, height: `${TRAY_LABEL_HEIGHT}px`,
+      left: `${layout.gridX}px`,
+      top: `${layout.trayY - 2}px`,
+      width: `${layout.gridWidth}px`,
+      height: `${TRAY_LABEL_HEIGHT}px`,
     });
   }
 
@@ -117,17 +119,31 @@ export class Hud {
   }
 
   /** `hints` name the nearest goals; `stats` are label/value pairs of the finished game. */
-  showGameOver(score: number, best: number, newRecord: boolean, hints: readonly string[] = [], stats: readonly (readonly [string, string])[] = [], delayMs = 450): void {
+  showGameOver(
+    score: number,
+    best: number,
+    newRecord: boolean,
+    hints: readonly string[] = [],
+    stats: readonly (readonly [string, string])[] = [],
+    delayMs = 450,
+  ): void {
     this.finalScore.textContent = String(score);
     this.finalBest.textContent = String(best);
     this.newRecordBadge.classList.toggle('hidden', !newRecord);
-    this.gameOverHints.replaceChildren(...hints.map(hint => Object.assign(document.createElement('li'), { textContent: hint })));
+    this.gameOverHints.replaceChildren(
+      ...hints.map(hint => Object.assign(document.createElement('li'), { textContent: hint })),
+    );
     this.gameOverHints.hidden = hints.length === 0;
-    this.gameOverStats.replaceChildren(...stats.map(([label, value]) => {
-      const item = document.createElement('div');
-      item.append(Object.assign(document.createElement('dt'), { textContent: label }), Object.assign(document.createElement('dd'), { textContent: value }));
-      return item;
-    }));
+    this.gameOverStats.replaceChildren(
+      ...stats.map(([label, value]) => {
+        const item = document.createElement('div');
+        item.append(
+          Object.assign(document.createElement('dt'), { textContent: label }),
+          Object.assign(document.createElement('dd'), { textContent: value }),
+        );
+        return item;
+      }),
+    );
     clearTimeout(this.gameOverTimer);
     this.gameOverTimer = setTimeout(() => this.gameOverModal.classList.remove('hidden'), delayMs);
   }

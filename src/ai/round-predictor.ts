@@ -10,10 +10,15 @@ export class RoundPredictor {
   private worker: Worker | null = null;
   private busy = false;
 
-  start(id: number, rows: number[], pieces: (SolverPiece | null)[], onResult: (id: number, result: SolveResult) => void): void {
+  start(
+    id: number,
+    rows: number[],
+    pieces: (SolverPiece | null)[],
+    onResult: (id: number, result: SolveResult) => void,
+  ): void {
     if (this.busy) this.stop();
     try {
-      const worker = this.worker ??= new Worker(new URL('./solver.worker.ts', import.meta.url), { type: 'module' });
+      const worker = (this.worker ??= new Worker(new URL('./solver.worker.ts', import.meta.url), { type: 'module' }));
       worker.onmessage = ({ data }: MessageEvent<{ id: number; result: SolveResult }>) => {
         this.busy = false;
         onResult(data.id, data.result);

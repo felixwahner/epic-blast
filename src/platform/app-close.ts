@@ -18,7 +18,11 @@ export const CLOSE_TIMEOUT_MS = 300;
 
 /** Resolves true when the window closed, false when the browser kept it open. */
 export function closeApp(env: AppCloseEnvironment): Promise<boolean> {
-  try { env.close(); } catch { /* Treated like a refusal below. */ }
+  try {
+    env.close();
+  } catch {
+    /* Treated like a refusal below. */
+  }
   return new Promise(resolve => {
     env.setTimeout(() => {
       if (env.closed) return resolve(true);

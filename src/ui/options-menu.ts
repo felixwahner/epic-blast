@@ -29,7 +29,13 @@ export class OptionsMenu {
     this.dialog.addEventListener('click', event => {
       if (event.target !== this.dialog) return;
       const rect = this.dialog.getBoundingClientRect();
-      if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) this.dialog.close();
+      if (
+        event.clientX < rect.left ||
+        event.clientX > rect.right ||
+        event.clientY < rect.top ||
+        event.clientY > rect.bottom
+      )
+        this.dialog.close();
     });
 
     this.syncSound();

@@ -17,15 +17,41 @@ describe('production PWA build', () => {
     const scope = 'https://example.com/games/blast/';
     const deleted: string[] = [];
     let precached: Request[] = [];
-    let claimed = false, skipped = false, online = true;
-    const cache = { addAll: async (requests: Request[]) => { precached = requests; }, match: async () => new Response('offline shell') };
+    let claimed = false,
+      skipped = false,
+      online = true;
+    const cache = {
+      addAll: async (requests: Request[]) => {
+        precached = requests;
+      },
+      match: async () => new Response('offline shell'),
+    };
     vm.runInNewContext(source, {
       self: {
-        skipWaiting: async () => { skipped = true; }, registration: { scope }, location: { origin: 'https://example.com' },
-        clients: { claim: async () => { claimed = true; } }, addEventListener: (name: string, fn: Handler) => { handlers[name] = fn; },
+        skipWaiting: async () => {
+          skipped = true;
+        },
+        registration: { scope },
+        location: { origin: 'https://example.com' },
+        clients: {
+          claim: async () => {
+            claimed = true;
+          },
+        },
+        addEventListener: (name: string, fn: Handler) => {
+          handlers[name] = fn;
+        },
       },
-      caches: { open: async () => cache, keys: async () => [`epic-blast-${scope}-old`, 'unrelated-cache'], delete: async (key: string) => { deleted.push(key); } },
-      URL, Request, Response,
+      caches: {
+        open: async () => cache,
+        keys: async () => [`epic-blast-${scope}-old`, 'unrelated-cache'],
+        delete: async (key: string) => {
+          deleted.push(key);
+        },
+      },
+      URL,
+      Request,
+      Response,
       fetch: async (request: Request) => {
         assert.equal(request.cache, 'no-store');
         if (!online) throw new Error('Offline');
@@ -34,7 +60,9 @@ describe('production PWA build', () => {
     });
 
     let pending: Promise<unknown> = Promise.resolve();
-    const waitUntil = (promise: Promise<unknown>) => { pending = promise; };
+    const waitUntil = (promise: Promise<unknown>) => {
+      pending = promise;
+    };
     handlers.install({ waitUntil });
     await pending;
     assert(skipped);
@@ -44,7 +72,10 @@ describe('production PWA build', () => {
       assert(request.url.startsWith(scope));
       assert(existsSync(new URL(request.url.slice(scope.length), dist)), request.url);
     }
-    assert(precached.some(request => /PressStart2P.*\.ttf$/.test(request.url)), 'the font is precached');
+    assert(
+      precached.some(request => /PressStart2P.*\.ttf$/.test(request.url)),
+      'the font is precached',
+    );
 
     handlers.activate({ waitUntil });
     await pending;
@@ -53,7 +84,9 @@ describe('production PWA build', () => {
 
     const navigation = new Request(scope);
     Object.defineProperty(navigation, 'mode', { value: 'navigate' });
-    const respondWith = (promise: Promise<unknown>) => { pending = promise; };
+    const respondWith = (promise: Promise<unknown>) => {
+      pending = promise;
+    };
     handlers.fetch({ request: navigation, respondWith });
     assert.equal(await ((await pending) as Response).text(), 'new shell');
     online = false;
@@ -67,8 +100,17 @@ describe('production PWA build', () => {
     const html = read('index.html');
     assert(!html.includes('/src/'), 'index.html references bundled assets only');
     const assets = readdirSync(new URL('assets/', dist));
-    for (const pattern of [/^board-.*\.webp$/, /^neon-jewel-.*\.png$/, /^solver\.worker-.*\.js$/, /^smth-smth-.*\.mp3$/, /^record-.*\.mp3$/]) {
-      assert(assets.some(name => pattern.test(name)), `missing ${pattern}`);
+    for (const pattern of [
+      /^board-.*\.webp$/,
+      /^neon-jewel-.*\.png$/,
+      /^solver\.worker-.*\.js$/,
+      /^smth-smth-.*\.mp3$/,
+      /^record-.*\.mp3$/,
+    ]) {
+      assert(
+        assets.some(name => pattern.test(name)),
+        `missing ${pattern}`,
+      );
     }
   });
 });

@@ -43,19 +43,30 @@ export function moves(rows: RowMasks, pieces: readonly (SolverPiece | null)[]): 
 
 const bitCount = (mask: number): number => {
   let n = 0;
-  while (mask) { mask &= mask - 1; n++; }
+  while (mask) {
+    mask &= mask - 1;
+    n++;
+  }
   return n;
 };
 
 /** Places a piece and resolves simultaneous row/column clears. Never mutates `rows`. */
-export function applyMove(rows: RowMasks, piece: SolverPiece, move: Pick<Move, 'x' | 'y'>): { rows: number[]; lines: number } {
+export function applyMove(
+  rows: RowMasks,
+  piece: SolverPiece,
+  move: Pick<Move, 'x' | 'y'>,
+): { rows: number[]; lines: number } {
   const next = rows.slice();
-  piece.matrix.forEach((row, dy) => row.forEach((cell, dx) => {
-    if (cell) next[move.y + dy] |= 1 << (move.x + dx);
-  }));
+  piece.matrix.forEach((row, dy) =>
+    row.forEach((cell, dx) => {
+      if (cell) next[move.y + dy] |= 1 << (move.x + dx);
+    }),
+  );
   const fullRows = next.map((mask, i) => (mask === FULL_ROW ? i : -1)).filter(i => i >= 0);
   let columns = FULL_ROW;
-  next.forEach(mask => { columns &= mask; });
+  next.forEach(mask => {
+    columns &= mask;
+  });
   for (let y = 0; y < 8; y++) next[y] = fullRows.includes(y) ? 0 : next[y] & ~columns;
   return { rows: next, lines: fullRows.length + bitCount(columns) };
 }
@@ -77,13 +88,15 @@ export function canPlaceAll(rows: RowMasks, pieces: readonly (SolverPiece | null
 
 /** Heuristic for future room: empty cells first, then adjacent empty pairs. */
 export function boardQuality(rows: RowMasks): number {
-  let empty = 0, space = 0;
-  for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) {
-    if (rows[y] & (1 << x)) continue;
-    empty++;
-    if (x < 7 && !(rows[y] & (1 << (x + 1)))) space++;
-    if (y < 7 && !(rows[y + 1] & (1 << x))) space++;
-  }
+  let empty = 0,
+    space = 0;
+  for (let y = 0; y < 8; y++)
+    for (let x = 0; x < 8; x++) {
+      if (rows[y] & (1 << x)) continue;
+      empty++;
+      if (x < 7 && !(rows[y] & (1 << (x + 1)))) space++;
+      if (y < 7 && !(rows[y + 1] & (1 << x))) space++;
+    }
   return empty * 128 + space;
 }
 
@@ -119,11 +132,12 @@ export function solve(rows: RowMasks, pieces: readonly (SolverPiece | null)[]): 
   // Memo keyed by numbers instead of strings: rows 0-3 and the remaining pieces in
   // the outer key, rows 4-7 in the inner one.
   const memo = new Map<number, Map<number, SearchResult>>();
-  const board = new Array<number>(8);
+  const board = Array.from({ length: 8 }, () => 0);
 
   function search(remaining: number): SearchResult {
-    const high = ((board[0] | board[1] << 8 | board[2] << 16) + board[3] * 2 ** 24) * 2 ** pieces.length + remaining;
-    const low = (board[4] | board[5] << 8 | board[6] << 16) + board[7] * 2 ** 24;
+    const high =
+      ((board[0] | (board[1] << 8) | (board[2] << 16)) + board[3] * 2 ** 24) * 2 ** pieces.length + remaining;
+    const low = (board[4] | (board[5] << 8) | (board[6] << 16)) + board[7] * 2 ** 24;
     let level = memo.get(high);
     const cached = level?.get(low);
     if (cached) return cached;
@@ -139,7 +153,8 @@ export function solve(rows: RowMasks, pieces: readonly (SolverPiece | null)[]): 
           if (!fits) continue;
           // Place, then clear full rows and columns together.
           for (let dy = 0; dy < piece.height; dy++) board[y + dy] = saved[y + dy] | (piece.rows[dy] << x);
-          let columns = FULL_ROW, fullRows = 0;
+          let columns = FULL_ROW,
+            fullRows = 0;
           for (let i = 0; i < 8; i++) {
             columns &= board[i];
             if (board[i] === FULL_ROW) fullRows |= 1 << i;
@@ -148,14 +163,15 @@ export function solve(rows: RowMasks, pieces: readonly (SolverPiece | null)[]): 
           const lines = bitCount(fullRows) + bitCount(columns);
           const tail = search(remaining & ~(1 << slot));
           for (let i = 0; i < 8; i++) board[i] = saved[i];
-          const placed = tail.placed + 1, total = tail.lines + lines;
+          const placed = tail.placed + 1,
+            total = tail.lines + lines;
           if ((placed - best.placed || total - best.lines || tail.quality - best.quality) > 0) {
             best = { placed, lines: total, quality: tail.quality, move: { slot, x, y }, tail };
           }
         }
       }
     }
-    if (!level) memo.set(high, level = new Map());
+    if (!level) memo.set(high, (level = new Map()));
     level.set(low, best);
     return best;
   }

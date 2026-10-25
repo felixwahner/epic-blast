@@ -25,19 +25,50 @@ function emptiesBoard(rows: RowMasks, path: readonly ShapeDefinition[]): boolean
 describe('piece distribution', () => {
   it('weights solid pieces (lines, 2x2, 2x3, 3x3) at over 40% of all spawns', () => {
     const total = SHAPE_DEFINITIONS.reduce((sum, def) => sum + def.weight, 0);
-    const solid = SHAPE_DEFINITIONS.filter(def => isSatisfyingShape(def.matrix)).reduce((sum, def) => sum + def.weight, 0);
+    const solid = SHAPE_DEFINITIONS.filter(def => isSatisfyingShape(def.matrix)).reduce(
+      (sum, def) => sum + def.weight,
+      0,
+    );
     assert(solid / total > 0.4, `solid share ${solid / total}`);
-    for (const matrix of [[[1, 1, 1], [1, 1, 1]], [[1, 1], [1, 1], [1, 1]], [[1, 1, 1], [1, 1, 1], [1, 1, 1]]]) {
-      assert(SHAPE_DEFINITIONS.some(def => key(def) === JSON.stringify(matrix)), `catalog has ${JSON.stringify(matrix)}`);
+    for (const matrix of [
+      [
+        [1, 1, 1],
+        [1, 1, 1],
+      ],
+      [
+        [1, 1],
+        [1, 1],
+        [1, 1],
+      ],
+      [
+        [1, 1, 1],
+        [1, 1, 1],
+        [1, 1, 1],
+      ],
+    ]) {
+      assert(
+        SHAPE_DEFINITIONS.some(def => key(def) === JSON.stringify(matrix)),
+        `catalog has ${JSON.stringify(matrix)}`,
+      );
     }
   });
 
   it('only counts solid rectangles of three or more blocks as satisfying', () => {
     assert(isSatisfyingShape([[1, 1, 1]]));
-    assert(isSatisfyingShape([[1, 1], [1, 1]]));
+    assert(
+      isSatisfyingShape([
+        [1, 1],
+        [1, 1],
+      ]),
+    );
     assert(!isSatisfyingShape([[1, 1]]));
     assert(!isSatisfyingShape([[1]]));
-    assert(!isSatisfyingShape([[1, 0], [1, 1]]));
+    assert(
+      !isSatisfyingShape([
+        [1, 0],
+        [1, 1],
+      ]),
+    );
   });
 
   it('deals a solid piece in about nine of ten random trays, while keeping every shape in play', () => {
@@ -81,13 +112,36 @@ describe('board-clear search', () => {
       '...#....',
     ]);
     assert.equal(key(finishingShape(cross, SHAPE_DEFINITIONS)!), key(dot));
-    assert.equal(finishingShape(cross, SHAPE_DEFINITIONS.filter(def => key(def) !== key(dot))), null);
+    assert.equal(
+      finishingShape(
+        cross,
+        SHAPE_DEFINITIONS.filter(def => key(def) !== key(dot)),
+      ),
+      null,
+    );
     assert(emptiesBoard(cross, [dot]));
   });
 
   it('matches multi-line gaps against the catalog, e.g. a 2x3 block finishing two rows', () => {
-    const rows = board(['##...###', '##...###', '........', '........', '........', '........', '........', '........']);
-    assert.equal(key(finishingShape(rows, SHAPE_DEFINITIONS)!), key({ matrix: [[1, 1, 1], [1, 1, 1]] }));
+    const rows = board([
+      '##...###',
+      '##...###',
+      '........',
+      '........',
+      '........',
+      '........',
+      '........',
+      '........',
+    ]);
+    assert.equal(
+      key(finishingShape(rows, SHAPE_DEFINITIONS)!),
+      key({
+        matrix: [
+          [1, 1, 1],
+          [1, 1, 1],
+        ],
+      }),
+    );
   });
 
   it('returns null when one piece cannot empty the board', () => {
@@ -101,7 +155,16 @@ describe('board-clear search', () => {
     assert.equal(twoPath.length, 2);
     assert(emptiesBoard(two, twoPath));
 
-    const three = board(['#####...', '........', '........', '#####...', '........', '........', '#####...', '........']);
+    const three = board([
+      '#####...',
+      '........',
+      '........',
+      '#####...',
+      '........',
+      '........',
+      '#####...',
+      '........',
+    ]);
     assert.equal(boardClearPath(three, SHAPE_DEFINITIONS, seededRandom(1), 2), null);
     const threePath = boardClearPath(three, SHAPE_DEFINITIONS, seededRandom(1))!;
     assert.equal(threePath.length, 3);
@@ -147,7 +210,7 @@ describe('board-aware dealer', () => {
     const crowded = board(['#######.', '#######.', '#######.', '#######.', '#######.', '', '##......', '']);
     const path = createHelpDealer(() => 0).deal(crowded, SHAPE_DEFINITIONS);
     assert(path, 'line-clear help still applies');
-    assert(!emptiesBoard(crowded, path!));
+    assert(!emptiesBoard(crowded, path));
   });
 });
 

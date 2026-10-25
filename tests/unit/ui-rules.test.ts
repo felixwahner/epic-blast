@@ -1,7 +1,12 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import type { CelebrationKind } from '../../src/core/session.ts';
-import { CELEBRATION_COOLDOWN_MS, CELEBRATION_LABELS, CELEBRATION_PRIORITY, pickCelebration } from '../../src/ui/celebrations.ts';
+import {
+  CELEBRATION_COOLDOWN_MS,
+  CELEBRATION_LABELS,
+  CELEBRATION_PRIORITY,
+  pickCelebration,
+} from '../../src/ui/celebrations.ts';
 import { comboMood } from '../../src/ui/effects.ts';
 
 describe('celebration selection', () => {
@@ -23,6 +28,15 @@ describe('celebration selection', () => {
 
 describe('combo mood', () => {
   it('escalates at 2, 5 and 10', () => {
-    assert.deepEqual([0, 1, 2, 4, 5, 9, 10, 50].map(comboMood), ['calm', 'calm', 'warm', 'warm', 'hot', 'hot', 'legend', 'legend']);
+    assert.deepEqual([0, 1, 2, 4, 5, 9, 10, 50].map(comboMood), [
+      'calm',
+      'calm',
+      'warm',
+      'warm',
+      'hot',
+      'hot',
+      'legend',
+      'legend',
+    ]);
   });
 });

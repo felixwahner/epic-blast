@@ -12,12 +12,27 @@ describe('background music', () => {
   const saved = { document: globals.document, Audio: globals.Audio };
 
   before(() => {
-    globals.document = { visibilityState: 'visible', addEventListener: (name: string, fn: () => void) => { listeners[name] = fn; } };
+    globals.document = {
+      visibilityState: 'visible',
+      addEventListener: (name: string, fn: () => void) => {
+        listeners[name] = fn;
+      },
+    };
     globals.Audio = class {
-      url: string; currentTime = 12; loop = false; preload = '';
-      constructor(url: string) { this.url = url; }
-      play() { counters.plays++; return counters.fail ? Promise.reject(new Error('Autoplay blocked')) : Promise.resolve(); }
-      pause() { counters.pauses++; }
+      url: string;
+      currentTime = 12;
+      loop = false;
+      preload = '';
+      constructor(url: string) {
+        this.url = url;
+      }
+      play() {
+        counters.plays++;
+        return counters.fail ? Promise.reject(new Error('Autoplay blocked')) : Promise.resolve();
+      }
+      pause() {
+        counters.pauses++;
+      }
     };
   });
   after(() => Object.assign(globals, saved));
@@ -26,12 +41,21 @@ describe('background music', () => {
     const document = globals.document as { visibilityState: string };
     const levels: number[] = [];
     const ctx = {
-      state: 'running', currentTime: 1, destination: {},
+      state: 'running',
+      currentTime: 1,
+      destination: {},
       createMediaElementSource: () => ({ connect() {}, disconnect() {} }),
-      createGain: () => ({ gain: { value: 0, cancelScheduledValues() {}, setTargetAtTime: (v: number) => levels.push(v) }, connect() {}, disconnect() {} }),
+      createGain: () => ({
+        gain: { value: 0, cancelScheduledValues() {}, setTargetAtTime: (v: number) => levels.push(v) },
+        connect() {},
+        disconnect() {},
+      }),
     } as unknown as AudioContext;
-    const audio: { ctx: AudioContext | null; volume: number; isMuted: boolean; announcer?: { active: unknown } } =
-      { ctx: null, volume: 0.25, isMuted: false };
+    const audio: { ctx: AudioContext | null; volume: number; isMuted: boolean; announcer?: { active: unknown } } = {
+      ctx: null,
+      volume: 0.25,
+      isMuted: false,
+    };
     const music = new BackgroundMusic(audio, memoryStorage());
     clearInterval(music.timer!);
 
@@ -87,9 +111,9 @@ describe('background music', () => {
     // Rapid off/on must cancel the delayed pause.
     music.stop();
     music.tick();
-    const before = counters.pauses;
+    const pausesBefore = counters.pauses;
     await wait(80);
-    assert.equal(counters.pauses, before);
+    assert.equal(counters.pauses, pausesBefore);
     music.stop();
     await wait(70);
   });

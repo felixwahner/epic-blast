@@ -9,14 +9,23 @@ import { noHelp, seededRandom } from '../helpers/fakes.ts';
 
 const dot = { matrix: [[1]], weight: 1 };
 const domino = { matrix: [[1, 1]], weight: 1 };
-const square = { matrix: [[1, 1], [1, 1]], weight: 1 };
+const square = {
+  matrix: [
+    [1, 1],
+    [1, 1],
+  ],
+  weight: 1,
+};
 const bar3 = { matrix: [[1], [1], [1]], weight: 1 };
 const bar4 = { matrix: [[1], [1], [1], [1]], weight: 1 };
 
 function newSession(options: SessionOptions = {}): GameSession {
   const session = new GameSession({
-    random: seededRandom(7), catalog: [dot], helpDealer: noHelp,
-    reviveFor: () => [dot, dot, dot], ...options,
+    random: seededRandom(7),
+    catalog: [dot],
+    helpDealer: noHelp,
+    reviveFor: () => [dot, dot, dot],
+    ...options,
   });
   session.start();
   return session;
@@ -56,7 +65,14 @@ describe('GameSession: starting and dealing', () => {
   });
 
   it('retries the first tray piece until it fits the board', () => {
-    const big = { matrix: [[1, 1, 1], [1, 1, 1], [1, 1, 1]], weight: 1 };
+    const big = {
+      matrix: [
+        [1, 1, 1],
+        [1, 1, 1],
+        [1, 1, 1],
+      ],
+      weight: 1,
+    };
     const script = [0.1, 0.9]; // big (does not fit), then dot (fits)
     let index = 0;
     const session = newSession({ catalog: [big, dot], random: () => script[index++] ?? 0.5 });
@@ -100,8 +116,16 @@ describe('GameSession: placing pieces', () => {
     const session = newSession();
     session.deal([square, dot, dot]);
     const outcome = session.place(0, 2, 3)!;
-    assert.deepEqual(outcome.cells, [{ row: 3, col: 2 }, { row: 3, col: 3 }, { row: 4, col: 2 }, { row: 4, col: 3 }]);
-    assert.deepEqual(outcome.awards.map(a => [a.kind, a.points]), [['placement', 4]]);
+    assert.deepEqual(outcome.cells, [
+      { row: 3, col: 2 },
+      { row: 3, col: 3 },
+      { row: 4, col: 2 },
+      { row: 4, col: 3 },
+    ]);
+    assert.deepEqual(
+      outcome.awards.map(a => [a.kind, a.points]),
+      [['placement', 4]],
+    );
     assert.equal(session.score, 4);
     assert.equal(session.tray[0], null);
     assert.equal(outcome.clear, null);
@@ -143,7 +167,10 @@ describe('GameSession: placing pieces', () => {
     const outcome = session.place(0, 7, 3)!;
     assert.equal(outcome.clear!.allClear, true);
     assert(outcome.events.includes('clean'));
-    assert.deepEqual(outcome.awards.map(a => a.kind), ['placement', 'clear', 'all-clear']);
+    assert.deepEqual(
+      outcome.awards.map(a => a.kind),
+      ['placement', 'clear', 'all-clear'],
+    );
     assert.equal(outcome.clear!.allClearMultiplier, 3);
     assert.equal(outcome.awards[2].points, allClearBonus(clearScore(1, 1), 1));
     assert.equal(outcome.awards[1].points + outcome.awards[2].points, 300 + 3 * clearScore(1, 1));
@@ -165,12 +192,18 @@ describe('GameSession: placing pieces', () => {
   it('labels triple and four-line clears', () => {
     const triple = newSession();
     triple.deal([bar3, dot, dot]);
-    fill(triple, [0, 1, 2].flatMap(r => row(r, range(1, 7))));
+    fill(
+      triple,
+      [0, 1, 2].flatMap(r => row(r, range(1, 7))),
+    );
     assert(triple.place(0, 0, 0)!.events.includes('triple'));
 
     const four = newSession();
     four.deal([bar4, dot, dot]);
-    fill(four, [0, 1, 2, 3].flatMap(r => row(r, range(1, 7))));
+    fill(
+      four,
+      [0, 1, 2, 3].flatMap(r => row(r, range(1, 7))),
+    );
     const events = four.place(0, 0, 0)!.events;
     assert(events.includes('blockbuster'));
     assert(!events.includes('triple'));
@@ -193,7 +226,11 @@ describe('GameSession: placing pieces', () => {
   });
 
   it('announces combo milestones at 3, 5 and 10', () => {
-    for (const [combo, event] of [[2, 'fire'], [4, 'unstoppable'], [9, 'legendary']] as const) {
+    for (const [combo, event] of [
+      [2, 'fire'],
+      [4, 'unstoppable'],
+      [9, 'legendary'],
+    ] as const) {
       const session = newSession();
       session.combo = combo;
       fill(session, row(0, range(0, 6)));

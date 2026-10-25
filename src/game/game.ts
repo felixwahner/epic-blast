@@ -9,7 +9,13 @@ import type { AudioEngine } from '../audio/audio-engine.ts';
 import { BackgroundMusic } from '../audio/music.ts';
 import { predictClears, type FullLines } from '../core/board.ts';
 import {
-  addLines, chooseStart, markSeen, nextUnlock, parseCollection, unlockedWorlds, type WorldCollection,
+  addLines,
+  chooseStart,
+  markSeen,
+  nextUnlock,
+  parseCollection,
+  unlockedWorlds,
+  type WorldCollection,
 } from '../core/collection.ts';
 import { TUTORIAL_OPENING, TUTORIAL_TARGET } from '../core/opening.ts';
 import { LINES_PER_WORLD, progression, worldProgress } from '../core/progression.ts';
@@ -150,8 +156,18 @@ export class Game {
     // Back to front. The clear preview sits above blocks and ghosts so it stays visible.
     this.app.stage.addChild(this.root);
     this.root.addChild(
-      this.board.background, this.board.materialLayer, this.board.blocks, this.board.jewelLayer, this.board.ghosts, this.board.preview,
-      this.flash.graphics, this.trayBackdrop, this.tray.container, this.dragLayer, particleLayer, textLayer,
+      this.board.background,
+      this.board.materialLayer,
+      this.board.blocks,
+      this.board.jewelLayer,
+      this.board.ghosts,
+      this.board.preview,
+      this.flash.graphics,
+      this.trayBackdrop,
+      this.tray.container,
+      this.dragLayer,
+      particleLayer,
+      textLayer,
     );
   }
 
@@ -170,31 +186,44 @@ export class Game {
   // --- Assets & theme -------------------------------------------------------
 
   private loadAssets(): void {
-    Assets.load<Texture>(stoneReferenceURL).then(texture => {
-      this.referenceStone = texture;
-      this.updateWorldTheme(true);
-    }).catch(error => console.warn('Reference stone load failed:', error));
+    Assets.load<Texture>(stoneReferenceURL)
+      .then(texture => {
+        this.referenceStone = texture;
+        this.updateWorldTheme(true);
+      })
+      .catch(error => console.warn('Reference stone load failed:', error));
   }
 
   private loadBoardMaterial(slug: string): void {
     const url = boardURL(slug);
     if (!url || this.boardLoads.has(slug)) return;
     this.boardLoads.add(slug);
-    Assets.load<Texture>(url).then(sheet => {
-      const { width, height } = sheet;
-      // Take each of the sheet's seven-by-seven sockets whole, rim included.
-      const variants: Texture[] = [];
-      for (let row = 0; row < 7; row++) for (let col = 0; col < 7; col++) {
-        variants.push(new Texture(sheet.baseTexture, new Rectangle(
-          Math.floor(width * (0.015 + col * 0.135)), Math.floor(height * (0.015 + row * 0.135)),
-          Math.floor(width * 0.135), Math.floor(height * 0.135))));
-      }
-      this.boardMaterials.set(slug, variants);
-      if (this.theme.slug === slug) this.renderBoardBackground();
-    }).catch(error => {
-      this.boardLoads.delete(slug);
-      console.warn('Board material load failed:', error);
-    });
+    Assets.load<Texture>(url)
+      .then(sheet => {
+        const { width, height } = sheet;
+        // Take each of the sheet's seven-by-seven sockets whole, rim included.
+        const variants: Texture[] = [];
+        for (let row = 0; row < 7; row++)
+          for (let col = 0; col < 7; col++) {
+            variants.push(
+              new Texture(
+                sheet.baseTexture,
+                new Rectangle(
+                  Math.floor(width * (0.015 + col * 0.135)),
+                  Math.floor(height * (0.015 + row * 0.135)),
+                  Math.floor(width * 0.135),
+                  Math.floor(height * 0.135),
+                ),
+              ),
+            );
+          }
+        this.boardMaterials.set(slug, variants);
+        if (this.theme.slug === slug) this.renderBoardBackground();
+      })
+      .catch(error => {
+        this.boardLoads.delete(slug);
+        console.warn('Board material load failed:', error);
+      });
   }
 
   private updateWorldTheme(force = false): void {
@@ -211,7 +240,14 @@ export class Game {
     this.themeApplied = true;
     if (markSeen(this.collection, next.index)) this.saveCollection();
     if (wasApplied && previous.name !== next.name && this.session.clearedLines > 0) {
-      this.texts.spawn(this.layout.viewWidth / 2, this.layout.gridY + 50, next.name, next.primary, 18, this.layout.viewWidth);
+      this.texts.spawn(
+        this.layout.viewWidth / 2,
+        this.layout.gridY + 50,
+        next.name,
+        next.primary,
+        18,
+        this.layout.viewWidth,
+      );
     }
     applyTheme(next, this.hud.container, this.hud.worldLabel);
     // A new stage only brightens the page; the jewels and board change with the world.
@@ -245,16 +281,23 @@ export class Game {
     // Browser zoom and moving between monitors change the pixel ratio at runtime.
     this.app.renderer.resolution = canvasResolution();
     this.app.renderer.resize(Math.floor(rect.width), Math.floor(rect.height));
-    const layout = this.layout = computeLayout(rect.width, rect.height);
+    const layout = (this.layout = computeLayout(rect.width, rect.height));
     this.hud.positionComboBox(layout);
     this.hud.alignHeader(layout);
     this.trayBackdrop.clear();
     this.trayBackdrop.beginFill(0x080714, 0.78);
-    this.trayBackdrop.drawRoundedRect(layout.gridX, layout.trayY - 4, layout.gridWidth, Math.min(layout.trayHeight + 8, layout.viewHeight - layout.trayY), 12);
+    this.trayBackdrop.drawRoundedRect(
+      layout.gridX,
+      layout.trayY - 4,
+      layout.gridWidth,
+      Math.min(layout.trayHeight + 8, layout.viewHeight - layout.trayY),
+      12,
+    );
     this.trayBackdrop.endFill();
     this.renderBoardBackground();
     this.flash.relayout(layout);
-    if (Math.round(layout.cellSize * this.app.renderer.resolution) !== this.textures.pixelSize) this.rebuildBlockTextures();
+    if (Math.round(layout.cellSize * this.app.renderer.resolution) !== this.textures.pixelSize)
+      this.rebuildBlockTextures();
     this.syncBoard();
     this.tray.relayout(layout);
     this.positionHand();
@@ -280,11 +323,17 @@ export class Game {
   /** Continues the game saved before the page was closed. Returns false when there is none. */
   private resumeSavedGame(): boolean {
     let saved: { session?: unknown; worldOrder?: unknown; nearRecordCalled?: unknown } | null = null;
-    try { saved = JSON.parse(this.storage.getItem(STORAGE_KEYS.savedGame) || 'null'); } catch { return false; }
+    try {
+      saved = JSON.parse(this.storage.getItem(STORAGE_KEYS.savedGame) || 'null');
+    } catch {
+      return false;
+    }
     if (!saved || !this.session.restore(saved.session)) return false;
     const order = saved.worldOrder;
-    const validOrder = Array.isArray(order) && order.length > 0
-      && order.every(index => Number.isInteger(index) && index >= 0 && index < WORLDS.length);
+    const validOrder =
+      Array.isArray(order) &&
+      order.length > 0 &&
+      order.every(index => Number.isInteger(index) && index >= 0 && index < WORLDS.length);
     this.worldOrder = validOrder ? order : extendWorldOrder([], 1, Math.random, this.collection.start);
     this.nearRecordCalled = Boolean(saved.nearRecordCalled);
     this.resetPresentation();
@@ -296,7 +345,12 @@ export class Game {
     if (session.recoveryPending) {
       this.hud.offerRecovery(session.combo, session.revives);
     } else {
-      this.handleDeal({ kind: 'dealt', roundId: session.roundId, pieces: session.tray.filter(p => p !== null), gameOver: session.isGameOver });
+      this.handleDeal({
+        kind: 'dealt',
+        roundId: session.roundId,
+        pieces: session.tray.filter(p => p !== null),
+        gameOver: session.isGameOver,
+      });
     }
     return true;
   }
@@ -309,9 +363,14 @@ export class Game {
       this.storage.setItem(STORAGE_KEYS.savedGame, '');
       return;
     }
-    this.storage.setItem(STORAGE_KEYS.savedGame, JSON.stringify({
-      session: session.snapshot(), worldOrder: this.worldOrder, nearRecordCalled: this.nearRecordCalled,
-    }));
+    this.storage.setItem(
+      STORAGE_KEYS.savedGame,
+      JSON.stringify({
+        session: session.snapshot(),
+        worldOrder: this.worldOrder,
+        nearRecordCalled: this.nearRecordCalled,
+      }),
+    );
   }
 
   private saveCollection(): void {
@@ -320,7 +379,11 @@ export class Game {
   }
 
   private updateWorldCount(): void {
-    this.hud.setWorldCount(unlockedWorlds(this.collection, WORLDS.length).length, WORLDS.length, this.collection.fresh.length > 0);
+    this.hud.setWorldCount(
+      unlockedWorlds(this.collection, WORLDS.length).length,
+      WORLDS.length,
+      this.collection.fresh.length > 0,
+    );
   }
 
   /** Board, effects and overlays back to a clean state for a new or resumed game. */
@@ -359,10 +422,21 @@ export class Game {
   private positionHand(): void {
     const { session, layout } = this;
     const piece = session.tray[TUTORIAL_TARGET.slot];
-    const waiting = !this.storage.getItem(STORAGE_KEYS.tutorialDone) && session.roundId === 1 && session.roundPlacements === 0 && piece;
-    if (!waiting || !layout.cellSize) { if (!waiting) this.hand.hide(); return; }
+    const waiting =
+      !this.storage.getItem(STORAGE_KEYS.tutorialDone) &&
+      session.roundId === 1 &&
+      session.roundPlacements === 0 &&
+      piece;
+    if (!waiting || !layout.cellSize) {
+      if (!waiting) this.hand.hide();
+      return;
+    }
     // The hand ends where a finger has to be: dragged pieces float above the pointer.
-    const center = cellCenter(layout, TUTORIAL_TARGET.row + (piece.height - 1) / 2, TUTORIAL_TARGET.col + (piece.width - 1) / 2);
+    const center = cellCenter(
+      layout,
+      TUTORIAL_TARGET.row + (piece.height - 1) / 2,
+      TUTORIAL_TARGET.col + (piece.width - 1) / 2,
+    );
     const to = { x: center.x, y: center.y + dragLift(piece.height, layout.cellSize) };
     this.hand.show(slotCenter(layout, TUTORIAL_TARGET.slot), to);
   }
@@ -382,8 +456,13 @@ export class Game {
     this.updateCombo();
     this.tray.setPieces(outcome.pieces, this.layout);
     // A resumed round may already be partly played; the solver only judges whole rounds.
-    if (this.session.roundPlacements === 0) this.predictor.start(outcome.roundId, this.session.encodedGrid(), this.session.tray.map(p => (p ? { matrix: p.matrix } : null)),
-      (id, result) => this.session.setRoundBest(id, result));
+    if (this.session.roundPlacements === 0)
+      this.predictor.start(
+        outcome.roundId,
+        this.session.encodedGrid(),
+        this.session.tray.map(p => (p ? { matrix: p.matrix } : null)),
+        (id, result) => this.session.setRoundBest(id, result),
+      );
     this.refreshFits();
     if (outcome.gameOver) this.showGameOver();
     this.saveGame();
@@ -453,7 +532,14 @@ export class Game {
     const fragments = Math.max(4, Math.floor(220 / clear.cells.length));
     for (const cell of clear.cells) {
       const center = cellCenter(layout, cell.row, cell.col);
-      this.particles.spawnShatter(center.x, center.y, this.theme.palettes[cell.color], layout.cellSize, epicenter, fragments);
+      this.particles.spawnShatter(
+        center.x,
+        center.y,
+        this.theme.palettes[cell.color],
+        layout.cellSize,
+        epicenter,
+        fragments,
+      );
     }
     if (clear.combo >= 2) this.hud.flashCombo();
     if (clear.lines >= 3) this.audio.playComboFanfare();
@@ -464,12 +550,26 @@ export class Game {
         const center = cellCenter(layout, cell.row, cell.col);
         this.particles.spawnPuff(center.x, center.y, 0xffd23f, 14);
       }
-      this.texts.spawn(layout.viewWidth / 2, layout.gridY + layout.gridWidth / 2 - 40, `GOLD +${formatNumber(clear.jewelPoints)}`, '#ffd23f', 18, layout.viewWidth);
+      this.texts.spawn(
+        layout.viewWidth / 2,
+        layout.gridY + layout.gridWidth / 2 - 40,
+        `GOLD +${formatNumber(clear.jewelPoints)}`,
+        '#ffd23f',
+        18,
+        layout.viewWidth,
+      );
     }
     if (clear.allClear) {
       this.audio.playComboFanfare();
       this.shake.add(0.5);
-      this.texts.spawn(layout.viewWidth / 2, layout.gridY + layout.gridWidth / 2, `BOARD CLEAR x${clear.allClearMultiplier}`, '#ffd23f', 18, layout.viewWidth);
+      this.texts.spawn(
+        layout.viewWidth / 2,
+        layout.gridY + layout.gridWidth / 2,
+        `BOARD CLEAR x${clear.allClearMultiplier}`,
+        '#ffd23f',
+        18,
+        layout.viewWidth,
+      );
     }
   }
 
@@ -480,20 +580,33 @@ export class Game {
       if (award.kind === 'placement' || !epicenter) {
         this.scoreAnimator.add(award.points);
       } else if (award.kind === 'clear') {
-        this.scoreAnimator.add(award.points, this.toClient(epicenter), { combo: outcome.clear!.combo, delay: this.reduced() ? 0 : CHARGE_TIME });
+        this.scoreAnimator.add(award.points, this.toClient(epicenter), {
+          combo: outcome.clear!.combo,
+          delay: this.reduced() ? 0 : CHARGE_TIME,
+        });
       } else {
         const centerY = layout.gridY + layout.gridWidth / 2;
         // Board clear and gold jewel bonuses fly in from opposite sides of the clear.
         const offset = (epicenter.y > centerY ? -84 : 84) * (award.kind === 'jewel' ? -0.6 : 1);
         const bonus = { x: layout.viewWidth / 2, y: epicenter.y + offset };
-        this.scoreAnimator.add(award.points, this.toClient(bonus), { bonus: true, delay: award.kind === 'jewel' ? 0.2 : 0.32 });
+        this.scoreAnimator.add(award.points, this.toClient(bonus), {
+          bonus: true,
+          delay: award.kind === 'jewel' ? 0.2 : 0.32,
+        });
       }
       if (award.levelUp) {
         const { level, gained } = award.levelUp;
         this.hud.celebrateLevelUp();
         this.audio.playComboFanfare();
         this.audio.announcer.announce('level', level);
-        this.texts.spawn(layout.viewWidth / 2, layout.gridY + 35, `LEVEL ${level}! +${gained} REVIVE`, '#00ff66', 16, layout.viewWidth);
+        this.texts.spawn(
+          layout.viewWidth / 2,
+          layout.gridY + 35,
+          `LEVEL ${level}! +${gained} REVIVE`,
+          '#00ff66',
+          16,
+          layout.viewWidth,
+        );
       }
     }
     if (outcome.newRecord) {
@@ -526,10 +639,22 @@ export class Game {
   private collectLines(lines: number): void {
     const unlocked = addLines(this.collection, lines, WORLDS.length);
     this.saveCollection();
-    unlocked.forEach((index, order) => setTimeout(() => {
-      const { layout } = this;
-      this.texts.spawn(layout.viewWidth / 2, layout.gridY + layout.gridWidth * 0.3, `🔓 ${WORLDS[index][0]} FREI!`, WORLDS[index][1], 14, layout.viewWidth);
-    }, 900 + order * 700));
+    unlocked.forEach((index, order) =>
+      setTimeout(
+        () => {
+          const { layout } = this;
+          this.texts.spawn(
+            layout.viewWidth / 2,
+            layout.gridY + layout.gridWidth * 0.3,
+            `🔓 ${WORLDS[index][0]} FREI!`,
+            WORLDS[index][1],
+            14,
+            layout.viewWidth,
+          );
+        },
+        900 + order * 700,
+      ),
+    );
   }
 
   private showGameOver(): void {
@@ -550,7 +675,10 @@ export class Game {
       hints.push(`Nur ${formatNumber(bestScore - score + 1)} Punkte bis zum Rekord!`);
     }
     const unlock = nextUnlock(this.collection, WORLDS.length);
-    if (unlock) hints.push(`Noch ${unlock.remaining} ${unlock.remaining === 1 ? 'Linie' : 'Linien'} bis ${WORLDS[unlock.index][0]}`);
+    if (unlock)
+      hints.push(
+        `Noch ${unlock.remaining} ${unlock.remaining === 1 ? 'Linie' : 'Linien'} bis ${WORLDS[unlock.index][0]}`,
+      );
     const next = progression(score);
     if (hints.length < 2 && next.progress >= LEVEL_HINT_PROGRESS) {
       hints.push(`Noch ${formatNumber(next.next - score)} Punkte bis Level ${level + 1}`);
@@ -580,7 +708,14 @@ export class Game {
     this.audio.announcer.announce('revive', this.session.revives);
     this.shake.add(0.4);
     const { layout } = this;
-    this.texts.spawn(layout.viewWidth / 2, layout.gridY + layout.gridWidth / 2 - 30, '✨ REVIVED! ✨', '#00ff66', 20, layout.viewWidth);
+    this.texts.spawn(
+      layout.viewWidth / 2,
+      layout.gridY + layout.gridWidth / 2 - 30,
+      '✨ REVIVED! ✨',
+      '#00ff66',
+      20,
+      layout.viewWidth,
+    );
     this.handleDeal(outcome);
     this.tray.playEntrance(layout, this.reduced());
     this.updateProgressionUI();
@@ -594,7 +729,14 @@ export class Game {
     if (result.saved) {
       this.audio.playRevive();
       this.audio.announcer.announce('rescue');
-      this.texts.spawn(this.layout.viewWidth / 2, this.layout.gridY + 40, `COMBO ${combo} GERETTET!`, '#00f5ff', 16, this.layout.viewWidth);
+      this.texts.spawn(
+        this.layout.viewWidth / 2,
+        this.layout.gridY + 40,
+        `COMBO ${combo} GERETTET!`,
+        '#00f5ff',
+        16,
+        this.layout.viewWidth,
+      );
     }
     this.hud.closeRecovery();
     this.handleDeal(result.outcome);
@@ -602,10 +744,10 @@ export class Game {
   }
 
   private toClient(point: Point): Point {
-    const rect = this.canvasRect ??= this.app.view.getBoundingClientRect();
+    const rect = (this.canvasRect ??= this.app.view.getBoundingClientRect());
     return {
-      x: rect.left + point.x * rect.width / this.layout.viewWidth,
-      y: rect.top + point.y * rect.height / this.layout.viewHeight,
+      x: rect.left + (point.x * rect.width) / this.layout.viewWidth,
+      y: rect.top + (point.y * rect.height) / this.layout.viewHeight,
     };
   }
 
@@ -616,7 +758,9 @@ export class Game {
     const music = new BackgroundMusic(audio, this.storage);
     document.addEventListener('visibilitychange', () => music.tick());
     window.addEventListener('pagehide', () => music.suspend());
-    window.addEventListener('pageshow', event => { if (event.persisted) music.resume(); });
+    window.addEventListener('pageshow', event => {
+      if (event.persisted) music.resume();
+    });
     // Another window of the game set a new record.
     window.addEventListener('storage', event => {
       if (event.key === STORAGE_KEYS.bestScore) this.saveBestScore();
@@ -630,7 +774,10 @@ export class Game {
         return muted;
       },
       musicEnabled: () => music.enabled,
-      toggleMusic: () => { audio.init(); return music.toggle(); },
+      toggleMusic: () => {
+        audio.init();
+        return music.toggle();
+      },
       vibrationEnabled: () => this.haptics.enabled,
       toggleVibration: () => {
         const enabled = this.haptics.toggle();
@@ -640,25 +787,32 @@ export class Game {
       resized: () => this.resize(),
     });
     this.effects.bindToggle(document.getElementById('btn-effects')!);
-    new WorldGallery({
-      collection: () => this.collection,
-      choose: index => {
-        chooseStart(this.collection, index);
-        this.saveCollection();
-        // A game that has not cleared anything yet switches right away.
-        const { session } = this;
-        if (session.clearedLines > 0 || session.isGameOver) return false;
-        this.worldOrder = extendWorldOrder([], 1, Math.random, index);
-        this.updateWorldTheme(true);
-        this.saveGame();
-        return true;
+    new WorldGallery(
+      {
+        collection: () => this.collection,
+        choose: index => {
+          chooseStart(this.collection, index);
+          this.saveCollection();
+          // A game that has not cleared anything yet switches right away.
+          const { session } = this;
+          if (session.clearedLines > 0 || session.isGameOver) return false;
+          this.worldOrder = extendWorldOrder([], 1, Math.random, index);
+          this.updateWorldTheme(true);
+          this.saveGame();
+          return true;
+        },
+        opened: () => {
+          if (!this.collection.fresh.length) return;
+          this.collection.fresh = [];
+          this.saveCollection();
+        },
       },
-      opened: () => {
-        if (!this.collection.fresh.length) return;
-        this.collection.fresh = [];
-        this.saveCollection();
-      },
-    }, [this.hud.worldButton, document.getElementById('btn-options-worlds')!, document.getElementById('btn-over-worlds')!]);
+      [
+        this.hud.worldButton,
+        document.getElementById('btn-options-worlds')!,
+        document.getElementById('btn-over-worlds')!,
+      ],
+    );
     new RestartConfirm(() => {
       audio.init();
       this.startNewGame();
@@ -671,7 +825,10 @@ export class Game {
     this.hud.reviveButton.addEventListener('click', () => this.revive());
     document.getElementById('btn-recover-streak')!.addEventListener('click', () => this.finishRecovery(true));
     document.getElementById('btn-skip-recovery')!.addEventListener('click', () => this.finishRecovery(false));
-    this.hud.recoveryDialog.addEventListener('cancel', event => { event.preventDefault(); this.finishRecovery(false); });
+    this.hud.recoveryDialog.addEventListener('cancel', event => {
+      event.preventDefault();
+      this.finishRecovery(false);
+    });
 
     // Touch pointerdown can precede Chrome's user activation. Retry from
     // native touchend/click events, including after returning to the app.

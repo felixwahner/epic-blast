@@ -10,10 +10,15 @@ function fakeWindow(options: { allowClose: boolean; fullscreen?: boolean; throws
       if (options.throws) throw new Error('blocked');
       if (options.allowClose) (env as { closed: boolean }).closed = true;
     },
-    setTimeout: fn => { fn(); return 0; },
+    setTimeout: fn => {
+      fn();
+      return 0;
+    },
     document: {
       fullscreenElement: options.fullscreen ? ({} as Element) : null,
-      exitFullscreen: async () => { exited += 1; },
+      exitFullscreen: async () => {
+        exited += 1;
+      },
     },
     exited: () => exited,
   };

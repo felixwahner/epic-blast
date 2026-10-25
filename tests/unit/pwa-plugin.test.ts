@@ -5,6 +5,8 @@ import { join } from 'node:path';
 import { after, describe, it } from 'node:test';
 import { renderServiceWorker } from '../../build/pwa-plugin.ts';
 
+const version = (source: string) => source.match(/PREFIX \+ '([0-9a-f]{16})'/)![1];
+
 describe('service worker generation', () => {
   const dir = mkdtempSync(join(tmpdir(), 'epic-blast-sw-'));
   after(() => rmSync(dir, { recursive: true, force: true }));
@@ -32,7 +34,6 @@ describe('service worker generation', () => {
   });
 
   it('changes the cache version when any asset changes', () => {
-    const version = (source: string) => source.match(/PREFIX \+ '([0-9a-f]{16})'/)![1];
     const before = version(renderServiceWorker(template, dir));
     writeFileSync(join(dir, 'assets', 'app.js'), 'console.log(2)');
     assert.notEqual(version(renderServiceWorker(template, dir)), before);

@@ -3,7 +3,10 @@ import { describe, it } from 'node:test';
 import { COMBO_HELP_CHANCE, HELP_CHANCE, createHelpDealer, helpfulDefinitions } from '../../src/ai/helpful-dealer.ts';
 import { applyMove, moves } from '../../src/ai/solver.ts';
 
-const catalog = [{ matrix: [[1]], weight: 1 }, { matrix: [[1, 1]], weight: 1 }];
+const catalog = [
+  { matrix: [[1]], weight: 1 },
+  { matrix: [[1, 1]], weight: 1 },
+];
 const rows = [254, 0, 0, 0, 0, 0, 0, 0];
 // Too full for the board-clear search, so only the line-clear help applies.
 const crowded = [254, 127, 127, 127, 127, 0, 0, 0];
@@ -34,6 +37,9 @@ describe('helpful dealer', () => {
   });
 
   it('returns null when nothing can clear', () => {
-    assert.equal(helpfulDefinitions(Array(8).fill(0), catalog, () => 0), null);
+    assert.equal(
+      helpfulDefinitions(Array(8).fill(0), catalog, () => 0),
+      null,
+    );
   });
 });

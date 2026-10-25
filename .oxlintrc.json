@@ -1,0 +1,64 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "unicorn", "oxc", "import", "promise", "node"],
+  "options": {
+    "typeAware": true,
+    "reportUnusedDisableDirectives": "error"
+  },
+  "categories": {
+    "correctness": "error",
+    "suspicious": "error",
+    "perf": "warn"
+  },
+  "env": {
+    "browser": true,
+    "es2022": true
+  },
+  "overrides": [
+    {
+      "files": ["tools/**", "build/**", "tests/**", "*.config.ts"],
+      "env": { "node": true }
+    },
+    {
+      // node:test's describe() and it() return promises the runner tracks itself.
+      "files": ["tests/**"],
+      "rules": { "typescript/no-floating-promises": "off" }
+    },
+    {
+      "files": ["tools/**"],
+      "rules": { "no-console": "off" }
+    }
+  ],
+  "ignorePatterns": ["dist/", "design/", "marketing/", "public/"],
+  "rules": {
+    "eqeqeq": ["error", "always", { "null": "ignore" }],
+    "no-var": "error",
+    "prefer-const": "error",
+    "no-console": ["error", { "allow": ["warn", "error"] }],
+    "typescript/no-explicit-any": "error",
+    "typescript/consistent-type-imports": "error",
+    "import/no-cycle": "error",
+    "import/no-duplicates": "error",
+    "typescript/no-floating-promises": "error",
+
+    // Side-effect imports load CSS and setup modules on purpose.
+    "import/no-unassigned-import": "off",
+    // Some UI classes attach themselves to the DOM in their constructor.
+    "no-new": "off",
+    // Worker postMessage has no targetOrigin; the rule only applies to window.postMessage.
+    "unicorn/require-post-message-target-origin": "off",
+    // Array#toSorted is ES2023, the project targets ES2022.
+    "unicorn/no-array-sort": "off",
+    // Single-handler on* properties are used deliberately for audio and workers.
+    "unicorn/prefer-add-event-listener": "off",
+    // Tests and audio loading await one step after another on purpose.
+    "no-await-in-loop": "off",
+    "promise/always-return": "off",
+    "oxc/no-map-spread": "off",
+    // Strings spread here are ASCII-only layouts and labels.
+    "typescript/no-misused-spread": "off",
+    // Casts at DOM and test boundaries are deliberate.
+    "typescript/no-unsafe-type-assertion": "off",
+    "typescript/no-unnecessary-type-parameters": "off"
+  }
+}

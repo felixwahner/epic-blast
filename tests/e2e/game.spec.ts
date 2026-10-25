@@ -18,7 +18,11 @@ test('loads the renderer, materials, options and a playable tray', async ({ page
   // Pick the first tray shape and drop it near the board center, where every catalog shape fits.
   await page.mouse.move(box.x + layout.gridX + layout.gridWidth / 6, box.y + layout.trayY + layout.trayHeight / 2);
   await page.mouse.down();
-  await page.mouse.move(box.x + layout.gridX + layout.gridWidth / 2, box.y + layout.gridY + layout.gridWidth * 0.58 + 80, { steps: 12 });
+  await page.mouse.move(
+    box.x + layout.gridX + layout.gridWidth / 2,
+    box.y + layout.gridY + layout.gridWidth * 0.58 + 80,
+    { steps: 12 },
+  );
   await page.mouse.up();
   await expect(page.locator('#score-display')).not.toHaveText('0');
   await page.screenshot({ path: `test-results/${info.project.name}-placed.png`, fullPage: true });

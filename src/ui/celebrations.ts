@@ -2,16 +2,38 @@
 import type { CelebrationKind } from '../core/session.ts';
 
 export const CELEBRATION_LABELS: Record<CelebrationKind, string> = {
-  blockbuster: 'BLOCKBUSTER!', triple: 'TRIPLE HIT!', clean: 'CLEAN SWEEP!', escape: 'PHEW! CLOSE ONE!',
-  room: 'ROOM TO BREATHE!', perfect: 'PERFECT ROUND!', brilliant: 'BRILLIANT MOVE!',
-  fire: 'ON FIRE!', unstoppable: 'UNSTOPPABLE!', legendary: 'LEGENDARY!', finish: 'WHAT A FINISH!',
-  record: 'NEW PERSONAL BEST!', cross: 'CROSS STRIKE!', zone: 'IN THE ZONE!',
+  blockbuster: 'BLOCKBUSTER!',
+  triple: 'TRIPLE HIT!',
+  clean: 'CLEAN SWEEP!',
+  escape: 'PHEW! CLOSE ONE!',
+  room: 'ROOM TO BREATHE!',
+  perfect: 'PERFECT ROUND!',
+  brilliant: 'BRILLIANT MOVE!',
+  fire: 'ON FIRE!',
+  unstoppable: 'UNSTOPPABLE!',
+  legendary: 'LEGENDARY!',
+  finish: 'WHAT A FINISH!',
+  record: 'NEW PERSONAL BEST!',
+  cross: 'CROSS STRIKE!',
+  zone: 'IN THE ZONE!',
 };
 
 /** Highest priority first. */
 export const CELEBRATION_PRIORITY: readonly CelebrationKind[] = [
-  'perfect', 'clean', 'brilliant', 'escape', 'record', 'blockbuster', 'legendary',
-  'unstoppable', 'fire', 'finish', 'zone', 'cross', 'triple', 'room',
+  'perfect',
+  'clean',
+  'brilliant',
+  'escape',
+  'record',
+  'blockbuster',
+  'legendary',
+  'unstoppable',
+  'fire',
+  'finish',
+  'zone',
+  'cross',
+  'triple',
+  'room',
 ];
 
 export const CELEBRATION_COOLDOWN_MS = 6500;
@@ -23,8 +45,11 @@ export function pickCelebration(
   now: number,
   lastShown: ReadonlyMap<CelebrationKind, number>,
 ): CelebrationKind | null {
-  return CELEBRATION_PRIORITY.find(kind =>
-    events.includes(kind) && now - (lastShown.get(kind) ?? -Infinity) > CELEBRATION_COOLDOWN_MS) ?? null;
+  return (
+    CELEBRATION_PRIORITY.find(
+      kind => events.includes(kind) && now - (lastShown.get(kind) ?? -Infinity) > CELEBRATION_COOLDOWN_MS,
+    ) ?? null
+  );
 }
 
 export class Celebrations {

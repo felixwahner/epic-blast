@@ -51,8 +51,8 @@ export class TrayView {
       if (!view) continue;
       if (view.inTray) view.scale = view.targetScale = layout.trayScale;
       const center = slotCenter(layout, view.piece.slot);
-      view.origX = center.x - view.piece.width * layout.cellSize * view.scale / 2;
-      view.origY = center.y - view.piece.height * layout.cellSize * view.scale / 2;
+      view.origX = center.x - (view.piece.width * layout.cellSize * view.scale) / 2;
+      view.origY = center.y - (view.piece.height * layout.cellSize * view.scale) / 2;
       if (view.inTray) {
         view.x = view.origX;
         view.y = view.origY;
@@ -76,13 +76,15 @@ export class TrayView {
   }
 
   bounds(layout: Layout): TrayPieceBounds[] {
-    return this.views.filter((v): v is PieceView => v !== null).map(view => ({
-      slot: view.piece.slot,
-      x: view.x,
-      y: view.y,
-      width: view.piece.width * layout.cellSize * view.scale,
-      height: view.piece.height * layout.cellSize * view.scale,
-    }));
+    return this.views
+      .filter((v): v is PieceView => v !== null)
+      .map(view => ({
+        slot: view.piece.slot,
+        x: view.x,
+        y: view.y,
+        width: view.piece.width * layout.cellSize * view.scale,
+        height: view.piece.height * layout.cellSize * view.scale,
+      }));
   }
 
   /** Lifts a piece out of the tray into the drag layer, growing to board size. */
@@ -124,7 +126,7 @@ export class TrayView {
   retexture(): void {
     for (const view of this.views) {
       if (!view) continue;
-      for (const child of [...view.container.children]) {
+      for (const child of view.container.children) {
         if (!(child instanceof Sprite) || child.name === GLOW_NAME) continue;
         child.texture = this.textures.blocks[view.piece.colorIdx];
         this.textures.syncGlow(child, view.piece.colorIdx);
@@ -134,13 +136,15 @@ export class TrayView {
 
   private createView(piece: TrayPiece, layout: Layout): PieceView {
     const container = new Container();
-    piece.matrix.forEach((cells, r) => cells.forEach((cell, c) => {
-      if (cell !== 1) return;
-      const sprite = new Sprite(this.textures.blocks[piece.colorIdx]);
-      sprite.position.set(c * BLOCK_TEXTURE_SIZE, r * BLOCK_TEXTURE_SIZE);
-      container.addChild(sprite);
-      this.textures.syncGlow(sprite, piece.colorIdx);
-    }));
+    piece.matrix.forEach((cells, r) =>
+      cells.forEach((cell, c) => {
+        if (cell !== 1) return;
+        const sprite = new Sprite(this.textures.blocks[piece.colorIdx]);
+        sprite.position.set(c * BLOCK_TEXTURE_SIZE, r * BLOCK_TEXTURE_SIZE);
+        container.addChild(sprite);
+        this.textures.syncGlow(sprite, piece.colorIdx);
+      }),
+    );
     if (piece.jewel) {
       const mark = createJewelMark();
       mark.position.set(piece.jewel.col * BLOCK_TEXTURE_SIZE, piece.jewel.row * BLOCK_TEXTURE_SIZE);
@@ -148,8 +152,15 @@ export class TrayView {
     }
     this.container.addChild(container);
     return {
-      piece, container, x: 0, y: 0, origX: 0, origY: 0,
-      scale: layout.trayScale, targetScale: layout.trayScale, inTray: true,
+      piece,
+      container,
+      x: 0,
+      y: 0,
+      origX: 0,
+      origY: 0,
+      scale: layout.trayScale,
+      targetScale: layout.trayScale,
+      inTray: true,
     };
   }
 

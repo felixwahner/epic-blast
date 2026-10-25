@@ -34,7 +34,11 @@ export function shapeSize(matrix: Matrix): { width: number; height: number; bloc
 /** Occupied cells of a shape relative to its top-left corner, row by row. */
 export function shapeCells(matrix: Matrix): CellPosition[] {
   const cells: CellPosition[] = [];
-  matrix.forEach((row, r) => row.forEach((cell, c) => { if (cell === 1) cells.push({ row: r, col: c }); }));
+  matrix.forEach((row, r) =>
+    row.forEach((cell, c) => {
+      if (cell === 1) cells.push({ row: r, col: c });
+    }),
+  );
   return cells;
 }
 
@@ -94,8 +98,12 @@ export function lineCells({ rows, cols }: FullLines): CellPosition[] {
     seen.add(key);
     cells.push({ row, col });
   };
-  rows.forEach(r => { for (let c = 0; c < GRID_SIZE; c++) add(r, c); });
-  cols.forEach(c => { for (let r = 0; r < GRID_SIZE; r++) add(r, c); });
+  rows.forEach(r => {
+    for (let c = 0; c < GRID_SIZE; c++) add(r, c);
+  });
+  cols.forEach(c => {
+    for (let r = 0; r < GRID_SIZE; r++) add(r, c);
+  });
   return cells;
 }
 

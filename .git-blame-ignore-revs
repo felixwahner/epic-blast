@@ -1,0 +1,5 @@
+# Bulk reformats, skipped by `git blame` (GitHub does this automatically;
+# locally: git config blame.ignoreRevsFile .git-blame-ignore-revs).
+
+# Format the codebase with oxfmt
+0a035aaa98b54e1c8fd9fa5d76c92814a3884b31
