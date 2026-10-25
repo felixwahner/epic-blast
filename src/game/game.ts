@@ -259,7 +259,13 @@ export class Game {
 
   private rebuildBlockTextures(): void {
     const pixelSize = this.layout.cellSize * this.app.renderer.resolution || undefined;
-    const disposeOld = this.textures.rebuild(this.theme.palettes, this.theme.material, this.referenceStone, pixelSize);
+    const disposeOld = this.textures.rebuild(
+      this.theme.palettes,
+      this.theme.material,
+      this.referenceStone,
+      pixelSize,
+      this.theme.slug,
+    );
     this.syncBoard();
     this.tray.retexture();
     this.board.retextureGhosts();

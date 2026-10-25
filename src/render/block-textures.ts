@@ -3,6 +3,7 @@ import type { Material, Palette } from '../theme/themes.ts';
 import { jewelSurface } from './jewel-surface.ts';
 import { BLOCK_TEXTURE_SIZE } from './layout.ts';
 import { drawMaterial } from './materials.ts';
+import { STONE_MOTIFS, drawStoneMotif } from './stone-motifs.ts';
 
 export const GLOW_NAME = 'stone-glow';
 const GLOW_MARGIN = 12;
@@ -79,11 +80,12 @@ export class BlockTextures {
     material: Material,
     referenceStone: Texture | null,
     pixelSize = this.pixelSize,
+    slug = '',
   ): () => void {
     this.pixelSize = Math.max(16, Math.round(pixelSize));
     const oldBlocks = this.blocks,
       oldGlows = this.glows;
-    this.blocks = palettes.map(p => this.createBlock(p, material, referenceStone));
+    this.blocks = palettes.map(p => this.createBlock(p, material, referenceStone, slug));
     this.glows = palettes.map(p => this.createGlow(p));
     return () => {
       oldBlocks.forEach(texture => texture.destroy(true));
@@ -118,7 +120,7 @@ export class BlockTextures {
     if (glow) glow.visible = false;
   }
 
-  private createBlock(p: Palette, material: Material, referenceStone: Texture | null): Texture {
+  private createBlock(p: Palette, material: Material, referenceStone: Texture | null, slug: string): Texture {
     const s = BLOCK_TEXTURE_SIZE;
     const resolution = this.pixelSize / s;
     if (referenceStone) {
@@ -126,6 +128,9 @@ export class BlockTextures {
       // Shade the jewel directly at display resolution: one high-quality downscale
       // from the source instead of several bilinear ones, which blurred the bevels.
       const surface = jewelSurface(source, p.base, this.pixelSize, material);
+      // The world's motif is carved into every jewel, in the jewel's own colour.
+      const motif = STONE_MOTIFS[slug];
+      if (motif) drawStoneMotif(surface, motif, p.hex);
       return Texture.from(surface, { resolution, mipmap: MIPMAP_MODES.ON });
     }
     const g = new Graphics();
