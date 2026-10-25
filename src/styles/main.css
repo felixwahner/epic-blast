@@ -2382,25 +2382,23 @@ body::after {
   }
 }
 
-/* Logo, score and the level rail line up with the board's left edge; BEST keeps the right. */
-.game-header {
-  justify-content: flex-start;
-}
+/* The level rail spans only the board; the logo trims its transparent top margin so the
+   board can move up. With the installed app's close button the corners split: close on the
+   left, menu on the right, both clear of the centered logo. */
 .game-logo {
   --logo-w: clamp(184px, 52vw, 236px);
   width: var(--logo-w);
-  /* The artwork's transparent margins (6% left, 11% top of its width) would push it off
-     the board edge and cost height; most of the bottom one stays as room above the score. */
-  margin: calc(var(--logo-w) * -0.09) 0 calc(var(--logo-w) * -0.02) calc(var(--logo-w) * -0.061);
-}
-.scoreboard {
-  align-items: flex-start;
-}
-#score-display {
-  transform-origin: left center;
+  margin: calc(var(--logo-w) * -0.09) 0 calc(var(--logo-w) * -0.02);
 }
 .level-status {
   padding-inline: var(--board-left, 0px) var(--board-right, 0px);
+}
+.game-header:has(#btn-close-app:not([hidden])) .header-controls {
+  right: calc(var(--board-right, 5px) + 2px);
+}
+#btn-close-app {
+  right: auto;
+  left: calc(var(--board-left, 5px) + 2px);
 }
 @media (max-height: 650px) {
   .game-logo {
