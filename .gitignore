@@ -10,6 +10,9 @@ dist/
 debug.log
 _backup-*.tgz
 
+# Raw announcer takes for tools/render-voice.mjs and tools/split-voice-clips.py
+/voice-takes/
+
 # Scratch files from local tooling
 /.claude-*
 /.snap-*

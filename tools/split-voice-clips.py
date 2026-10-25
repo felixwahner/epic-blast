@@ -1,6 +1,6 @@
 """Run from the repository root: python tools/split-voice-clips.py
 
-Split the approved, processed voice takes at their quiet phrase boundaries.
+Split the approved, processed voice takes in voice-takes/ (not in git, see docs/prompts/voice.md) at their quiet phrase boundaries.
 Clips are saved as 128 kbit/s MP3 (about a tenth of the WAV size); needs ffmpeg on the PATH."""
 from pathlib import Path
 import subprocess
@@ -17,7 +17,7 @@ for source, names in [
     ('new-calls-2', ['last-chance', 'record-in-sight', 'champion', 'perfect', 'brilliant', 'close-call']),
     ('new-calls-3', ['zone', 'cross', 'fire', 'epic-blast', 'lets-blast', 'million']),
 ]:
-    with wave.open(f'design/voice-previews/{source}.wav') as stream:
+    with wave.open(f'voice-takes/{source}.wav') as stream:
         rate = stream.getframerate()
         samples = np.frombuffer(stream.readframes(stream.getnframes()), dtype='<i2').reshape(-1, 2).astype(float) / 32768
     hop = rate // 100

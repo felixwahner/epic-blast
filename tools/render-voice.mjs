@@ -1,4 +1,6 @@
-// Run from the repository root: node tools/render-voice-preview.mjs [input.mp3] [output.wav]
+// Run from the repository root: node tools/render-voice.mjs [input.mp3] [output.wav]
+// Bakes the approved announcer effects into a raw take (see docs/prompts/voice.md).
+// Takes are kept out of git: put them in voice-takes/.
 import { chromium } from '@playwright/test';
 import { readFileSync, writeFileSync } from 'node:fs';
 
@@ -48,7 +50,7 @@ try {
     source.start();
     const rendered = await context.startRendering();
     return Array.from({ length: 2 }, (_, channel) => Array.from(rendered.getChannelData(channel)));
-  }, readFileSync(process.argv[2] || 'design/voice-previews/smooth-energetic-announcer.mp3').toString('base64'));
+  }, readFileSync(process.argv[2] || 'voice-takes/smooth-energetic-announcer.mp3').toString('base64'));
 
   const frames = result[0].length;
   let peak = 0;
@@ -66,8 +68,8 @@ try {
       output.writeInt16LE(Math.round(result[channel][frame] / peak * 0.89 * 32767), 44 + frame * 4 + channel * 2);
     }
   }
-  writeFileSync(process.argv[3] || 'design/voice-previews/epic-blast-announcer.wav', output);
-  console.log(`Rendered ${(frames / 44100).toFixed(2)}s stereo preview; peak normalized to -1 dBFS.`);
+  writeFileSync(process.argv[3] || 'voice-takes/epic-blast-announcer.wav', output);
+  console.log(`Rendered ${(frames / 44100).toFixed(2)}s stereo take; peak normalized to -1 dBFS.`);
 } finally {
   await browser.close();
 }
