@@ -199,7 +199,7 @@ Production builds include a web app manifest, icons and a service worker that sa
 
 ## Deployment
 
-`.github/workflows/deploy-ftp.yml` runs on every push to `main` (and by hand under **Actions → Deploy to FTP → Run workflow**). It runs `npm test`, builds `dist/` and uploads it with lftp. `index.html`, `sw.js` and `manifest.webmanifest` go up last, so visitors never load a page whose assets are still missing.
+`.github/workflows/deploy-ftp.yml` runs on pushes to `main` that change the game itself: `src/`, `public/`, `index.html`, `build/`, the Vite and TypeScript config, the package files or the workflow. Changes to docs, tests, `tools/` or `marketing/` alone don't deploy. You can also start it by hand under **Actions → Deploy to FTP → Run workflow**. It runs `npm test`, builds `dist/` and uploads it with lftp. `index.html`, `sw.js` and `manifest.webmanifest` go up last, so visitors never load a page whose assets are still missing.
 
 All values go under **Settings → Secrets and variables → Actions**. That page has two tabs, and each value must be in the right one. The workflow reads secrets only from the **Secrets** tab and variables only from the **Variables** tab. A value in the wrong tab counts as not set.
 
@@ -223,3 +223,9 @@ All values go under **Settings → Secrets and variables → Actions**. That pag
 Use repository secrets and variables, not environment ones. The job doesn't use a GitHub environment, so it can't see values stored there. If a run fails with `FTP_… is not set`, check that the value is in the right tab.
 
 Only turn on `FTP_DELETE_STALE` when `FTP_REMOTE_DIR` holds nothing but the game.
+
+## License
+
+EPIC BLAST is released under the [MIT License](LICENSE), © 2026 Felix Wahner. You may use, change and share the code, also commercially, as long as you keep the copyright notice and the license text, so the original author stays credited.
+
+The bundled [Press Start 2P](src/assets/fonts/PressStart2P.ttf) font is not covered by the MIT License. It is © The Press Start 2P Project Authors and licensed under the [SIL Open Font License 1.1](src/assets/fonts/OFL.txt).
