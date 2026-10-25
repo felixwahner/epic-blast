@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { PALETTE_COUNT, WORLDS, extendWorldOrder, themeFor, worldSlug } from '../../src/theme/themes.ts';
+import { STONE_MOTIFS } from '../../src/render/stone-motifs.ts';
+import { PALETTE_COUNT, WORLDS, deltaE, extendWorldOrder, themeFor, worldSlug } from '../../src/theme/themes.ts';
 
 describe('themes', () => {
   it('rotates through every world with eclipse variants', () => {
@@ -31,6 +32,22 @@ describe('themes', () => {
           }
         }
     }
+  });
+
+  it('never gives a fixed stone colour the look of a world colour', () => {
+    for (let world = 1; world <= WORLDS.length * 2; world++) {
+      const [first, second, ...fixed] = themeFor(world).palettes.map(palette => palette.hex);
+      for (const hex of fixed) {
+        assert(
+          deltaE(hex, first) >= 12 && deltaE(hex, second) >= 12,
+          `${themeFor(world).name}: ${hex} looks like a world colour`,
+        );
+      }
+    }
+  });
+
+  it('has a stone motif for every world', () => {
+    for (let index = 0; index < WORLDS.length; index++) assert(STONE_MOTIFS[worldSlug(index)], worldSlug(index));
   });
 
   it('swaps primary and secondary colors on odd eclipse cycles', () => {

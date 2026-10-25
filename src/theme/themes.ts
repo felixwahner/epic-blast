@@ -105,6 +105,37 @@ export function mixColor(a: string, b: string, t: number): number {
   );
 }
 
+/** Below this CIELAB distance two stone colours read as the same colour. */
+const SAME_COLOR_DELTA_E = 12;
+/** Replacements for a fixed hue that collides with a world colour. */
+const SPARE_HUES = ['#a8ff12', '#12ffd8', '#12c8ff', '#ff12f0', '#ff1830'];
+
+const labCurve = (t: number): number => (t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116);
+
+function lab(hex: string): [number, number, number] {
+  const [r, g, b] = [1, 3, 5].map(i => {
+    const c = parseInt(hex.slice(i, i + 2), 16) / 255;
+    return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  });
+  const x = labCurve((0.4124 * r + 0.3576 * g + 0.1805 * b) / 0.95047);
+  const y = labCurve(0.2126 * r + 0.7152 * g + 0.0722 * b);
+  const z = labCurve((0.0193 * r + 0.1192 * g + 0.9505 * b) / 1.08883);
+  return [116 * y - 16, 500 * (x - y), 200 * (y - z)];
+}
+
+/** CIELAB distance between two hex colours. */
+export const deltaE = (a: string, b: string): number => Math.hypot(...lab(a).map((v, i) => v - lab(b)[i]));
+
+/** Preserves hue while enforcing a luminous, saturated neon body, not pastel. */
+const neonHex = (color: string): string => {
+  const raw = parseInt(color.slice(1), 16);
+  const channels = [16, 8, 0].map(shift => (raw >> shift) & 255);
+  const max = Math.max(...channels),
+    min = Math.min(...channels);
+  const neon = channels.map(channel => Math.round(18 + ((channel - min) / Math.max(1, max - min)) * 237));
+  return '#' + ((neon[0] << 16) | (neon[1] << 8) | neon[2]).toString(16).padStart(6, '0');
+};
+
 /** Brightness stage (0..3) of a world from its progress (0..1). */
 const stageOf = (progress: number): number => Math.min(3, Math.floor(progress * 4));
 
@@ -122,16 +153,16 @@ export function themeFor(world: number, progress = 0, order: readonly number[] =
   const primary = cycle % 2 ? secondColor : firstColor;
   const secondary = cycle % 2 ? firstColor : secondColor;
   const stage = stageOf(progress);
-  const hues = [primary, secondary, '#ffca08', '#168bff', '#ff168f', '#9020ff', '#16f58a', '#ff6814'];
-  const palettes = hues.map((color): Palette => {
-    const raw = parseInt(color.slice(1), 16);
-    const channels = [16, 8, 0].map(shift => (raw >> shift) & 255);
-    const max = Math.max(...channels),
-      min = Math.min(...channels);
-    // Preserve hue while enforcing a luminous, saturated neon body, not pastel.
-    const neon = channels.map(channel => Math.round(18 + ((channel - min) / Math.max(1, max - min)) * 237));
-    const base = (neon[0] << 16) | (neon[1] << 8) | neon[2];
-    const hex = '#' + base.toString(16).padStart(6, '0');
+  const hues = [primary, secondary, '#ffca08', '#168bff', '#ff168f', '#9020ff', '#16f58a', '#ff6814'].map(neonHex);
+  // A fixed hue that nearly matches a world colour would give two look-alike stones: swap in a spare.
+  for (let i = 2; i < hues.length; i++) {
+    if (Math.min(deltaE(hues[i], hues[0]), deltaE(hues[i], hues[1])) >= SAME_COLOR_DELTA_E) continue;
+    const others = hues.filter((_, j) => j !== i);
+    const spread = (spare: string) => Math.min(...others.map(o => deltaE(spare, o)));
+    hues[i] = SPARE_HUES.map(neonHex).reduce((best, spare) => (spread(spare) > spread(best) ? spare : best));
+  }
+  const palettes = hues.map((hex): Palette => {
+    const base = parseInt(hex.slice(1), 16);
     return { base, hi: mixColor(hex, '#ffffff', 0.28), sh: mixColor(hex, '#000000', 0.55), hex };
   });
   return {
