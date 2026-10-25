@@ -13,6 +13,7 @@ import {
 } from '../core/collection.ts';
 import { TUTORIAL_OPENING, TUTORIAL_TARGET } from '../core/opening.ts';
 import { LINES_PER_WORLD, progression, worldProgress } from '../core/progression.ts';
+import { comboMilestone } from '../core/scoring.ts';
 import { GameSession, type DealOutcome, type PlacementOutcome } from '../core/session.ts';
 import { Haptics } from '../platform/haptics.ts';
 import { STORAGE_KEYS, readNumber, safeStorage, syncBestScore, type KeyValueStore } from '../platform/storage.ts';
@@ -438,7 +439,8 @@ export class Game {
     // The announcer keeps the most important of these calls.
     const { announcer } = this.audio;
     announcer.announce('clear', clear.lines);
-    announcer.announce('combo', clear.combo);
+    const milestone = comboMilestone(clear.combo - clear.lines, clear.combo);
+    if (milestone) announcer.announce('combo', milestone);
     const world = worldProgress(this.session.clearedLines).world;
     if (world > worldProgress(this.session.clearedLines - clear.lines).world) {
       announcer.announce((world - 1) % WORLDS.length === 0 ? 'eclipse' : 'world');
