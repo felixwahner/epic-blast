@@ -183,3 +183,23 @@ Production builds include a web app manifest, icons and a service worker that sa
 - `sw.js` and its cache version are generated from a hash of the build output, so a changed build always gets a new cache.
 - Update checks run on page load, when you return to the tab and when the connection comes back. A new version waits until all game tabs are closed, so a game in progress is never interrupted.
 - Deploy all of `dist/` at once. Serve `sw.js`, `index.html` and `manifest.webmanifest` with `Cache-Control: no-cache`. Hashed files in `assets/` can be cached for a year with `immutable`.
+
+---
+
+## Deployment
+
+`.github/workflows/deploy-ftp.yml` runs on every push to `main` (and by hand under **Actions → Deploy to FTP → Run workflow**). It runs `npm test`, builds `dist/` and uploads it with lftp. `index.html`, `sw.js` and `manifest.webmanifest` go up last, so visitors never load a page whose assets are still missing.
+
+Set these under **Settings → Secrets and variables → Actions**:
+
+| Name | Kind | Required | Meaning |
+| --- | --- | --- | --- |
+| `FTP_HOST` | Secret | yes | Server name, e.g. `ftp.example.com` (no `ftp://`) |
+| `FTP_USER` | Secret | yes | Login name |
+| `FTP_PASSWORD` | Secret | yes | Password |
+| `FTP_REMOTE_DIR` | Variable | yes | Target folder on the server, e.g. `/htdocs/epic-blast`. Created if missing |
+| `FTP_PROTOCOL` | Variable | no | `ftps` (default, FTP with TLS), `ftp` (unencrypted) or `sftp` |
+| `FTP_PORT` | Variable | no | Only if the server doesn't use the default port (21 for FTP/FTPS, 22 for SFTP) |
+| `FTP_DELETE_STALE` | Variable | no | `true` deletes files in `FTP_REMOTE_DIR` that are not in the build (old hashed assets). `.htaccess` and `.well-known/` are kept. Default `false` |
+
+Only turn on `FTP_DELETE_STALE` when `FTP_REMOTE_DIR` holds nothing but the game.
