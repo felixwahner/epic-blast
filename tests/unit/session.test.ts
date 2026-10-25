@@ -3,7 +3,7 @@ import { beforeEach, describe, it } from 'node:test';
 import { boardQuality } from '../../src/ai/solver.ts';
 import { encodeGrid, isGridEmpty } from '../../src/core/board.ts';
 import { levelStart } from '../../src/core/progression.ts';
-import { clearScore } from '../../src/core/scoring.ts';
+import { allClearBonus, clearScore } from '../../src/core/scoring.ts';
 import { GameSession, type DealOutcome, type SessionOptions } from '../../src/core/session.ts';
 import { noHelp, seededRandom } from '../helpers/fakes.ts';
 
@@ -144,7 +144,22 @@ describe('GameSession: placing pieces', () => {
     assert.equal(outcome.clear!.allClear, true);
     assert(outcome.events.includes('clean'));
     assert.deepEqual(outcome.awards.map(a => a.kind), ['placement', 'clear', 'all-clear']);
-    assert.equal(outcome.awards[2].points, 300);
+    assert.equal(outcome.clear!.allClearMultiplier, 3);
+    assert.equal(outcome.awards[2].points, allClearBonus(clearScore(1, 1), 1));
+    assert.equal(outcome.awards[1].points + outcome.awards[2].points, 300 + 3 * clearScore(1, 1));
+  });
+
+  it('raises the board-clear multiplier with every further board clear in a game', () => {
+    const session = newSession();
+    fill(session, row(3, range(0, 6)));
+    assert.equal(session.place(0, 7, 3)!.clear!.allClearMultiplier, 3);
+    fill(session, row(5, range(1, 7)));
+    const second = session.place(1, 0, 5)!;
+    assert.equal(second.clear!.allClearMultiplier, 4);
+    assert.equal(second.awards[2].points, allClearBonus(clearScore(2, 1), 2));
+    session.start();
+    fill(session, row(0, range(1, 7)));
+    assert.equal(session.place(0, 0, 0)!.clear!.allClearMultiplier, 3, 'a new game starts over');
   });
 
   it('labels triple and four-line clears', () => {

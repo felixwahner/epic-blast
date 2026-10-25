@@ -3,10 +3,14 @@ import { canvasLayout } from './helpers.ts';
 
 const BEST_KEY = 'epic_blast_best_score';
 
-/** Drops the first tray piece near the board center, where every catalog shape fits. */
+/**
+ * Drops the first tray piece near the board center, where every catalog shape fits.
+ * The press aims at the middle of the first tray slot: a one-cell-wide piece
+ * is too narrow to catch a press anywhere else.
+ */
 async function placeFirstPiece(page: Page) {
   const { box, layout } = await canvasLayout(page);
-  await page.mouse.move(box.x + box.width / 6, box.y + layout.trayY + layout.trayHeight / 2);
+  await page.mouse.move(box.x + layout.gridX + layout.gridWidth / 6, box.y + layout.trayY + layout.trayHeight / 2);
   await page.mouse.down();
   await page.mouse.move(box.x + layout.gridX + layout.gridWidth / 2, box.y + layout.gridY + layout.gridWidth * 0.58 + 80, { steps: 12 });
   await page.mouse.up();
@@ -18,11 +22,16 @@ test('best score follows a new record and survives a reload', async ({ page }) =
   await expect(page.locator('#pixi-view canvas')).toBeVisible();
   await expect(page.locator('#best-score-display')).toHaveText('0');
   await placeFirstPiece(page);
-  const score = await page.evaluate(() => Number(document.querySelector('#score-display')!.textContent));
-  await expect(page.locator('#best-score-display')).toHaveText(String(score));
-  expect(await page.evaluate(key => localStorage.getItem(key), BEST_KEY)).toBe(String(score));
+  // The score display counts up; wait until it settles on the new best.
+  const best = page.locator('#best-score-display');
+  await expect(async () => {
+    expect(await page.locator('#score-display').textContent()).toBe(await best.textContent());
+  }).toPass();
+  const score = await best.textContent();
+  expect(score).not.toBe('0');
+  expect(await page.evaluate(key => localStorage.getItem(key), BEST_KEY)).toBe(score);
   await page.reload();
-  await expect(page.locator('#best-score-display')).toHaveText(String(score));
+  await expect(best).toHaveText(score!);
 });
 
 // The installed app and a browser tab share localStorage. A record set in one

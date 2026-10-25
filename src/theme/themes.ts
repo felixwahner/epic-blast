@@ -1,7 +1,9 @@
 // Pure world/palette model. DOM application lives in ui/theme-dom.ts and
 // Pixi material decoration in render/materials.ts.
 
-export type Material = 'circuit' | 'candy' | 'leaf' | 'ice' | 'wood' | 'rune' | 'star' | 'lava';
+export type Material =
+  | 'circuit' | 'candy' | 'leaf' | 'ice' | 'wood' | 'rune' | 'star' | 'lava'
+  | 'bolt' | 'bubble' | 'cloud' | 'pixel' | 'stud' | 'gear' | 'chip' | 'sand' | 'scribble' | 'brush';
 
 export interface Palette {
   base: number;
@@ -12,6 +14,8 @@ export interface Palette {
 
 export interface Theme {
   index: number;
+  /** Folder of the world's scenery and board material under assets/images/worlds. */
+  slug: string;
   key: string;
   name: string;
   primary: string;
@@ -31,7 +35,43 @@ export const WORLDS: readonly (readonly [name: string, primary: string, secondar
   ['DUNGEON LOOT', '#48e6a0', '#ffd16b', 'rune'],
   ['COSMIC OVERDRIVE', '#b18cff', '#67caff', 'star'],
   ['VOLCANIC CORE', '#ff773e', '#ff3c64', 'lava'],
+  ['STORM CITADEL', '#a9c8ff', '#ffe14d', 'bolt'],
+  ['DEEP SEA ABYSS', '#2d6bff', '#c6ff3d', 'bubble'],
+  ['SKY KINGDOM', '#ffde59', '#ff8ad8', 'cloud'],
+  ['GLITCH DIMENSION', '#39ff14', '#ff1f1f', 'pixel'],
+  ['TOY BOX', '#ff2d2d', '#ffd21f', 'stud'],
+  ['STEAM FOUNDRY', '#ffb347', '#4ee6d2', 'gear'],
+  ['JACKPOT PALACE', '#ffd700', '#e0102f', 'chip'],
+  ['DESERT MIRAGE', '#ff5a36', '#7a5cff', 'sand'],
+  ['SKETCHBOOK', '#2f6bff', '#f5ff3d', 'scribble'],
+  ['MOONLIT DOJO', '#ff3b2f', '#4b3cff', 'brush'],
 ];
+
+/** Folder name of a world's art, e.g. 'NEON ARCADE' -> 'neon-arcade'. */
+export const worldSlug = (index: number): string => WORLDS[index][0].toLowerCase().replace(/\s+/g, '-');
+
+/**
+ * Appends shuffled rounds of every world until the order covers `length` worlds.
+ * Neon Arcade always opens a game; each later round visits every world once
+ * and never repeats the world that ended the previous round.
+ */
+export function extendWorldOrder(order: readonly number[], length: number, random: () => number = Math.random): number[] {
+  const out = [...order];
+  while (out.length < length) {
+    const round = WORLDS.map((_, index) => index);
+    for (let i = round.length - 1; i > 0; i--) {
+      const j = Math.floor(random() * (i + 1));
+      [round[i], round[j]] = [round[j], round[i]];
+    }
+    const lead = out.length === 0 ? 0 : out[out.length - 1];
+    const at = round.indexOf(lead);
+    // The first round starts at Neon Arcade; later rounds push the repeat out of the first slot.
+    if (out.length === 0) [round[0], round[at]] = [round[at], round[0]];
+    else if (at === 0) [round[0], round[1]] = [round[1], round[0]];
+    out.push(...round);
+  }
+  return out;
+}
 
 export const PALETTE_COUNT = 8;
 
@@ -40,13 +80,23 @@ export function mixColor(a: string, b: string, t: number): number {
   return [16, 8, 0].reduce((out, shift) => out | (Math.round(((x >> shift) & 255) * (1 - t) + ((y >> shift) & 255) * t) << shift), 0);
 }
 
-export function themeFor(level: number, progress = 0): Theme {
-  const index = (level - 1) % WORLDS.length;
+/** Brightness stage (0..3) of a world from its progress (0..1). */
+const stageOf = (progress: number): number => Math.min(3, Math.floor(progress * 4));
+
+/** Key of `themeFor(world, progress)`, cheap enough to compare every frame. */
+export const themeKey = (world: number, progress: number): string => `${world}:${stageOf(progress)}`;
+
+/**
+ * Theme of the `world`-th world of a game (1-based). `order` maps that position to a
+ * world; without one the worlds follow their listed order.
+ */
+export function themeFor(world: number, progress = 0, order: readonly number[] = []): Theme {
+  const index = order[world - 1] ?? (world - 1) % WORLDS.length;
   const [name, firstColor, secondColor, material] = WORLDS[index];
-  const cycle = Math.floor((level - 1) / WORLDS.length);
+  const cycle = Math.floor((world - 1) / WORLDS.length);
   const primary = cycle % 2 ? secondColor : firstColor;
   const secondary = cycle % 2 ? firstColor : secondColor;
-  const stage = Math.min(3, Math.floor(progress * 4));
+  const stage = stageOf(progress);
   const hues = [primary, secondary, '#ffca08', '#168bff', '#ff168f', '#9020ff', '#16f58a', '#ff6814'];
   const palettes = hues.map((color): Palette => {
     const raw = parseInt(color.slice(1), 16);
@@ -58,5 +108,5 @@ export function themeFor(level: number, progress = 0): Theme {
     const hex = '#' + base.toString(16).padStart(6, '0');
     return { base, hi: mixColor(hex, '#ffffff', 0.28), sh: mixColor(hex, '#000000', 0.55), hex };
   });
-  return { index, key: `${level}:${stage}`, name: name + (cycle ? ` · ECLIPSE ${cycle}` : ''), primary, secondary, material, stage, palettes };
+  return { index, slug: worldSlug(index), key: themeKey(world, progress), name: name + (cycle ? ` · ECLIPSE ${cycle}` : ''), primary, secondary, material, stage, palettes };
 }

@@ -39,13 +39,13 @@ describe('level progression', () => {
 });
 
 describe('world progression', () => {
-  it('advances every 40 lines with a light stage every 10 lines', () => {
-    for (const lines of [0, 9, 10, 19, 20, 29, 30, 39, 40, 79, 80, 360]) {
+  it('advances every 20 lines with a light stage every 5 lines', () => {
+    for (const lines of [0, 4, 5, 9, 10, 14, 15, 19, 20, 39, 40, 360]) {
       const state = worldProgress(lines);
-      assert.equal(state.world, Math.floor(lines / 40) + 1);
-      assert.equal(themeFor(state.world, state.progress).stage, Math.floor((lines % 40) / 10));
+      assert.equal(state.world, Math.floor(lines / 20) + 1);
+      assert.equal(themeFor(state.world, state.progress).stage, Math.floor((lines % 20) / 5));
     }
-    assert.deepEqual(worldProgress(40), { world: 2, progress: 0 });
+    assert.deepEqual(worldProgress(20), { world: 2, progress: 0 });
   });
 });
 

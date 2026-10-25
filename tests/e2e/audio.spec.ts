@@ -37,7 +37,7 @@ test('sound output survives mute and music stays independent', async ({ page }) 
 
   // The first sound after resume can land in the past on a busy machine; retry.
   await expect.poll(measure, { timeout: 10000 }).toBeGreaterThan(0);
-  await expect.poll(() => page.evaluate(() => window.audio!.announcer.buffers.size)).toBe(7);
+  await expect.poll(() => page.evaluate(() => window.audio!.announcer.buffers.size)).toBe(25);
   const voice = await page.evaluate(async () => {
     const { announcer } = window.audio!;
     announcer.announce('record');

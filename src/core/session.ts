@@ -6,8 +6,8 @@ import {
   lineCells, placeShape, shapeSize, type CellPosition, type Grid, type Matrix,
 } from './board.ts';
 import { progression } from './progression.ts';
-import { ALL_CLEAR_BONUS, clearScore } from './scoring.ts';
-import { SHAPE_DEFINITIONS, pickWeightedShape, type RandomSource, type ShapeDefinition } from './shapes.ts';
+import { allClearBonus, allClearMultiplier, clearScore } from './scoring.ts';
+import { SHAPE_DEFINITIONS, isSatisfyingShape, pickWeightedShape, type RandomSource, type ShapeDefinition } from './shapes.ts';
 import { canRecoverStreak } from './streak-recovery.ts';
 import { createHelpDealer, type HelpDealer } from '../ai/helpful-dealer.ts';
 import { reviveDefinitions } from '../ai/revive.ts';
@@ -16,6 +16,8 @@ import { boardQuality, compare, moves, type RoundScore, type RowMasks, type Solv
 export const TRAY_SLOTS = 3;
 /** Attempts to find a first tray piece that fits before giving up. */
 const FIRST_PIECE_ATTEMPTS = 20;
+/** Chance that a random tray without any solid piece (line, 2x2, 2x3, 3x3) gets one swapped in. */
+export const SATISFYING_ROUND_CHANCE = 0.5;
 
 export type CelebrationKind =
   | 'blockbuster' | 'triple' | 'clean' | 'escape' | 'room' | 'perfect' | 'brilliant'
@@ -58,6 +60,8 @@ export interface ClearOutcome {
   points: number;
   cells: ClearedCell[];
   allClear: boolean;
+  /** Score multiplier of this board clear; 1 when the board was not emptied. */
+  allClearMultiplier: number;
 }
 
 export interface PlacementOutcome {
@@ -98,6 +102,8 @@ export class GameSession {
   recoveryPending = false;
   /** Lines cleared this game; drives world progression. */
   clearedLines = 0;
+  /** Board clears this game; each one raises the next board clear's multiplier. */
+  allClears = 0;
 
   roundId = 0;
   roundLines = 0;
@@ -113,6 +119,7 @@ export class GameSession {
   private readonly paletteCount: number;
   private readonly helpDealer: HelpDealer;
   private readonly reviveFor: NonNullable<SessionOptions['reviveFor']>;
+  private readonly satisfying: readonly ShapeDefinition[];
   private pieceCounter = 0;
   private events: CelebrationKind[] = [];
   private awards: ScoreAward[] = [];
@@ -124,6 +131,7 @@ export class GameSession {
     this.paletteCount = options.paletteCount ?? 8;
     this.helpDealer = options.helpDealer ?? createHelpDealer(this.random);
     this.reviveFor = options.reviveFor ?? reviveDefinitions;
+    this.satisfying = this.catalog.filter(def => isSatisfyingShape(def.matrix));
     this.bestScore = options.bestScore ?? 0;
   }
 
@@ -139,6 +147,7 @@ export class GameSession {
     this.isGameOver = false;
     this.recoveryPending = false;
     this.clearedLines = 0;
+    this.allClears = 0;
     this.roundLines = 0;
     this.roundPlacements = 0;
     this.roundStreak = 0;
@@ -179,11 +188,13 @@ export class GameSession {
     if (!definitions && !this.turnHasClear) this.combo = 0;
     this.turnHasClear = false;
 
-    const helpful = definitions ? null : this.helpDealer.deal(this.encodedGrid(), this.catalog);
+    const helpful = definitions ? null : this.helpDealer.deal(this.encodedGrid(), this.catalog, { combo: this.combo });
+    const chosen: SolverPiece[] = [];
     for (let slot = 0; slot < TRAY_SLOTS; slot++) {
-      const chosen = definitions?.[slot] ?? helpful?.[slot] ?? this.randomDefinition(slot === 0);
-      this.tray[slot] = this.createPiece(chosen.matrix, slot);
+      chosen.push(definitions?.[slot] ?? helpful?.[slot] ?? this.randomDefinition(slot === 0));
     }
+    if (!definitions) this.addSatisfyingPiece(chosen, helpful?.length ?? 0);
+    chosen.forEach((def, slot) => { this.tray[slot] = this.createPiece(def.matrix, slot); });
 
     this.roundLines = 0;
     this.roundPlacements = 0;
@@ -284,11 +295,14 @@ export class GameSession {
     for (const cell of cells) this.grid[cell.row][cell.col] = null;
 
     const allClear = isGridEmpty(this.grid);
+    let multiplier = 1;
     if (allClear) {
+      this.allClears++;
+      multiplier = allClearMultiplier(this.allClears);
       this.events.push('clean');
-      this.award(ALL_CLEAR_BONUS, 'all-clear');
+      this.award(allClearBonus(points, this.allClears), 'all-clear');
     }
-    return { rows, cols, lines, combo: this.combo, points, cells, allClear };
+    return { rows, cols, lines, combo: this.combo, points, cells, allClear, allClearMultiplier: multiplier };
   }
 
   private award(points: number, kind: ScoreAward['kind']): void {
@@ -322,8 +336,24 @@ export class GameSession {
         const def = pickWeightedShape(this.catalog, this.random);
         if (canFitAnywhere(this.grid, def.matrix)) return def;
       }
+      // Tight boards: fall back to the shapes that still fit instead of giving up.
+      const fitting = this.catalog.filter(def => canFitAnywhere(this.grid, def.matrix));
+      if (fitting.length) return pickWeightedShape(fitting, this.random);
     }
     return pickWeightedShape(this.catalog, this.random);
+  }
+
+  /**
+   * Block Blast trays regularly contain a chunky solid piece. When the randomly
+   * drawn slots have none, sometimes swap the last one for a solid piece that fits.
+   */
+  private addSatisfyingPiece(chosen: SolverPiece[], fixedSlots: number): void {
+    const slot = TRAY_SLOTS - 1;
+    if (fixedSlots > slot || !this.satisfying.length) return;
+    if (chosen.some(def => isSatisfyingShape(def.matrix))) return;
+    if (this.random() >= SATISFYING_ROUND_CHANCE) return;
+    const fitting = this.satisfying.filter(def => canFitAnywhere(this.grid, def.matrix));
+    if (fitting.length) chosen[slot] = pickWeightedShape(fitting, this.random);
   }
 
   private createPiece(matrix: Matrix, slot: number): TrayPiece {

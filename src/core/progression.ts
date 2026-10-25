@@ -18,7 +18,7 @@ export function progression(score: number): LevelProgress {
   return { level, start, next, progress: (score - start) / (next - start) };
 }
 
-export const LINES_PER_WORLD = 40;
+export const LINES_PER_WORLD = 20;
 
 // Worlds advance independently from score levels and revive rewards.
 export function worldProgress(lines: number): { world: number; progress: number } {

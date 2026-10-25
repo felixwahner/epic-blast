@@ -1,18 +1,19 @@
 // Wires the pure GameSession to Pixi rendering, audio, haptics and the DOM HUD.
 // Rules live in core/session.ts; this file only turns their outcomes into feedback.
 import { Application, Assets, Container, Graphics, Rectangle, Texture, type FederatedPointerEvent } from 'pixi.js';
-import stoneReferenceURL from '../assets/images/neon-jewel.png?url';
-import boardMaterialURL from '../assets/images/board-materials.png?url';
+// 512px is ample: the jewel is shaded at the on-screen cell size (about 100-200 device pixels).
+import stoneReferenceURL from '../assets/images/neon-jewel-512.png?url';
 import { RoundPredictor } from '../ai/round-predictor.ts';
+import { MILLION, isNearRecord } from '../audio/announcer.ts';
 import type { AudioEngine } from '../audio/audio-engine.ts';
 import { BackgroundMusic } from '../audio/music.ts';
 import { predictClears, type FullLines } from '../core/board.ts';
 import { progression, worldProgress } from '../core/progression.ts';
 import { GameSession, type DealOutcome, type PlacementOutcome } from '../core/session.ts';
-import { showInterstitialAd, listenForAdEvents } from '../platform/ads.ts';
 import { Haptics } from '../platform/haptics.ts';
 import { STORAGE_KEYS, readNumber, safeStorage, syncBestScore, type KeyValueStore } from '../platform/storage.ts';
 import { BlockTextures } from '../render/block-textures.ts';
+import { BoardFlash } from '../render/board-flash.ts';
 import { BoardView } from '../render/board-view.ts';
 import { CHARGE_TIME } from '../render/clear-animation.ts';
 import { dragPlacement, hitTestTray, type Point } from '../render/drag.ts';
@@ -21,7 +22,8 @@ import { cellCenter, cellsCentroid, computeLayout, emptyLayout, type Layout } fr
 import { ParticleSystem } from '../render/particles.ts';
 import { ScreenShake } from '../render/screen-shake.ts';
 import { TrayView, type PieceView } from '../render/tray-view.ts';
-import { themeFor, type Theme } from '../theme/themes.ts';
+import { WORLDS, extendWorldOrder, themeFor, themeKey, type Theme } from '../theme/themes.ts';
+import { boardURL } from '../theme/world-art.ts';
 import { Celebrations } from '../ui/celebrations.ts';
 import { VisualEffects, pulse } from '../ui/effects.ts';
 import { Hud } from '../ui/hud.ts';
@@ -34,12 +36,21 @@ import { applyTheme } from '../ui/theme-dom.ts';
 const THEME_CHANGE_DELAY_MS = 1100;
 const NO_LINES: FullLines = { rows: [], cols: [] };
 
+/** Canvas backing-store density; capped so 3x phones don't pay for 9x the fill rate. */
+const canvasResolution = () => Math.min(window.devicePixelRatio || 1, 2);
+
+/** Same world look: the block textures and board background can stay as they are. */
+const sameLook = (a: Theme, b: Theme): boolean =>
+  a.slug === b.slug && a.material === b.material && a.palettes.every((p, i) => p.hex === b.palettes[i].hex);
+
 interface DragState {
   slot: number;
   view: PieceView;
   pointer: Point;
   target: { col: number; row: number } | null;
   preview: FullLines;
+  /** Grid cell the piece was last evaluated at; moves within it skip the board checks. */
+  cell: string;
 }
 
 export interface GameOptions {
@@ -58,6 +69,7 @@ export class Game {
   private readonly scoreAnimator: ScoreAnimator;
   private readonly predictor = new RoundPredictor();
   private readonly shake = new ScreenShake();
+  private readonly flash = new BoardFlash();
   private readonly reduced = () => this.effects.reduced;
 
   private readonly app: Application<HTMLCanvasElement>;
@@ -75,8 +87,17 @@ export class Game {
   private themeApplied = false;
   private themeChangeAt = 0;
   private referenceStone: Texture | null = null;
-  private boardMaterials: Texture[][] = [];
+  /** Shuffled world sequence of the current game; grows a full round at a time. */
+  private worldOrder: number[] = extendWorldOrder([], 1);
+  /** "Record in sight" plays at most once per game. */
+  private nearRecordCalled = false;
+  /** Board material variants per world slug, loaded when the world first appears. */
+  private readonly boardMaterials = new Map<string, Texture[]>();
+  private readonly boardLoads = new Set<string>();
   private drag: DragState | null = null;
+  /** Canvas position on the page, measured on resize instead of on every award. */
+  private canvasRect: DOMRect | null = null;
+  private resizeFrame = 0;
 
   constructor({ audio, storage = safeStorage }: GameOptions) {
     this.audio = audio;
@@ -93,7 +114,7 @@ export class Game {
       width: Math.max(300, Math.floor(rect.width)),
       height: Math.max(400, Math.floor(rect.height)),
       backgroundAlpha: 0,
-      resolution: Math.min(window.devicePixelRatio || 1, 2),
+      resolution: canvasResolution(),
       autoDensity: true,
       antialias: false,
     });
@@ -112,7 +133,7 @@ export class Game {
     this.app.stage.addChild(this.root);
     this.root.addChild(
       this.board.background, this.board.materialLayer, this.board.blocks, this.board.ghosts, this.board.preview,
-      this.trayBackdrop, this.tray.container, this.dragLayer, particleLayer, textLayer,
+      this.flash.graphics, this.trayBackdrop, this.tray.container, this.dragLayer, particleLayer, textLayer,
     );
   }
 
@@ -120,7 +141,10 @@ export class Game {
     this.loadAssets();
     this.bindControls();
     this.resize();
-    window.addEventListener('resize', () => this.resize());
+    // Resize events fire many times per frame while a window is dragged; lay out once per frame.
+    window.addEventListener('resize', () => {
+      if (!this.resizeFrame) this.resizeFrame = requestAnimationFrame(() => this.resize());
+    });
     this.startNewGame();
     this.app.ticker.add(delta => this.update(delta / 60));
   }
@@ -132,39 +156,55 @@ export class Game {
       this.referenceStone = texture;
       this.updateWorldTheme(true);
     }).catch(error => console.warn('Reference stone load failed:', error));
+  }
 
-    Assets.load<Texture>(boardMaterialURL).then(atlas => {
-      const width = atlas.width / 3, height = atlas.height / 3;
-      // Sample distinct interiors from the source's seven-by-seven material cells per world.
-      this.boardMaterials = Array.from({ length: 9 }, (_, index) => {
-        const variants: Texture[] = [];
-        for (let row = 0; row < 7; row++) for (let col = 0; col < 7; col++) {
-          variants.push(new Texture(atlas.baseTexture, new Rectangle(
-            Math.floor(index % 3 * width + width * (0.045 + col * 0.135)),
-            Math.floor(Math.floor(index / 3) * height + height * (0.045 + row * 0.135)),
-            Math.floor(width * 0.075), Math.floor(height * 0.075))));
-        }
-        return variants;
-      });
-      this.renderBoardBackground();
-    }).catch(error => console.warn('Board material load failed:', error));
+  private loadBoardMaterial(slug: string): void {
+    const url = boardURL(slug);
+    if (!url || this.boardLoads.has(slug)) return;
+    this.boardLoads.add(slug);
+    Assets.load<Texture>(url).then(sheet => {
+      const { width, height } = sheet;
+      // Take each of the sheet's seven-by-seven sockets whole, rim included.
+      const variants: Texture[] = [];
+      for (let row = 0; row < 7; row++) for (let col = 0; col < 7; col++) {
+        variants.push(new Texture(sheet.baseTexture, new Rectangle(
+          Math.floor(width * (0.015 + col * 0.135)), Math.floor(height * (0.015 + row * 0.135)),
+          Math.floor(width * 0.135), Math.floor(height * 0.135))));
+      }
+      this.boardMaterials.set(slug, variants);
+      if (this.theme.slug === slug) this.renderBoardBackground();
+    }).catch(error => {
+      this.boardLoads.delete(slug);
+      console.warn('Board material load failed:', error);
+    });
   }
 
   private updateWorldTheme(force = false): void {
     if (!force && performance.now() < this.themeChangeAt) return;
     const world = worldProgress(this.session.clearedLines);
-    const next = themeFor(world.world, world.progress);
-    if (!force && this.themeApplied && next.key === this.theme.key) return;
+    // Runs every frame, so compare the cheap key before building a theme.
+    if (!force && this.themeApplied && themeKey(world.world, world.progress) === this.theme.key) return;
+    if (world.world > this.worldOrder.length) this.worldOrder = extendWorldOrder(this.worldOrder, world.world);
+    const next = themeFor(world.world, world.progress, this.worldOrder);
 
-    const previousName = this.theme.name;
+    const previous = this.theme;
+    const wasApplied = this.themeApplied;
     this.theme = next;
     this.themeApplied = true;
-    if (previousName !== next.name && this.session.clearedLines > 0) {
+    if (previous.name !== next.name && this.session.clearedLines > 0) {
       this.texts.spawn(this.layout.viewWidth / 2, this.layout.gridY + 50, next.name, next.primary, 18, this.layout.viewWidth);
     }
     applyTheme(next, this.hud.container, this.hud.worldLabel);
-    const disposeOld = this.textures.rebuild(next.palettes, next.material, this.referenceStone);
+    // A new stage only brightens the page; the jewels and board change with the world.
+    if (!force && wasApplied && sameLook(previous, next)) return;
+    this.loadBoardMaterial(next.slug);
+    this.rebuildBlockTextures();
     this.renderBoardBackground();
+  }
+
+  private rebuildBlockTextures(): void {
+    const pixelSize = this.layout.cellSize * this.app.renderer.resolution || undefined;
+    const disposeOld = this.textures.rebuild(this.theme.palettes, this.theme.material, this.referenceStone, pixelSize);
     this.board.syncBlocks(this.session.grid, this.layout);
     this.tray.retexture();
     this.board.retextureGhosts();
@@ -172,14 +212,19 @@ export class Game {
   }
 
   private renderBoardBackground(): void {
-    this.board.renderBackground(this.layout, this.theme.palettes, this.theme, this.boardMaterials[this.theme.index]);
+    this.board.renderBackground(this.layout, this.theme.palettes, this.theme, this.boardMaterials.get(this.theme.slug));
   }
 
   // --- Layout ---------------------------------------------------------------
 
   private resize(): void {
+    cancelAnimationFrame(this.resizeFrame);
+    this.resizeFrame = 0;
+    this.canvasRect = null;
     const rect = this.hud.pixiMount.getBoundingClientRect();
     if (rect.width === 0 || rect.height === 0) return;
+    // Browser zoom and moving between monitors change the pixel ratio at runtime.
+    this.app.renderer.resolution = canvasResolution();
     this.app.renderer.resize(Math.floor(rect.width), Math.floor(rect.height));
     const layout = this.layout = computeLayout(rect.width, rect.height);
     this.hud.positionComboBox(layout);
@@ -189,9 +234,12 @@ export class Game {
     this.trayBackdrop.drawRoundedRect(layout.gridX, layout.trayY - 4, layout.gridWidth, Math.min(layout.trayHeight + 8, layout.viewHeight - layout.trayY), 12);
     this.trayBackdrop.endFill();
     this.renderBoardBackground();
+    this.flash.relayout(layout);
+    if (Math.round(layout.cellSize * this.app.renderer.resolution) !== this.textures.pixelSize) this.rebuildBlockTextures();
     this.board.syncBlocks(this.session.grid, layout);
     this.tray.relayout(layout);
     this.scoreAnimator.resize();
+    if (this.drag) this.drag.cell = '';
   }
 
   // --- Game flow ------------------------------------------------------------
@@ -199,14 +247,18 @@ export class Game {
   private startNewGame(): void {
     this.audio.announcer.reset();
     this.themeChangeAt = 0;
+    this.worldOrder = extendWorldOrder([], 1);
     this.hud.closeRecovery();
     this.celebrations.reset();
     const outcome = this.session.start();
+    this.nearRecordCalled = false;
+    this.audio.announcer.announce('start');
 
     this.scoreAnimator.reset();
     this.effects.updateComboMood(this.hud.canvasWrapper, 0);
     this.hud.setRecordGlow(false);
     this.shake.reset();
+    this.flash.stop();
     this.drag = null;
     this.board.clearGhost();
     this.board.clearPreview();
@@ -245,7 +297,7 @@ export class Game {
       const center = cellCenter(layout, cell.row, cell.col);
       this.particles.spawnPuff(center.x, center.y, this.theme.palettes[outcome.piece.colorIdx].base, 5);
     }
-    pulse(this.hud.pixiMount, 'piece-land');
+    if (!this.reduced()) this.flash.flash(0.08, 0.16);
     this.audio.playPlace();
     this.shake.add(this.reduced() ? 0 : 0.2);
 
@@ -259,6 +311,7 @@ export class Game {
     this.presentAwards(outcome);
     this.hud.setCombo(this.session.combo);
     this.celebrations.celebrate(outcome.events);
+    for (const kind of outcome.events) this.audio.announcer.announce(kind);
 
     if (outcome.next) {
       this.handleDeal(outcome.next);
@@ -273,13 +326,18 @@ export class Game {
     const { layout } = this;
     this.themeChangeAt = performance.now() + THEME_CHANGE_DELAY_MS;
     this.effects.lineClear(clear, layout, this.hud.canvasWrapper, this.hud.pixiMount);
+    if (!this.reduced()) this.flash.flash(0.08, clear.lines >= 3 ? 0.4 : 0.25, 0.35);
     this.haptics.lineClear();
     this.audio.playClear(clear.lines, clear.combo, this.reduced() ? 0 : CHARGE_TIME);
-    if ([5, 10].includes(clear.combo) || (clear.combo > 10 && clear.combo % 10 === 0)) {
-      this.audio.announcer.announce('combo', clear.combo);
-    } else if (clear.lines >= 3) {
-      this.audio.announcer.announce('clear', clear.lines);
+    // The announcer keeps the most important of these calls.
+    const { announcer } = this.audio;
+    announcer.announce('clear', clear.lines);
+    announcer.announce('combo', clear.combo);
+    const world = worldProgress(this.session.clearedLines).world;
+    if (world > worldProgress(this.session.clearedLines - clear.lines).world) {
+      announcer.announce((world - 1) % WORLDS.length === 0 ? 'eclipse' : 'world');
     }
+    if (clear.allClear) announcer.announce('sweep', clear.allClearMultiplier);
     this.shake.add(0.35 + clear.lines * 0.12 + Math.min(clear.combo, 15) * 0.012);
 
     const epicenter = cellsCentroid(layout, clear.cells);
@@ -293,6 +351,7 @@ export class Game {
     if (clear.allClear) {
       this.audio.playComboFanfare();
       this.shake.add(0.5);
+      this.texts.spawn(layout.viewWidth / 2, layout.gridY + layout.gridWidth / 2, `BOARD CLEAR x${clear.allClearMultiplier}`, '#ffd23f', 18, layout.viewWidth);
     }
   }
 
@@ -322,6 +381,13 @@ export class Game {
       this.audio.playNewRecord();
       this.audio.announcer.announce('record');
     }
+    const { score, bestScore } = this.session;
+    if (!this.nearRecordCalled && isNearRecord(score, bestScore)) {
+      this.nearRecordCalled = true;
+      this.audio.announcer.announce('near-record');
+    }
+    const gained = outcome.awards.reduce((sum, award) => sum + award.points, 0);
+    if (score >= MILLION && score - gained < MILLION) this.audio.announcer.announce('million');
     this.saveBestScore();
     this.updateProgressionUI();
   }
@@ -339,9 +405,9 @@ export class Game {
   private showGameOver(): void {
     const { score, bestScore } = this.session;
     this.audio.playGameOver();
-    this.audio.announcer.announce('over');
-    this.shake.add(0.4);
     const newRecord = score > 0 && score >= bestScore;
+    this.audio.announcer.announce('over', newRecord ? 1 : 0);
+    this.shake.add(0.4);
     if (newRecord) this.audio.playNewRecord();
     this.hud.showGameOver(score, bestScore, newRecord);
   }
@@ -354,7 +420,7 @@ export class Game {
     pulse(this.hud.canvasWrapper, 'revive-return');
     this.audio.playRevive();
     this.audio.announcer.reset();
-    this.audio.announcer.announce('revive');
+    this.audio.announcer.announce('revive', this.session.revives);
     this.shake.add(0.4);
     const { layout } = this;
     this.texts.spawn(layout.viewWidth / 2, layout.gridY + layout.gridWidth / 2 - 30, '✨ REVIVED! ✨', '#00ff66', 20, layout.viewWidth);
@@ -369,7 +435,7 @@ export class Game {
     if (!result) return;
     if (result.saved) {
       this.audio.playRevive();
-      this.audio.announcer.announce('revive');
+      this.audio.announcer.announce('rescue');
       this.texts.spawn(this.layout.viewWidth / 2, this.layout.gridY + 40, `COMBO ${combo} GERETTET!`, '#00f5ff', 16, this.layout.viewWidth);
     }
     this.hud.closeRecovery();
@@ -378,7 +444,7 @@ export class Game {
   }
 
   private toClient(point: Point): Point {
-    const rect = this.app.view.getBoundingClientRect();
+    const rect = this.canvasRect ??= this.app.view.getBoundingClientRect();
     return {
       x: rect.left + point.x * rect.width / this.layout.viewWidth,
       y: rect.top + point.y * rect.height / this.layout.viewHeight,
@@ -418,22 +484,17 @@ export class Game {
     this.effects.bindToggle(document.getElementById('btn-effects')!);
     new RestartConfirm(() => {
       audio.init();
-      showInterstitialAd(() => this.startNewGame());
+      this.startNewGame();
     });
 
     document.getElementById('btn-play-again')!.addEventListener('click', () => {
       audio.init();
-      showInterstitialAd(() => this.startNewGame());
+      this.startNewGame();
     });
     this.hud.reviveButton.addEventListener('click', () => this.revive());
     document.getElementById('btn-recover-streak')!.addEventListener('click', () => this.finishRecovery(true));
     document.getElementById('btn-skip-recovery')!.addEventListener('click', () => this.finishRecovery(false));
     this.hud.recoveryDialog.addEventListener('cancel', event => { event.preventDefault(); this.finishRecovery(false); });
-
-    listenForAdEvents({
-      pause: () => { this.app.ticker.stop(); audio.setMutedByAd(true); },
-      resume: () => { this.app.ticker.start(); audio.setMutedByAd(false); },
-    });
 
     // Touch pointerdown can precede Chrome's user activation. Retry from
     // native touchend/click events, including after returning to the app.
@@ -457,7 +518,7 @@ export class Game {
     if (slot === null) return;
     const view = this.tray.beginDrag(slot, this.dragLayer);
     if (!view) return;
-    this.drag = { slot, view, pointer, target: null, preview: NO_LINES };
+    this.drag = { slot, view, pointer, target: null, preview: NO_LINES, cell: '' };
     this.audio.playPickup();
     this.updateDrag();
   }
@@ -488,6 +549,10 @@ export class Game {
     const { piece } = drag.view;
     const placement = dragPlacement(this.layout, drag.pointer, piece.width, piece.height, drag.view.scale);
     this.tray.moveDragged(drag.view, placement.visual.x, placement.visual.y, this.layout);
+    // Pointer moves inside the same cell change nothing on the board.
+    const cell = `${placement.col}:${placement.row}`;
+    if (cell === drag.cell) return;
+    drag.cell = cell;
     if (this.session.canPlace(drag.slot, placement.col, placement.row)) {
       drag.target = { col: placement.col, row: placement.row };
       drag.preview = predictClears(this.session.grid, piece.matrix, placement.col, placement.row);
@@ -500,15 +565,20 @@ export class Game {
     this.drawClearPreview();
   }
 
+  /** Draws the predicted clear once; the frame loop only pulses its opacity. */
   private drawClearPreview(): void {
     const lines = this.drag?.preview ?? NO_LINES;
     if (!lines.rows.length && !lines.cols.length) {
       this.board.clearPreview();
       return;
     }
-    const intensity = this.reduced() ? 0.13 : 0.13 + Math.sin(performance.now() * 0.006) * 0.035;
     const color = this.theme.palettes[this.drag?.view.piece.colorIdx ?? 0].hi;
-    this.board.drawClearPreview(lines, this.layout, color, intensity);
+    this.board.drawClearPreview(lines, this.layout, color, 1);
+    this.pulseClearPreview();
+  }
+
+  private pulseClearPreview(): void {
+    this.board.preview.alpha = this.reduced() ? 0.13 : 0.13 + Math.sin(performance.now() * 0.006) * 0.035;
   }
 
   // --- Frame loop -------------------------------------------------------------
@@ -523,7 +593,8 @@ export class Game {
     this.tray.update(dt, this.layout);
     this.particles.update(dt);
     this.texts.update(dt);
+    this.flash.update(dt);
     // Pulse the clear prediction while a piece hovers.
-    if (this.drag?.preview.rows.length || this.drag?.preview.cols.length) this.drawClearPreview();
+    if (this.drag?.preview.rows.length || this.drag?.preview.cols.length) this.pulseClearPreview();
   }
 }

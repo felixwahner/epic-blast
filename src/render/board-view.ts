@@ -105,7 +105,7 @@ export class BoardView {
   }
 
   private renderMaterialBoard(layout: Layout, palettes: readonly Palette[], variants: readonly Texture[]): void {
-    const { gridX: x, gridY: y, gridWidth: size, cellSize: cs } = layout;
+    const { gridX: x, gridY: y, gridWidth: size } = layout;
     // One dark board plane; empty sockets must never compete with playable blocks.
     this.background.beginFill(0x080e20, 0.97);
     this.background.drawRoundedRect(x, y, size, size, 5);
@@ -116,14 +116,7 @@ export class BoardView {
       sprite.width = tile.size;
       sprite.height = tile.size;
       sprite.alpha = 0.8;
-      // Fine straight seams replace the rounded button bevels in the source atlas.
-      const edge = new Graphics();
-      edge.lineStyle(1, palettes[0].hi, 0.2);
-      edge.drawRoundedRect(tile.x, tile.y, cs - 2, cs - 2, 1);
-      edge.lineStyle(1, palettes[0].hi, 0.1);
-      edge.moveTo(tile.x + 2, tile.y + 2);
-      edge.lineTo(tile.x + cs - 4, tile.y + 2);
-      this.materialLayer.addChild(edge);
+      // Whole sockets carry their own sculpted rims, so no drawn seams are needed.
       this.materialLayer.addChild(sprite);
     }
     const rim = new Graphics();

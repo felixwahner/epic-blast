@@ -59,7 +59,7 @@ export class Hud {
     });
   }
 
-  /** Lines the header buttons up with the left and right edges of the board. */
+  /** Exposes the board's left and right edges so the header and scores line up with them. */
   alignHeader(layout: Layout): void {
     const header = this.header.getBoundingClientRect();
     const view = this.pixiMount.getBoundingClientRect();
@@ -67,8 +67,9 @@ export class Hud {
     const rim = 3;
     const left = view.left + layout.gridX - rim - header.left;
     const right = header.right - (view.left + layout.gridX + layout.gridWidth + rim);
-    this.header.style.paddingLeft = `${Math.max(0, left)}px`;
-    this.header.style.paddingRight = `${Math.max(0, right)}px`;
+    const container = this.header.parentElement!.style;
+    container.setProperty('--board-left', `${Math.max(0, left)}px`);
+    container.setProperty('--board-right', `${Math.max(0, right)}px`);
   }
 
   setProgress(score: number, state: LevelProgress, revives: number): void {

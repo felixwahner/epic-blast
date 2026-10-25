@@ -1,12 +1,12 @@
 /**
  * EPIC BLAST - Pixi.js HTML5 Edition
  * Faithful Block Blast mechanics with 8-bit / 16-bit pixel art visual juice.
- * Built for HTML5 game portals (Poki, CrazyGames, GameDistribution, itch.io).
  */
 import './styles/main.css';
 import { AudioEngine } from './audio/audio-engine.ts';
 import { Game } from './game/game.ts';
 import { InstallBanner } from './ui/install-banner.ts';
+import { setupCloseAppButton } from './ui/close-app-button.ts';
 import { enterFullscreenOnFirstTouch, registerServiceWorker } from './platform/pwa.ts';
 
 declare global {
@@ -20,6 +20,7 @@ if (import.meta.env.PROD) registerServiceWorker();
 enterFullscreenOnFirstTouch();
 // Created right away so an early `beforeinstallprompt` is not missed.
 new InstallBanner();
+setupCloseAppButton();
 
 const audio = new AudioEngine();
 window.audio = audio;

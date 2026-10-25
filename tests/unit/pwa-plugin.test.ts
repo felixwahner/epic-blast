@@ -16,9 +16,19 @@ describe('service worker generation', () => {
     writeFileSync(join(dir, 'assets', 'app.js'), 'console.log(1)');
     writeFileSync(join(dir, 'sw.js'), 'old');
     const output = renderServiceWorker(template, dir);
-    assert(!output.includes('__VERSION__') && !output.includes('__ASSETS__'));
+    assert(!output.includes('__VERSION__') && !output.includes('__ASSETS__') && !output.includes('__LAZY_ASSETS__'));
     assert(output.includes('["./assets/app.js","./index.html"]'));
     assert(!output.includes('./sw.js'));
+  });
+
+  it('caches world art on first use instead of on install', () => {
+    writeFileSync(join(dir, 'assets', 'scene-Ab12_x.webp'), 'scene');
+    writeFileSync(join(dir, 'assets', 'board-Cd34.webp'), 'board');
+    const output = renderServiceWorker(template, dir);
+    assert(output.includes('const ASSETS = ["./assets/app.js","./index.html"];'));
+    assert(output.includes('const LAZY_ASSETS = ["./assets/board-Cd34.webp","./assets/scene-Ab12_x.webp"];'));
+    rmSync(join(dir, 'assets', 'scene-Ab12_x.webp'));
+    rmSync(join(dir, 'assets', 'board-Cd34.webp'));
   });
 
   it('changes the cache version when any asset changes', () => {

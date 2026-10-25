@@ -20,12 +20,12 @@ const defaultContextClass = (): AudioContextConstructor | undefined => {
 export class AudioEngine {
   ctx: AudioContext | null = null;
   isMuted: boolean;
-  /** Set while a portal advertisement is playing. */
-  adMuted = false;
   volume = 0.25;
   readonly announcer: StadiumAnnouncer;
 
   private readonly storage: KeyValueStore;
+  /** White noise for impact crunches, generated once per audio context. */
+  private noise: AudioBuffer | null = null;
   private readonly contextClass: () => AudioContextConstructor | undefined;
 
   constructor({ storage = safeStorage, contextClass = defaultContextClass }: AudioEngineOptions = {}) {
@@ -33,17 +33,9 @@ export class AudioEngine {
     this.contextClass = contextClass;
     this.isMuted = storage.getItem(STORAGE_KEYS.muted) === 'true';
     this.announcer = new StadiumAnnouncer({
-      enabled: () => !this.isMuted && !this.adMuted,
+      enabled: () => !this.isMuted,
       context: () => this.ctx as unknown as AnnouncerContext | null,
     });
-  }
-
-  setMutedByAd(mute: boolean): void {
-    this.adMuted = mute;
-    if (mute) this.announcer.stop();
-    if (!this.ctx) return;
-    if (mute && this.ctx.state === 'running') void this.ctx.suspend();
-    else if (!mute && this.ctx.state === 'suspended') void this.ctx.resume();
   }
 
   /** Creates or resumes the context. Call from user gestures; safe to call often. */
@@ -54,7 +46,7 @@ export class AudioEngine {
     }
     void this.announcer.prepare();
     // Music shares this context but has its own toggle; mute only guards SFX and speech.
-    if (this.ctx && this.ctx.state !== 'running' && !this.adMuted) {
+    if (this.ctx && this.ctx.state !== 'running') {
       this.ctx.resume().catch(error => {
         console.warn('Audio activation failed; retrying on next interaction:', error);
       });
@@ -70,12 +62,12 @@ export class AudioEngine {
   }
 
   private get canPlay(): boolean {
-    return !this.isMuted && !this.adMuted && this.ctx !== null && this.ctx.state === 'running';
+    return !this.isMuted && this.ctx !== null && this.ctx.state === 'running';
   }
 
   /** Simple oscillator with an exponential decay envelope. */
   private voice(type: OscillatorType, freq: number, startTime: number, duration: number, startGain: number, endGain: number): void {
-    if (this.isMuted || this.adMuted || !this.ctx) return;
+    if (this.isMuted || !this.ctx) return;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
     osc.type = type;
@@ -153,11 +145,13 @@ export class AudioEngine {
     if (!this.canPlay) return;
     const ctx = this.ctx!;
     const now = ctx.currentTime;
-    const buffer = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * 0.12), ctx.sampleRate);
-    const data = buffer.getChannelData(0);
-    for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+    if (this.noise?.sampleRate !== ctx.sampleRate) {
+      this.noise = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * 0.12), ctx.sampleRate);
+      const data = this.noise.getChannelData(0);
+      for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+    }
     const source = ctx.createBufferSource();
-    source.buffer = buffer;
+    source.buffer = this.noise;
     const filter = ctx.createBiquadFilter();
     filter.type = 'lowpass';
     filter.frequency.setValueAtTime(2400, now);
@@ -264,7 +258,7 @@ export class AudioEngine {
   /** Revive / second chance arpeggio. */
   playRevive(): void {
     this.init();
-    if (this.isMuted || this.adMuted || !this.ctx) return;
+    if (this.isMuted || !this.ctx) return;
     const now = this.ctx.currentTime;
     [261.63, 329.63, 392.0, 523.25, 659.25, 783.99, 1046.5].forEach((freq, idx) => {
       this.voice('triangle', freq, now + idx * 0.05, 0.15, 0.2, 0.001 / this.volume);

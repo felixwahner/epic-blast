@@ -1,22 +1,71 @@
 // Recorded English calls with baked-in arena effects; no system voices.
 
-export type ClipName = 'triple' | 'unstoppable' | 'legendary' | 'record' | 'level' | 'revive' | 'over';
-export type AnnouncerEvent = 'clear' | 'combo' | 'level' | 'record' | 'revive' | 'over';
+const CLIP_NAMES = [
+  'triple', 'unstoppable', 'legendary', 'record', 'level', 'revive', 'over',
+  'sweep', 'sweep-again', 'max-multiplier', 'new-world', 'eclipse', 'combo-saved',
+  'last-chance', 'record-in-sight', 'champion', 'perfect', 'brilliant', 'close-call',
+  'zone', 'cross', 'fire', 'epic-blast', 'lets-blast', 'million',
+] as const;
 
-export const CLIPS: Record<ClipName, string> = {
-  triple: new URL('../assets/audio/announcer/triple.wav', import.meta.url).href,
-  unstoppable: new URL('../assets/audio/announcer/unstoppable.wav', import.meta.url).href,
-  legendary: new URL('../assets/audio/announcer/legendary.wav', import.meta.url).href,
-  record: new URL('../assets/audio/announcer/record.wav', import.meta.url).href,
-  level: new URL('../assets/audio/announcer/level.wav', import.meta.url).href,
-  revive: new URL('../assets/audio/announcer/revive.wav', import.meta.url).href,
-  over: new URL('../assets/audio/announcer/over.wav', import.meta.url).href,
-};
+export type ClipName = typeof CLIP_NAMES[number];
+export type AnnouncerEvent =
+  | 'start' | 'clear' | 'combo' | 'fire' | 'cross' | 'zone' | 'escape' | 'brilliant' | 'perfect'
+  | 'world' | 'eclipse' | 'level' | 'near-record' | 'record' | 'million' | 'sweep'
+  | 'rescue' | 'revive' | 'over';
+
+const clipURL = (name: ClipName): string => new URL(`../assets/audio/announcer/${name}.mp3`, import.meta.url).href;
+export const CLIPS = Object.fromEntries(CLIP_NAMES.map(name => [name, clipURL(name)])) as Record<ClipName, string>;
 
 /** Minimum gap between two calls, except game over. */
 export const CALL_COOLDOWN_MS = 6500;
 /** "Unstoppable" is the most frequent call; keep it special. */
 export const UNSTOPPABLE_REPEAT_MS = 45000;
+/** Calls that would otherwise repeat every few moves are spoken at most this often. */
+export const REPEAT_LIMITS_MS: Partial<Record<ClipName, number>> = {
+  unstoppable: UNSTOPPABLE_REPEAT_MS, fire: 45000, cross: 45000, zone: 45000,
+};
+/** "Record in sight" plays once the score reaches this share of a stored best... */
+export const NEAR_RECORD_SHARE = 0.9;
+/** ...but only when that best is worth chasing. */
+export const NEAR_RECORD_MIN_BEST = 10000;
+export const MILLION = 1_000_000;
+
+export const isNearRecord = (score: number, best: number): boolean =>
+  best >= NEAR_RECORD_MIN_BEST && score < best && score >= best * NEAR_RECORD_SHARE;
+
+/** Clip and priority for an event; a higher priority replaces a lower pending call. */
+function callFor(event: AnnouncerEvent, value: number): [ClipName, number] | null {
+  switch (event) {
+    case 'start': return ['lets-blast', 1];
+    case 'fire': return ['fire', 1];
+    case 'cross': return ['cross', 1];
+    case 'zone': return ['zone', 2];
+    case 'clear':
+      if (value >= 5) return ['epic-blast', 5];
+      return value >= 3 ? [value >= 4 ? 'legendary' : 'triple', 2] : null;
+    case 'combo':
+      if (value !== 5 && !(value >= 10 && value % 10 === 0)) return null;
+      return [value >= 10 ? 'legendary' : 'unstoppable', 3];
+    case 'escape': return ['close-call', 3];
+    case 'brilliant': return ['brilliant', 3];
+    case 'world': return ['new-world', 4];
+    case 'level': return ['level', 4];
+    case 'near-record': return ['record-in-sight', 4];
+    case 'perfect': return ['perfect', 5];
+    case 'eclipse': return ['eclipse', 5];
+    case 'record': return ['record', 5];
+    case 'million': return ['million', 5];
+    // `value` is the board clear multiplier: x3 first, x4/x5 later, x6 at the cap.
+    case 'sweep': return [value >= 6 ? 'max-multiplier' : value > 3 ? 'sweep-again' : 'sweep', 6];
+    case 'rescue': return ['combo-saved', 6];
+    // `value` is the number of revives left after this one.
+    case 'revive': return [value > 0 ? 'revive' : 'last-chance', 6];
+    // `value` is 1 when the game ended on a new best score.
+    case 'over': return [value ? 'champion' : 'over', 7];
+    default: return null;
+  }
+}
+
 const SPEAK_DELAY_MS = 220;
 
 /** The minimal Web Audio surface the announcer needs (mockable in tests). */
@@ -105,16 +154,7 @@ export class StadiumAnnouncer {
   }
 
   announce(event: AnnouncerEvent | string, value = 0): void {
-    if (event === 'combo' && value !== 5 && !(value >= 10 && value % 10 === 0)) return;
-    const calls: Record<AnnouncerEvent, [ClipName, number]> = {
-      clear: [value >= 4 ? 'legendary' : 'triple', 2],
-      combo: [value >= 10 ? 'legendary' : 'unstoppable', 3],
-      level: ['level', 4],
-      record: ['record', 5],
-      revive: ['revive', 6],
-      over: ['over', 7],
-    };
-    const call = calls[event as AnnouncerEvent];
+    const call = callFor(event as AnnouncerEvent, value);
     if (!call || !this.enabled() || this.host?.document?.hidden) return;
     if (this.pending && this.pending.priority > call[1]) return;
     this.pending = { clip: call[0], priority: call[1], terminal: event === 'over' };
@@ -131,7 +171,8 @@ export class StadiumAnnouncer {
     const buffer = this.buffers.get(call.clip);
     if (!buffer) { void this.prepare(); return; } // Never replay stale calls after loading.
     const now = Date.now();
-    if (call.clip === 'unstoppable' && now - (this.lastClipSpoken.get(call.clip) ?? -Infinity) < UNSTOPPABLE_REPEAT_MS) return;
+    const repeatLimit = REPEAT_LIMITS_MS[call.clip] ?? 0;
+    if (now - (this.lastClipSpoken.get(call.clip) ?? -Infinity) < repeatLimit) return;
     if (!call.terminal && (now - this.lastSpoken < CALL_COOLDOWN_MS || this.active)) return;
     if (call.terminal) this.stop();
     const source = ctx.createBufferSource();

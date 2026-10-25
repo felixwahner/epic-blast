@@ -7,12 +7,12 @@ export const MUSIC_URL = new URL('../assets/audio/music/smth-smth.mp3', import.m
 const MUSIC_LEVEL = 0.7;
 /** Music level while the announcer speaks. */
 export const DUCK_LEVEL = 0.35;
-const TICK_MS = 50;
+/** Poll interval for ducking and audio-context changes; a tick without changes is cheap. */
+const TICK_MS = 100;
 
 /** The parts of the audio engine the music player depends on. */
 export interface MusicAudioSource {
   ctx: AudioContext | null;
-  adMuted: boolean;
   volume: number;
   announcer?: { active: unknown };
 }
@@ -31,6 +31,8 @@ export class BackgroundMusic {
   private source: MediaElementAudioSourceNode | null = null;
   private gain: GainNode | null = null;
   private pauseTimer: ReturnType<typeof setTimeout> | undefined;
+  /** Gain level last scheduled, so unchanged ticks add no automation events. */
+  private level = -1;
 
   constructor(audio: MusicAudioSource, storage: KeyValueStore = safeStorage) {
     this.audio = audio;
@@ -62,6 +64,7 @@ export class BackgroundMusic {
   stop(): void {
     if (!this.playing) return;
     this.playing = false;
+    this.level = -1;
     if (this.context && this.gain) {
       const now = this.context.currentTime;
       this.gain.gain.cancelScheduledValues(now);
@@ -72,8 +75,8 @@ export class BackgroundMusic {
   }
 
   tick(): void {
-    const { ctx, adMuted, volume } = this.audio;
-    if (!this.enabled || !ctx || ctx.state !== 'running' || adMuted || document.visibilityState !== 'visible') {
+    const { ctx, volume } = this.audio;
+    if (!this.enabled || !ctx || ctx.state !== 'running' || document.visibilityState !== 'visible') {
       this.stop();
       return;
     }
@@ -91,7 +94,10 @@ export class BackgroundMusic {
       });
     }
     const duck = this.audio.announcer?.active ? DUCK_LEVEL : 1;
-    this.gain!.gain.setTargetAtTime(Math.max(0, Math.min(1, volume * MUSIC_LEVEL * duck)), ctx.currentTime, duck < 1 ? 0.04 : 0.25);
+    const level = Math.max(0, Math.min(1, volume * MUSIC_LEVEL * duck));
+    if (level === this.level) return;
+    this.level = level;
+    this.gain!.gain.setTargetAtTime(level, ctx.currentTime, duck < 1 ? 0.04 : 0.25);
   }
 
   /** (Re)binds the media element to a new audio context. */
@@ -102,6 +108,7 @@ export class BackgroundMusic {
     this.gain?.disconnect();
     this.context = ctx;
     this.playing = false;
+    this.level = -1;
     this.blocked = false;
     this.media = new Audio(MUSIC_URL);
     this.media.loop = true;

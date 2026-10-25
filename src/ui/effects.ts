@@ -10,12 +10,32 @@ export function comboMood(combo: number): ComboMood {
   return combo >= 10 ? 'legend' : combo >= 5 ? 'hot' : combo >= 2 ? 'warm' : 'calm';
 }
 
-/** Restarts a one-shot CSS animation class. */
+/** Pulse classes per element, dropped again when the element's animation ends. */
+const pulsing = new WeakMap<Element, Set<string>>();
+
+/**
+ * Restarts a one-shot CSS animation class. The class is dropped when its animation
+ * ends, so the next pulse starts it again without forcing a synchronous layout.
+ */
 export function pulse(element: Element | null, name: string): void {
   if (!element) return;
-  element.classList.remove(name);
-  void (element as HTMLElement).offsetWidth;
+  if (element.classList.contains(name)) {
+    // Still running: only a reflow restarts it.
+    element.classList.remove(name);
+    void (element as HTMLElement).offsetWidth;
+  }
   element.classList.add(name);
+  let names = pulsing.get(element);
+  if (!names) {
+    const pending = names = new Set<string>();
+    pulsing.set(element, pending);
+    element.addEventListener('animationend', event => {
+      if (event.target !== element) return;
+      for (const pulsed of pending) element.classList.remove(pulsed);
+      pending.clear();
+    });
+  }
+  names.add(name);
 }
 
 export class VisualEffects {
@@ -86,6 +106,5 @@ export class VisualEffects {
       host.append(beam);
       beam.addEventListener('animationend', () => beam.remove(), { once: true });
     }
-    pulse(wrapper, lines.rows.length + lines.cols.length >= 3 ? 'big-clear' : 'line-hit');
   }
 }

@@ -1,10 +1,12 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { createHelpDealer, helpfulDefinitions } from '../../src/ai/helpful-dealer.ts';
+import { COMBO_HELP_CHANCE, HELP_CHANCE, createHelpDealer, helpfulDefinitions } from '../../src/ai/helpful-dealer.ts';
 import { applyMove, moves } from '../../src/ai/solver.ts';
 
 const catalog = [{ matrix: [[1]], weight: 1 }, { matrix: [[1, 1]], weight: 1 }];
 const rows = [254, 0, 0, 0, 0, 0, 0, 0];
+// Too full for the board-clear search, so only the line-clear help applies.
+const crowded = [254, 127, 127, 127, 127, 0, 0, 0];
 
 describe('helpful dealer', () => {
   it('offers a legal clearing piece without touching the board', () => {
@@ -15,17 +17,20 @@ describe('helpful dealer', () => {
     assert.deepEqual(rows, original);
   });
 
-  it('cools down for three rounds after helping, and reset clears the cooldown', () => {
+  it('cools down for one round after helping, and reset clears the cooldown', () => {
     const helper = createHelpDealer(() => 0);
-    assert(helper.deal(rows, catalog));
-    for (let i = 0; i < 3; i++) assert.equal(helper.deal(rows, catalog), null);
-    assert(helper.deal(rows, catalog));
+    assert(helper.deal(crowded, catalog));
+    assert.equal(helper.deal(crowded, catalog), null);
+    assert(helper.deal(crowded, catalog));
+    assert.equal(helper.deal(crowded, catalog), null);
     helper.reset();
-    assert(helper.deal(rows, catalog));
+    assert(helper.deal(crowded, catalog));
   });
 
-  it('only helps below the 15% chance boundary', () => {
-    assert.equal(createHelpDealer(() => 0.15).deal(rows, catalog), null);
+  it('only helps below the chance boundary, which a running combo raises', () => {
+    assert.equal(createHelpDealer(() => HELP_CHANCE).deal(crowded, catalog), null);
+    assert(createHelpDealer(() => HELP_CHANCE).deal(crowded, catalog, { combo: 2 }));
+    assert.equal(createHelpDealer(() => COMBO_HELP_CHANCE).deal(crowded, catalog, { combo: 2 }), null);
   });
 
   it('returns null when nothing can clear', () => {

@@ -4,7 +4,7 @@
 
 # EPIC BLAST
 
-A Block Blast–style puzzle game for the browser, built with **TypeScript**, **Pixi.js 7** and **Vite**. You drag pieces onto an 8×8 board and clear full rows and columns. It has neon "jewel" blocks, nine themed worlds, a combo system, revives, a recorded stadium announcer and background music. It installs as a PWA and is packaged for HTML5 game portals (GameDistribution).
+A Block Blast–style puzzle game for the browser, built with **TypeScript**, **Pixi.js 7** and **Vite**. You drag pieces onto an 8×8 board and clear full rows and columns. It has neon "jewel" blocks, nine themed worlds, a combo system, revives, a recorded stadium announcer and background music. It installs as a PWA.
 
 <p align="center">
   <img src="marketing/gameplay/neon-arcade-combo16.png" alt="Neon Arcade world with a 16x combo" width="250">
@@ -103,7 +103,7 @@ All settings are saved in `localStorage`. The game still works if storage is blo
 - **Sound effects** are made in code with the Web Audio API: pickup, drop impact, line-clear chords that rise with combo, fanfares, game over, new record and revive.
 - **Announcer:** seven recorded calls in `src/assets/audio/announcer/` (`triple`, `unstoppable`, `legendary`, `record`, `level`, `revive`, `over`). There are at least 6.5 seconds between calls, and "Unstoppable" can repeat at most every 45 seconds. Background music gets quieter while the announcer speaks.
 - **Music:** one looping track (`src/assets/audio/music/smth-smth.mp3`) with its own on/off setting. It starts after your first click or tap, because browsers block autoplay.
-- Audio pauses when the tab is hidden or an ad is playing.
+- Audio pauses when the tab is hidden.
 
 ## Visuals
 
@@ -128,7 +128,6 @@ npm run preview    # serve dist/
 | `npm run test:build` | Production build, then checks the service worker, manifest and assets |
 | `npm run test:e2e` | Playwright tests on desktop and mobile screen sizes |
 | `npm run test:all` | All of the above |
-| `npm run pack` | Build, then zip `dist/` into `epic-blast-gamedistribution.zip` |
 
 To run one test file: `node --test tests/unit/session.test.ts`
 
@@ -159,7 +158,7 @@ src/
   audio/                Sound effects engine, announcer, background music
   ui/                   Page UI: HUD, options menu, celebrations, score animation, effects, theme colors
   theme/themes.ts       The nine worlds and palette generation
-  platform/             Safe localStorage, haptics, PWA registration, GameDistribution ad hooks
+  platform/             Safe localStorage, haptics, PWA registration
   styles/main.css
   assets/               Images, font (Press Start 2P), announcer clips, music
 public/                 Manifest, PWA icons, favicon, install screenshots (copied as-is; regenerate with tools/generate_icons.py)
@@ -168,9 +167,9 @@ tests/
   unit/                 Unit tests for rules, solver, audio, rendering math, platform code
   build/                Checks on the production build
   e2e/                  Playwright browser tests (with small test pages in harness/)
-tools/                  Promo + icon generators, voice clip tools, portal zip script
+tools/                  Promo + icon generators, voice clip tools
 design/                 Source material that doesn't ship (voice takes, prompts, references)
-marketing/promo_images/ Portal thumbnails (1280×720, 1280×550, 512×512, 512×384, 200×120)
+marketing/promo_images/ Promo images (1280×720, 1280×550, 512×512, 512×384, 200×120)
 ```
 
 Game rules go in `core/` and are tested there. `game/game.ts` only turns the results that `GameSession` returns into visuals and sound.
@@ -184,7 +183,3 @@ Production builds include a web app manifest, icons and a service worker that sa
 - `sw.js` and its cache version are generated from a hash of the build output, so a changed build always gets a new cache.
 - Update checks run on page load, when you return to the tab and when the connection comes back. A new version waits until all game tabs are closed, so a game in progress is never interrupted.
 - Deploy all of `dist/` at once. Serve `sw.js`, `index.html` and `manifest.webmanifest` with `Cache-Control: no-cache`. Hashed files in `assets/` can be cached for a year with `immutable`.
-
-## Game portals and ads
-
-`vite.config.ts` uses a relative base path (`./`), so the game runs from any subfolder or inside an iframe. `src/platform/ads.ts` connects to the **GameDistribution SDK** when one is on the page. It shows an interstitial ad before "Play Again" and "Restart", and pauses the game and audio during ads. The SDK script is **not** included in `index.html`, so without it the game just skips ads. Run `npm run pack` to build the zip for upload.

@@ -1,4 +1,4 @@
-import { BLEND_MODES, Container, Graphics, Rectangle, Sprite, Texture, type IRenderer } from 'pixi.js';
+import { BLEND_MODES, Graphics, MIPMAP_MODES, Rectangle, Sprite, Texture, type IRenderer } from 'pixi.js';
 import type { Material, Palette } from '../theme/themes.ts';
 import { jewelSurface } from './jewel-surface.ts';
 import { BLOCK_TEXTURE_SIZE } from './layout.ts';
@@ -44,6 +44,8 @@ function drawProceduralBlock(g: Graphics, p: Palette, material: Material): void 
 export class BlockTextures {
   blocks: Texture[] = [];
   glows: Texture[] = [];
+  /** Device pixels per block texture edge; matched to the on-screen cell so blocks map 1:1. */
+  pixelSize = BLOCK_TEXTURE_SIZE * 4;
   private readonly renderer: IRenderer;
   private readonly glowOf = new WeakMap<Sprite, Sprite>();
 
@@ -55,7 +57,8 @@ export class BlockTextures {
    * Regenerates all textures. Returns a disposer for the previous set, to be
    * called once every sprite has been switched to the new textures.
    */
-  rebuild(palettes: readonly Palette[], material: Material, referenceStone: Texture | null): () => void {
+  rebuild(palettes: readonly Palette[], material: Material, referenceStone: Texture | null, pixelSize = this.pixelSize): () => void {
+    this.pixelSize = Math.max(16, Math.round(pixelSize));
     const oldBlocks = this.blocks, oldGlows = this.glows;
     this.blocks = palettes.map(p => this.createBlock(p, material, referenceStone));
     this.glows = palettes.map(p => this.createGlow(p));
@@ -94,23 +97,17 @@ export class BlockTextures {
 
   private createBlock(p: Palette, material: Material, referenceStone: Texture | null): Texture {
     const s = BLOCK_TEXTURE_SIZE;
+    const resolution = this.pixelSize / s;
     if (referenceStone) {
       const source = (referenceStone.baseTexture.resource as unknown as { source: HTMLImageElement }).source;
-      const sample = Texture.from(jewelSurface(source, p.base, 256, material));
-      const tile = new Sprite(sample);
-      tile.width = s;
-      tile.height = s;
-      // Scale the sample inside an unscaled surface so the region stays 48x48.
-      const surface = new Container();
-      surface.addChild(tile);
-      const texture = this.renderer.generateTexture(surface, { region: new Rectangle(0, 0, s, s), resolution: 4 });
-      surface.destroy({ children: true });
-      sample.destroy(true);
-      return texture;
+      // Shade the jewel directly at display resolution: one high-quality downscale
+      // from the source instead of several bilinear ones, which blurred the bevels.
+      const surface = jewelSurface(source, p.base, this.pixelSize, material);
+      return Texture.from(surface, { resolution, mipmap: MIPMAP_MODES.ON });
     }
     const g = new Graphics();
     drawProceduralBlock(g, p, material);
-    const texture = this.renderer.generateTexture(g, { region: new Rectangle(0, 0, s, s) });
+    const texture = this.renderer.generateTexture(g, { region: new Rectangle(0, 0, s, s), resolution });
     g.destroy(true);
     return texture;
   }

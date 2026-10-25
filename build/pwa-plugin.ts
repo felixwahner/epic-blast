@@ -11,14 +11,23 @@ export function listFiles(dir: string): string[] {
     entry.isDirectory() ? listFiles(join(dir, entry.name)) : [join(dir, entry.name)]);
 }
 
+/**
+ * World scenery and board art is only needed once a world appears, so it is cached
+ * on first use instead of being downloaded for all worlds when the app installs.
+ */
+export const isLazyAsset = (path: string): boolean => /\/(scene|board)-[\w-]+\.webp$/.test(path);
+
 /** Fills the template placeholders; exported for tests. */
 export function renderServiceWorker(template: string, outDir: string): string {
   const files = listFiles(outDir).filter(file => !file.endsWith('sw.js')).sort();
   const hash = createHash('sha256');
   for (const file of files) hash.update(relative(outDir, file)).update(readFileSync(file));
   const version = hash.digest('hex').slice(0, 16);
-  const assets = files.map(file => './' + relative(outDir, file).replaceAll('\\', '/'));
-  return template.replace('__VERSION__', version).replace('__ASSETS__', JSON.stringify(assets));
+  const paths = files.map(file => './' + relative(outDir, file).replaceAll('\\', '/'));
+  return template
+    .replace('__VERSION__', version)
+    .replace('__ASSETS__', JSON.stringify(paths.filter(path => !isLazyAsset(path))))
+    .replace('__LAZY_ASSETS__', JSON.stringify(paths.filter(isLazyAsset)));
 }
 
 export function pwaPlugin(): Plugin {

@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { PALETTE_COUNT, WORLDS, themeFor } from '../../src/theme/themes.ts';
+import { PALETTE_COUNT, WORLDS, extendWorldOrder, themeFor, worldSlug } from '../../src/theme/themes.ts';
 
 describe('themes', () => {
-  it('rotates through 9 worlds with eclipse variants', () => {
+  it('rotates through every world with eclipse variants', () => {
     const names = new Set<string>();
     for (let level = 1; level <= 27; level++) {
       const world = themeFor(level);
@@ -36,5 +36,34 @@ describe('themes', () => {
     const first = themeFor(1), eclipse = themeFor(1 + WORLDS.length);
     assert.equal(eclipse.primary, first.secondary);
     assert.equal(eclipse.name, 'NEON ARCADE · ECLIPSE 1');
+  });
+
+  it('opens every game in Neon Arcade and visits each world once per shuffled round', () => {
+    for (let seed = 1; seed <= 50; seed++) {
+      let state = seed;
+      const random = () => (state = (state * 16807) % 2147483647) / 2147483647;
+      const order = extendWorldOrder([], WORLDS.length * 4, random);
+      assert.equal(order[0], 0);
+      for (let start = 0; start < order.length; start += WORLDS.length) {
+        assert.equal(new Set(order.slice(start, start + WORLDS.length)).size, WORLDS.length);
+      }
+      for (let i = 1; i < order.length; i++) assert.notEqual(order[i], order[i - 1], 'A world never follows itself');
+    }
+  });
+
+  it('extends an order without changing the worlds already played', () => {
+    const order = extendWorldOrder([], 1);
+    assert.equal(order.length, WORLDS.length);
+    const longer = extendWorldOrder(order, WORLDS.length + 1);
+    assert.deepEqual(longer.slice(0, order.length), order);
+    assert.equal(longer.length, WORLDS.length * 2);
+  });
+
+  it('themes follow the given order and carry the world art slug', () => {
+    const order = [0, 12, 5];
+    assert.equal(themeFor(2, 0, order).name, 'GLITCH DIMENSION');
+    assert.equal(themeFor(2, 0, order).slug, 'glitch-dimension');
+    assert.equal(worldSlug(0), 'neon-arcade');
+    assert.equal(new Set(WORLDS.map((_, index) => worldSlug(index))).size, WORLDS.length);
   });
 });

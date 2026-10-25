@@ -16,7 +16,7 @@ test('loads the renderer, materials, options and a playable tray', async ({ page
 
   const { box, layout } = await canvasLayout(page);
   // Pick the first tray shape and drop it near the board center, where every catalog shape fits.
-  await page.mouse.move(box.x + box.width / 6, box.y + layout.trayY + layout.trayHeight / 2);
+  await page.mouse.move(box.x + layout.gridX + layout.gridWidth / 6, box.y + layout.trayY + layout.trayHeight / 2);
   await page.mouse.down();
   await page.mouse.move(box.x + layout.gridX + layout.gridWidth / 2, box.y + layout.gridY + layout.gridWidth * 0.58 + 80, { steps: 12 });
   await page.mouse.up();
@@ -38,18 +38,18 @@ test('remembers option toggles across reloads', async ({ page }) => {
   await expect(page.locator('#btn-vibration')).toHaveAttribute('aria-pressed', 'false');
 });
 
-test('new game sits top left and asks in an in-game overlay', async ({ page }, info) => {
+test('new game sits beside the logo and asks in an in-game overlay', async ({ page }, info) => {
   await page.goto('/');
   await expect(page.locator('#options-menu #btn-restart')).toHaveCount(0);
   const newGame = page.getByRole('button', { name: 'Neues Spiel' });
   const options = page.getByRole('button', { name: 'Optionen öffnen' });
   const [newGameBox, optionsBox] = [(await newGame.boundingBox())!, (await options.boundingBox())!];
-  expect(newGameBox.x).toBeLessThan(optionsBox.x);
+  // Both buttons flank the logo, vertically centred on it.
+  const logoBox = (await page.locator('.game-logo').boundingBox())!;
+  expect(newGameBox.x + newGameBox.width).toBeLessThanOrEqual(logoBox.x);
+  expect(optionsBox.x).toBeGreaterThanOrEqual(logoBox.x + logoBox.width);
   expect(Math.abs(newGameBox.y - optionsBox.y)).toBeLessThan(2);
-  // Both buttons sit flush with the board's rim, 3px outside the grid.
-  const { box, layout } = await canvasLayout(page);
-  expect(Math.abs(newGameBox.x - (box.x + layout.gridX - 3))).toBeLessThan(1.5);
-  expect(Math.abs(optionsBox.x + optionsBox.width - (box.x + layout.gridX + layout.gridWidth + 3))).toBeLessThan(1.5);
+  expect(Math.abs(newGameBox.y + newGameBox.height / 2 - (logoBox.y + logoBox.height / 2))).toBeLessThan(3);
 
   const overlay = page.locator('#restart-confirm');
   await newGame.click();

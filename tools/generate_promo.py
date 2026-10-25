@@ -1,4 +1,4 @@
-"""Builds the GameDistribution promo images from real gameplay captures + the in-game logo.
+"""Builds the promo images from real gameplay captures + the in-game logo.
 
 Run from the repository root:  python tools/generate_promo.py
 Optional: python tools/generate_promo.py <hero_frame> <second_frame> <closeup_frame>

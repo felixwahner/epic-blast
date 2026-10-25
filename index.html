@@ -25,12 +25,13 @@
 					<button id="btn-new-game" class="pixel-btn" aria-haspopup="dialog" aria-controls="restart-confirm" aria-expanded="false" aria-label="Neues Spiel" title="Neues Spiel"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 3.5v5h-5"/></svg></button>
 				</div>
 				<div class="header-left">
-					<h1 class="game-title"><img class="game-logo" src="./src/assets/branding/epic-blast-logo-concept.png" alt="EPIC BLAST" width="1536" height="1024" /></h1>
+					<h1 class="game-title"><img class="game-logo" src="./src/assets/branding/epic-blast-logo.webp" alt="EPIC BLAST" width="672" height="448" /></h1>
 				</div>
 				<div class="header-controls">
 					
 					<button id="btn-options" class="pixel-btn" aria-haspopup="dialog" aria-controls="options-menu" aria-label="Optionen öffnen" title="Optionen"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9.5 3-.6 2.3-1.6.9L5 5.6 2.5 10l1.7 1.7v1.8L2.5 15 5 19.4l2.3-.6 1.6.9.6 2.3h5l.6-2.3 1.6-.9 2.3.6 2.5-4.4-1.7-1.5v-1.8L21.5 10 19 5.6l-2.3.6-1.6-.9L14.5 3Z"/><circle cx="12" cy="12.5" r="3"/></svg></button>
 </div>
+				<button id="btn-close-app" class="pixel-btn" aria-label="App schließen" title="App schließen" hidden><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
 			</header>
 
 			<div class="scoreboard">
@@ -53,46 +54,6 @@
 						<span id="combo-display" class="score-value highlight">0</span>
 					</div>
 				</div>
-
-				<!-- Overlay for Game Over -->
-				<div id="game-over-modal" class="modal-overlay hidden">
-					<div class="modal-box pixel-border">
-						<h2 class="modal-title flash-text">GAME OVER</h2>
-						<div class="modal-scores">
-							<div class="modal-row">
-								<span>SCORE:</span>
-								<span id="final-score" class="score-highlight">0</span>
-							</div>
-							<div class="modal-row">
-								<span>BEST:</span>
-								<span id="final-best" class="score-highlight">0</span>
-							</div>
-						</div>
-						<div id="new-record-badge" class="badge hidden">✨ NEW RECORD! ✨</div>
-						<div class="modal-actions">
-							<button
-								id="btn-revive"
-								class="pixel-btn revive-btn"
-								title="Einen Revive einsetzen und weiterspielen"
-							>
-								REVIVE (1)
-							</button>
-							<button id="btn-play-again" class="pixel-btn play-again-btn">PLAY AGAIN</button>
-						</div>
-					</div>
-				</div>
-
-				<!-- Overlay confirming a new game -->
-				<div id="restart-confirm" class="modal-overlay hidden" role="alertdialog" aria-modal="true" aria-labelledby="restart-title" aria-describedby="restart-message" inert>
-					<div class="modal-box pixel-border restart-box">
-						<h2 id="restart-title" class="modal-title">NEUES SPIEL?</h2>
-						<p id="restart-message" class="restart-message">Dein aktueller Spielfortschritt geht verloren.</p>
-						<div class="modal-actions">
-							<button id="btn-confirm-restart" class="pixel-btn restart-confirm-btn">NEU STARTEN</button>
-							<button id="btn-cancel-restart" class="pixel-btn play-again-btn">WEITERSPIELEN</button>
-						</div>
-					</div>
-				</div>
 			</div>
 		<div class="level-status">
 <div id="world-label" class="world-label">NEON ARCADE</div>
@@ -102,8 +63,48 @@
 </div>
 </div>
 
-		<dialog id="options-menu" class="options-menu" aria-labelledby="options-title">
-  <div class="options-heading"><h2 id="options-title">OPTIONEN</h2><button id="btn-close-options" class="pixel-btn" aria-label="Optionen schließen">✕</button></div>
+		<!-- Overlay for Game Over -->
+		<div id="game-over-modal" class="modal-overlay hidden">
+			<div class="modal-box overlay-panel">
+				<h2 class="overlay-title flash-text">GAME OVER</h2>
+				<div class="modal-scores">
+					<div class="modal-row">
+						<span>SCORE:</span>
+						<span id="final-score" class="score-highlight">0</span>
+					</div>
+					<div class="modal-row">
+						<span>BEST:</span>
+						<span id="final-best" class="score-highlight">0</span>
+					</div>
+				</div>
+				<div id="new-record-badge" class="badge hidden">✨ NEW RECORD! ✨</div>
+				<div class="overlay-actions">
+					<button
+						id="btn-revive"
+						class="pixel-btn overlay-btn overlay-btn--primary revive-btn"
+						title="Einen Revive einsetzen und weiterspielen"
+					>
+						REVIVE (1)
+					</button>
+					<button id="btn-play-again" class="pixel-btn overlay-btn overlay-btn--secondary play-again-btn">PLAY AGAIN</button>
+				</div>
+			</div>
+		</div>
+
+		<!-- Overlay confirming a new game -->
+		<div id="restart-confirm" class="modal-overlay hidden" role="alertdialog" aria-modal="true" aria-labelledby="restart-title" aria-describedby="restart-message" inert>
+			<div class="modal-box overlay-panel restart-box">
+				<h2 id="restart-title" class="overlay-title">NEUES SPIEL?</h2>
+				<p id="restart-message" class="overlay-text">Dein aktueller Spielfortschritt geht verloren.</p>
+				<div class="overlay-actions">
+					<button id="btn-confirm-restart" class="pixel-btn overlay-btn overlay-btn--primary">NEU STARTEN</button>
+					<button id="btn-cancel-restart" class="pixel-btn overlay-btn overlay-btn--secondary">WEITERSPIELEN</button>
+				</div>
+			</div>
+		</div>
+
+		<dialog id="options-menu" class="overlay-dialog overlay-panel options-menu" aria-labelledby="options-title">
+  <div class="options-heading"><h2 id="options-title" class="overlay-title">OPTIONEN</h2><button id="btn-close-options" class="pixel-btn" aria-label="Optionen schließen">✕</button></div>
   <p class="options-subtitle">TUNE YOUR BLAST</p>
   <div id="fullscreen-option" class="option-row" hidden><span>Vollbild</span><button id="btn-fullscreen" class="pixel-btn" title="Vollbild aktivieren" aria-label="Vollbild aktivieren" aria-pressed="false"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 3H3v6m12-6h6v6M3 15v6h6m12-6v6h-6" /></svg></button></div>
   <div class="option-row"><span>Sound</span><button id="btn-sound" class="pixel-btn" title="Toggle Sound" aria-label="Toggle Sound">🔊</button></div>
@@ -111,12 +112,12 @@
 <div class="option-row"><span>Vibration</span><button id="btn-vibration" class="pixel-btn" title="Vibration ausschalten" aria-label="Vibration ausschalten" aria-pressed="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="8" y="4" width="8" height="16" rx="2"/><path d="M4 8v8M1 10v4m19-6v8m3-6v4"/><path class="vibration-slash" d="m3 3 18 18"/></svg></button></div>
   <div class="option-row"><span>Visuelle Effekte</span><button id="btn-effects" aria-pressed="false">EFFEKTE: VOLL</button></div>
 </dialog>
-<dialog id="streak-recovery" class="options-menu" aria-labelledby="recovery-title">
-  <div class="options-heading"><h2 id="recovery-title">KOMBO RETTEN</h2></div>
-  <p id="recovery-message" class="recovery-message"></p>
-  <div class="recovery-actions">
-    <button id="btn-recover-streak" class="pixel-btn revive-btn">RETTEN · 1 REVIVE</button>
-    <button id="btn-skip-recovery" class="pixel-btn">WEITER OHNE RETTUNG</button>
+<dialog id="streak-recovery" class="overlay-dialog overlay-panel recovery-dialog" aria-labelledby="recovery-title">
+  <h2 id="recovery-title" class="overlay-title">KOMBO RETTEN</h2>
+  <p id="recovery-message" class="overlay-text"></p>
+  <div class="overlay-actions">
+    <button id="btn-recover-streak" class="pixel-btn overlay-btn overlay-btn--primary">RETTEN · 1 REVIVE</button>
+    <button id="btn-skip-recovery" class="pixel-btn overlay-btn overlay-btn--secondary">WEITER OHNE RETTUNG</button>
   </div>
 </dialog>
 <div id="install-banner" class="install-banner" role="region" aria-label="App installieren" hidden>

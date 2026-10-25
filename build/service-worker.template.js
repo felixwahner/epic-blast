@@ -2,8 +2,11 @@
 // Plain JavaScript on purpose - it is copied verbatim into dist/sw.js.
 const PREFIX = `epic-blast-${self.registration.scope}-`;
 const CACHE = PREFIX + '__VERSION__';
+// Precached on install.
 const ASSETS = __ASSETS__;
-const assetURLs = new Set(ASSETS.map(path => new URL(path, self.registration.scope).href));
+// World art, cached the first time it is requested.
+const LAZY_ASSETS = __LAZY_ASSETS__;
+const assetURLs = new Set([...ASSETS, ...LAZY_ASSETS].map(path => new URL(path, self.registration.scope).href));
 const shell = new URL('./index.html', self.registration.scope).href;
 
 self.addEventListener('install', event => {
@@ -35,7 +38,14 @@ self.addEventListener('fetch', event => {
       return cached || Response.error();
     })());
   } else if (assetURLs.has(url.href)) {
-    event.respondWith(caches.open(CACHE).then(cache => cache.match(event.request)).then(response => response || fetch(event.request)));
+    event.respondWith((async () => {
+      const cache = await caches.open(CACHE);
+      const cached = await cache.match(event.request);
+      if (cached) return cached;
+      const response = await fetch(event.request);
+      if (response.ok) cache.put(event.request, response.clone());
+      return response;
+    })());
   }
 });
 

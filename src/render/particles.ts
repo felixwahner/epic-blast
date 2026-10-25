@@ -23,6 +23,8 @@ export type GraphicsFactory = () => Graphics;
 /** Placement puffs and line-clear shatter debris. Pixi objects come from the injected factory. */
 export class ParticleSystem {
   readonly particles: Particle[] = [];
+  /** Expired graphics, hidden in the layer and redrawn for the next particle instead of reallocated. */
+  readonly pool: Graphics[] = [];
   private readonly layer: Pick<Container, 'addChild'>;
   private readonly reduced: () => boolean;
   private readonly createGraphics: GraphicsFactory;
@@ -39,11 +41,34 @@ export class ParticleSystem {
     return this.reduced() || this.particles.length > MAX_PARTICLES;
   }
 
+  /** A blank graphics object at (x, y), taken from the pool when one is free. */
+  private acquire(x: number, y: number): Graphics {
+    let g = this.pool.pop();
+    if (g) {
+      g.clear();
+      g.rotation = 0;
+      g.alpha = 1;
+      g.scale.set(1);
+      g.visible = true;
+    } else {
+      g = this.createGraphics();
+      this.layer.addChild(g);
+    }
+    g.x = x;
+    g.y = y;
+    return g;
+  }
+
+  private release(object: DisplayObject): void {
+    object.visible = false;
+    this.pool.push(object as Graphics);
+  }
+
   spawnPuff(cx: number, cy: number, color: number, count = 4): void {
     if (this.saturated) return;
     const rnd = this.random;
     for (let i = 0; i < count; i++) {
-      const g = this.createGraphics();
+      const g = this.acquire(cx, cy);
       const s = Math.floor(rnd() * 3 + 3);
       g.beginFill(color);
       if (i % 3 === 0) g.drawPolygon([0, -s * 1.8, s * 0.35, -s * 0.35, s * 1.8, 0, s * 0.35, s * 0.35, 0, s * 1.8, -s * 0.35, s * 0.35, -s * 1.8, 0, -s * 0.35, -s * 0.35]);
@@ -51,9 +76,6 @@ export class ParticleSystem {
       g.endFill();
       const angle = rnd() * Math.PI * 2;
       const speed = rnd() * 80 + 30;
-      g.x = cx;
-      g.y = cy;
-      this.layer.addChild(g);
       this.particles.push({ displayObject: g, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, gravity: 80, life: 0, maxLife: 0.25 });
     }
   }
@@ -63,30 +85,24 @@ export class ParticleSystem {
     if (this.saturated) return;
     const rnd = this.random;
     const delay = detonationTime(cx, cy, epicenter);
-    const charge = this.createGraphics();
+    const charge = this.acquire(cx, cy);
     const size = cellSize - 4;
     charge.beginFill(palette.base); charge.drawRect(-size / 2, -size / 2, size, size); charge.endFill();
     charge.beginFill(palette.hi); charge.drawRect(-size / 2, -size / 2, size, 3); charge.endFill();
     charge.beginFill(palette.sh); charge.drawRect(-size / 2, size / 2 - 3, size, 3); charge.endFill();
-    charge.x = cx;
-    charge.y = cy;
-    this.layer.addChild(charge);
     this.particles.push({ displayObject: charge, vx: 0, vy: 0, gravity: 0, life: 0, maxLife: delay, charge: true });
+    const colors = [palette.base, palette.base, palette.hi];
     for (let i = 0; i < fragmentCount; i++) {
-      const g = this.createGraphics();
+      const g = this.acquire(cx, cy);
       const depthSpeed = (rnd() - 0.35) * 1.2;
       const s = cellSize * (0.12 + rnd() * 0.12);
-      const colors = [palette.base, palette.base, palette.hi];
       g.beginFill(colors[i % colors.length]); g.drawRect(-s / 2, -s / 2, s, s); g.endFill();
       g.beginFill(palette.hi); g.drawRect(-s / 2, -s / 2, s, 2); g.endFill();
       g.beginFill(palette.sh); g.drawPolygon([s / 2, -s / 2, s * 0.8, -s * 0.8, s * 0.8, s * 0.2, s / 2, s / 2]); g.endFill();
       g.beginFill(palette.hi); g.drawPolygon([-s / 2, -s / 2, -s * 0.2, -s * 0.8, s * 0.8, -s * 0.8, s / 2, -s / 2]); g.endFill();
       const angle = (epicenter ? Math.atan2(cy - epicenter.y, cx - epicenter.x) : 0) + (rnd() - 0.5) * 3;
       const speed = 90 + rnd() * 160;
-      g.x = cx;
-      g.y = cy;
       g.visible = false;
-      this.layer.addChild(g);
       this.particles.push({
         displayObject: g, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed - 110,
         gravity: 440, life: -delay, spin: (rnd() - 0.5) * 6, depthSpeed, tumble: 5 + rnd() * 7,
@@ -101,8 +117,10 @@ export class ParticleSystem {
       const object = p.displayObject;
       p.life += dt;
       if (p.life >= p.maxLife) {
-        object.destroy();
-        this.particles.splice(i, 1);
+        this.release(object);
+        // Swap-remove: order is irrelevant and the last entry was already updated.
+        this.particles[i] = this.particles[this.particles.length - 1];
+        this.particles.pop();
         continue;
       }
       if (p.life < 0) { object.visible = false; continue; }
@@ -126,7 +144,7 @@ export class ParticleSystem {
   }
 
   clear(): void {
-    for (const p of this.particles) p.displayObject.destroy();
+    for (const p of this.particles) this.release(p.displayObject);
     this.particles.length = 0;
   }
 }

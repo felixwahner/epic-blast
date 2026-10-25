@@ -37,10 +37,13 @@ export function createScoreAnimator(element: HTMLElement, { host, reducedMotion 
   let impact: Animation | undefined;
   let bounds = layer.getBoundingClientRect();
   let destination = { x: 0.5, y: 0 };
+  /** Positions are re-read only after a resize or when the score grows a digit. */
+  let measured = false;
   const motionPreference = matchMedia('(prefers-reduced-motion: reduce)');
   const gentle = () => reducedMotion() || motionPreference.matches;
 
   function measure() {
+    measured = true;
     bounds = layer.getBoundingClientRect();
     const rect = element.getBoundingClientRect();
     destination = {
@@ -52,6 +55,7 @@ export function createScoreAnimator(element: HTMLElement, { host, reducedMotion 
   function render() {
     const text = Math.floor(displayed).toLocaleString();
     if (text === lastText) return;
+    if (text.length !== lastText.length) measured = false;
     element.textContent = lastText = text;
     element.style.setProperty('--score-chars', String(text.length));
   }
@@ -74,7 +78,7 @@ export function createScoreAnimator(element: HTMLElement, { host, reducedMotion 
       receive(points, false);
       return;
     }
-    measure();
+    if (!measured) measure();
     const node = document.createElement('div');
     node.className = `score-flight${bonus ? ' score-flight--bonus' : ''}`;
     if (bonus || combo >= 2) {

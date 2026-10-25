@@ -5,12 +5,13 @@ import { MAX_PARTICLES, ParticleSystem } from '../../src/render/particles.ts';
 
 /** Records drawing calls with the same method names as Pixi's Graphics. */
 class FakeGraphics {
-  x = 0; y = 0; rotation = 0; alpha = 1; visible = true; destroyed = false;
+  x = 0; y = 0; rotation = 0; alpha = 1; visible = true; destroyed = false; clears = 0;
   scale = { x: 1, y: 1, set(x: number, y = x) { this.x = x; this.y = y; } };
   beginFill() { return this; }
   drawRect() { return this; }
   drawPolygon() { return this; }
   endFill() { return this; }
+  clear() { this.clears++; return this; }
   destroy() { this.destroyed = true; }
 }
 
@@ -25,14 +26,27 @@ function system(reduced = false) {
 const palette = { base: 1, hi: 2, sh: 3, hex: '#000001' };
 
 describe('particle system', () => {
-  it('spawns puffs and expires them', () => {
+  it('spawns puffs and expires them into the pool', () => {
     const { particles, added } = system();
     particles.spawnPuff(20, 20, 0xffffff, 5);
     assert.equal(particles.particles.length, 5);
     assert.equal(added.length, 5);
     particles.update(0.3);
     assert.equal(particles.particles.length, 0);
-    assert(added.every(g => g.destroyed));
+    assert(added.every(g => !g.visible && !g.destroyed));
+    assert.equal(particles.pool.length, 5);
+  });
+
+  it('reuses pooled graphics instead of allocating new ones', () => {
+    const { particles, added } = system();
+    particles.spawnPuff(20, 20, 0xffffff, 5);
+    particles.update(0.3);
+    added[0].rotation = 2; added[0].alpha = 0.1; added[0].scale.set(3);
+    particles.spawnPuff(60, 70, 0xffffff, 3);
+    assert.equal(added.length, 5, 'no new graphics');
+    assert.equal(particles.pool.length, 2);
+    const reused = particles.particles.map(p => p.displayObject as unknown as FakeGraphics);
+    assert(reused.every(g => g.visible && g.clears === 1 && g.x === 60 && g.y === 70 && g.rotation === 0 && g.alpha === 1 && g.scale.x === 1));
   });
 
   it('holds the block until the detonation wave arrives, then releases fragments', () => {
@@ -44,7 +58,7 @@ describe('particle system', () => {
     particles.update(0.05);
     assert(fragments.every(g => !g.visible));
     particles.update(0.3);
-    assert(added[0].destroyed, 'the held block disappears on detonation');
+    assert(!added[0].visible, 'the held block disappears on detonation');
     assert(fragments.every(g => g.visible));
   });
 
@@ -66,6 +80,7 @@ describe('particle system', () => {
     particles.spawnShatter(0, 0, palette, 40);
     particles.clear();
     assert.equal(particles.particles.length, 0);
-    assert(added.every(g => g.destroyed));
+    assert(added.every(g => !g.visible));
+    assert.equal(particles.pool.length, added.length);
   });
 });

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { afterEach, describe, it } from 'node:test';
-import { StadiumAnnouncer, type AnnouncerContext } from '../../src/audio/announcer.ts';
+import { CLIPS, StadiumAnnouncer, isNearRecord, type AnnouncerContext } from '../../src/audio/announcer.ts';
 
 interface FakeSource { buffer: unknown; onended: (() => void) | null; connect(): void; disconnect(): void; start(): void; stop(): void }
 
@@ -32,12 +32,54 @@ describe('stadium announcer', () => {
   const realNow = Date.now;
   afterEach(() => { Date.now = realNow; });
 
-  it('downloads and caches all seven clips once', async () => {
+  it('downloads and caches all clips once', async () => {
     const { announcer, state } = setup();
+    const count = Object.keys(CLIPS).length;
+    assert.equal(count, 25);
     await announcer.prepare();
-    assert.equal(announcer.buffers.size, 7);
+    assert.equal(announcer.buffers.size, count);
     await announcer.prepare();
-    assert.equal(state.downloads, 7);
+    assert.equal(state.downloads, count);
+  });
+
+  it('picks the clip that matches each event', async () => {
+    const cases: [string, number, string][] = [
+      ['start', 0, 'lets-blast'], ['fire', 0, 'fire'], ['cross', 0, 'cross'], ['zone', 0, 'zone'],
+      ['clear', 3, 'triple'], ['clear', 4, 'legendary'], ['clear', 5, 'epic-blast'], ['clear', 6, 'epic-blast'],
+      ['escape', 0, 'close-call'], ['brilliant', 0, 'brilliant'], ['perfect', 0, 'perfect'],
+      ['world', 0, 'new-world'], ['eclipse', 0, 'eclipse'], ['near-record', 0, 'record-in-sight'], ['million', 0, 'million'],
+      ['sweep', 3, 'sweep'], ['sweep', 4, 'sweep-again'], ['sweep', 5, 'sweep-again'], ['sweep', 6, 'max-multiplier'],
+      ['rescue', 0, 'combo-saved'], ['revive', 1, 'revive'], ['revive', 0, 'last-chance'],
+      ['over', 0, 'over'], ['over', 1, 'champion'],
+    ];
+    for (const [event, value, clip] of cases) {
+      const { announcer } = setup();
+      announcer.announce(event, value);
+      assert.equal(announcer.pending?.clip, clip, `${event} ${value}`);
+      announcer.stop();
+    }
+  });
+
+  it('lets a board clear outrank combo and line calls of the same move', () => {
+    const { announcer } = setup();
+    announcer.announce('clear', 3); announcer.announce('combo', 5); announcer.announce('world'); announcer.announce('sweep', 3);
+    assert.equal(announcer.pending?.clip, 'sweep');
+    announcer.announce('fire');
+    assert.equal(announcer.pending?.clip, 'sweep', 'a lesser call cannot replace it');
+    announcer.stop();
+  });
+
+  it('stays quiet for one or two lines', () => {
+    const { announcer } = setup();
+    announcer.announce('clear', 2);
+    assert.equal(announcer.pending, null);
+  });
+
+  it('calls "Record in sight" only near a worthwhile best', () => {
+    assert.equal(isNearRecord(9000, 10000), true);
+    assert.equal(isNearRecord(8999, 10000), false);
+    assert.equal(isNearRecord(10000, 10000), false, 'the record itself has its own call');
+    assert.equal(isNearRecord(950, 1000), false, 'tiny bests are not announced');
   });
 
   it('plays the highest-priority pending call at a restrained volume', async () => {
@@ -109,6 +151,21 @@ describe('stadium announcer', () => {
     announcer.stop(); time += 35000;
     announcer.announce('combo', 5); flush();
     assert.equal(played.length, 3, 'unstoppable returns after its repeat cooldown');
+    announcer.stop();
+  });
+
+  it('limits frequent calls like "On fire" to once per 45 seconds', async () => {
+    const { announcer, played, flush } = setup();
+    await announcer.prepare();
+    let time = 100000;
+    Date.now = () => time;
+    announcer.announce('fire'); flush();
+    announcer.stop(); time += 10000;
+    announcer.announce('fire'); flush();
+    assert.equal(played.length, 1);
+    announcer.stop(); time += 35000;
+    announcer.announce('fire'); flush();
+    assert.equal(played.length, 2);
     announcer.stop();
   });
 });

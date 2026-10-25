@@ -1,7 +1,10 @@
 """Run from the repository root: python tools/split-voice-clips.py
 
-Split the approved, processed voice takes at their quiet phrase boundaries."""
+Split the approved, processed voice takes at their quiet phrase boundaries.
+Clips are saved as 128 kbit/s MP3 (about a tenth of the WAV size); needs ffmpeg on the PATH."""
 from pathlib import Path
+import subprocess
+import tempfile
 import wave
 import numpy as np
 
@@ -10,6 +13,9 @@ out.mkdir(exist_ok=True)
 for source, names in [
     ('epic-blast-announcer', ['triple', 'unstoppable', 'legendary', 'record']),
     ('extra-calls', ['level', 'revive', 'over']),
+    ('new-calls-1', ['sweep', 'sweep-again', 'max-multiplier', 'new-world', 'eclipse', 'combo-saved']),
+    ('new-calls-2', ['last-chance', 'record-in-sight', 'champion', 'perfect', 'brilliant', 'close-call']),
+    ('new-calls-3', ['zone', 'cross', 'fire', 'epic-blast', 'lets-blast', 'million']),
 ]:
     with wave.open(f'design/voice-previews/{source}.wav') as stream:
         rate = stream.getframerate()
@@ -28,9 +34,12 @@ for source, names in [
         fade = min(len(clip), int(rate * .045))
         clip[:fade] *= np.linspace(0, 1, fade)[:, None]
         clip[-fade:] *= np.linspace(1, 0, fade)[:, None]
-        with wave.open(str(out / f'{name}.wav'), 'wb') as stream:
-            stream.setnchannels(2)
-            stream.setsampwidth(2)
-            stream.setframerate(rate)
-            stream.writeframes(np.round(clip * 32767).astype('<i2').tobytes())
+        with tempfile.TemporaryDirectory() as tmp:
+            pcm = Path(tmp) / f'{name}.wav'
+            with wave.open(str(pcm), 'wb') as stream:
+                stream.setnchannels(2)
+                stream.setsampwidth(2)
+                stream.setframerate(rate)
+                stream.writeframes(np.round(clip * 32767).astype('<i2').tobytes())
+            subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', str(pcm), '-codec:a', 'libmp3lame', '-b:a', '128k', str(out / f'{name}.mp3')], check=True)
         print(f'{name}: {start / 100:.2f}–{end / 100:.2f}s')

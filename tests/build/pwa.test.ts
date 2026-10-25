@@ -12,7 +12,7 @@ type Handler = (event: Record<string, unknown>) => void;
 describe('production PWA build', () => {
   it('precaches the build, serves an offline shell and removes old caches', async () => {
     const source = read('sw.js');
-    assert(!source.includes('__VERSION__') && !source.includes('__ASSETS__'));
+    assert(!source.includes('__VERSION__') && !source.includes('__ASSETS__') && !source.includes('__LAZY_ASSETS__'));
     const handlers: Record<string, Handler> = {};
     const scope = 'https://example.com/games/blast/';
     const deleted: string[] = [];
@@ -67,7 +67,7 @@ describe('production PWA build', () => {
     const html = read('index.html');
     assert(!html.includes('/src/'), 'index.html references bundled assets only');
     const assets = readdirSync(new URL('assets/', dist));
-    for (const pattern of [/^board-materials-.*\.png$/, /^neon-jewel-.*\.png$/, /^solver\.worker-.*\.js$/, /^smth-smth-.*\.mp3$/, /^record-.*\.wav$/]) {
+    for (const pattern of [/^board-.*\.webp$/, /^neon-jewel-.*\.png$/, /^solver\.worker-.*\.js$/, /^smth-smth-.*\.mp3$/, /^record-.*\.mp3$/]) {
       assert(assets.some(name => pattern.test(name)), `missing ${pattern}`);
     }
   });
