@@ -42,7 +42,7 @@ export function computeLayout(width: number, height: number): Layout {
   const gridX = Math.floor((w - gridWidth) / 2);
   const trayHeight = Math.max(90, cellSize * 3.0);
   const verticalRemainder = h - (gridWidth + 24 + trayHeight);
-  const gridY = Math.max(12, Math.floor(verticalRemainder * 0.35));
+  const gridY = Math.max(12, Math.floor(verticalRemainder * 0.12));
   const trayY = gridY + gridWidth + 20;
   const slotWidth = gridWidth / 3;
   // Fit even five-cell shapes inside a slot with room at both edges.
