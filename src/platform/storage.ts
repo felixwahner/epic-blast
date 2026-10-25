@@ -7,6 +7,7 @@ export const STORAGE_KEYS = {
   vibration: 'epic_blast_vibration',
   effects: 'epic_blast_effects',
   music: 'epic_blast_music',
+  soundWorld: 'epic_blast_sound_world',
   installDismissed: 'epic_blast_install_dismissed',
   worlds: 'epic_blast_worlds',
   savedGame: 'epic_blast_saved_game',

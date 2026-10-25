@@ -1,7 +1,8 @@
-// Retro 8-bit / 16-bit sound synthesis with the Web Audio API.
+// Game sound effects, synthesized with the Web Audio API in the selected sound world.
 import { STORAGE_KEYS, safeStorage, type KeyValueStore } from '../platform/storage.ts';
 import { StadiumAnnouncer, type AnnouncerContext } from './announcer.ts';
 import { comboSoundProfile } from './combo-sound.ts';
+import { createSoundKit, nextSoundWorld, parseSoundWorld, type SoundKit, type SoundWorldId } from './sound-worlds.ts';
 
 type AudioContextConstructor = new () => AudioContext;
 
@@ -25,17 +26,21 @@ export class AudioEngine {
   ctx: AudioContext | null = null;
   isMuted: boolean;
   volume = 0.25;
+  soundWorld: SoundWorldId;
   readonly announcer: StadiumAnnouncer;
 
   private readonly storage: KeyValueStore;
   /** White noise for impact crunches, generated once per audio context. */
   private noise: AudioBuffer | null = null;
   private readonly contextClass: () => AudioContextConstructor | undefined;
+  /** The layered kit for the current world and context; null plays the arcade sounds below. */
+  private kitCache: { world: SoundWorldId; ctx: AudioContext; kit: SoundKit | null } | null = null;
 
   constructor({ storage = safeStorage, contextClass = defaultContextClass }: AudioEngineOptions = {}) {
     this.storage = storage;
     this.contextClass = contextClass;
     this.isMuted = storage.getItem(STORAGE_KEYS.muted) === 'true';
+    this.soundWorld = parseSoundWorld(storage.getItem(STORAGE_KEYS.soundWorld));
     this.announcer = new StadiumAnnouncer({
       enabled: () => !this.isMuted,
       context: () => this.ctx as unknown as AnnouncerContext | null,
@@ -65,8 +70,31 @@ export class AudioEngine {
     return this.isMuted;
   }
 
+  /** Switches to the next sound world, stores it and returns it. */
+  cycleSoundWorld(): SoundWorldId {
+    this.soundWorld = nextSoundWorld(this.soundWorld);
+    this.storage.setItem(STORAGE_KEYS.soundWorld, this.soundWorld);
+    return this.soundWorld;
+  }
+
+  /** Short preview of the current world: a placement that clears a line. */
+  playSoundWorldPreview(): void {
+    this.playPlace();
+    this.playClear(1, 1, 0.14);
+  }
+
   private get canPlay(): boolean {
     return !this.isMuted && this.ctx !== null && this.ctx.state === 'running';
+  }
+
+  private kit(): SoundKit | null {
+    const ctx = this.ctx;
+    if (!ctx) return null;
+    const cache = this.kitCache;
+    if (cache?.world === this.soundWorld && cache.ctx === ctx) return cache.kit;
+    const kit = createSoundKit(this.soundWorld, ctx, ctx.destination, this.volume / 0.25);
+    this.kitCache = { world: this.soundWorld, ctx, kit };
+    return kit;
   }
 
   /** Simple oscillator with an exponential decay envelope. */
@@ -122,6 +150,8 @@ export class AudioEngine {
     this.init();
     if (this.isMuted || !this.ctx) return;
     const now = this.ctx.currentTime;
+    const kit = this.kit();
+    if (kit) return kit.pickup(now);
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
     osc.type = 'triangle';
@@ -139,6 +169,8 @@ export class AudioEngine {
   playCancel(): void {
     this.init();
     if (this.isMuted || !this.ctx) return;
+    const kit = this.kit();
+    if (kit) return kit.cancel(this.ctx.currentTime);
     this.voice('sine', 200, this.ctx.currentTime, 0.08, 0.15, 0.001);
   }
 
@@ -147,6 +179,8 @@ export class AudioEngine {
     this.init();
     if (this.isMuted || !this.ctx) return;
     const now = this.ctx.currentTime;
+    const kit = this.kit();
+    if (kit) return kit.place(now);
     this.playBassImpact(0.85);
     this.playImpactCrunch();
     const osc = this.ctx.createOscillator();
@@ -224,6 +258,8 @@ export class AudioEngine {
     if (!this.canPlay) return;
     const now = this.ctx!.currentTime + delay;
     const { stage, milestone } = comboSoundProfile(comboCount);
+    const kit = this.kit();
+    if (kit) return kit.clear(now, lineCount, comboCount);
     const tone = (offset: number, duration: number, frequency: number, amplitude: number, bright = false) =>
       this.tone(now + offset, duration, frequency, amplitude, bright ? 'triangle' : 'sine');
     tone(0, 0.16, 1046.5, 0.3, true);
@@ -254,6 +290,8 @@ export class AudioEngine {
     this.init();
     if (!this.canPlay) return;
     const now = this.ctx!.currentTime + 0.15;
+    const kit = this.kit();
+    if (kit) return kit.fanfare(now);
     [523.25, 659.25, 783.99].forEach((frequency, index) => {
       const start = now + index * 0.055;
       const ctx = this.ctx!;
@@ -280,6 +318,8 @@ export class AudioEngine {
     this.init();
     if (this.isMuted || !this.ctx) return;
     const now = this.ctx.currentTime;
+    const kit = this.kit();
+    if (kit) return kit.gameOver(now);
     [392.0, 369.99, 349.23, 311.13, 246.94].forEach((freq, idx) => {
       this.voice('sawtooth', freq, now + idx * 0.14, 0.2, 0.22, 0.001 / this.volume);
     });
@@ -289,6 +329,8 @@ export class AudioEngine {
   playNewRecord(): void {
     this.init();
     if (this.isMuted || !this.ctx) return;
+    const kit = this.kit();
+    if (kit) return kit.record(this.ctx.currentTime);
     let t = this.ctx.currentTime;
     for (const { f, d } of [
       { f: 523.25, d: 0.1 },
@@ -306,6 +348,8 @@ export class AudioEngine {
     this.init();
     if (this.isMuted || !this.ctx) return;
     const now = this.ctx.currentTime;
+    const kit = this.kit();
+    if (kit) return kit.revive(now);
     [261.63, 329.63, 392.0, 523.25, 659.25, 783.99, 1046.5].forEach((freq, idx) => {
       this.voice('triangle', freq, now + idx * 0.05, 0.15, 0.2, 0.001 / this.volume);
     });

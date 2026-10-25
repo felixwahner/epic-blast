@@ -7,6 +7,7 @@ import { RoundPredictor } from '../ai/round-predictor.ts';
 import { MILLION, isNearRecord } from '../audio/announcer.ts';
 import type { AudioEngine } from '../audio/audio-engine.ts';
 import { BackgroundMusic } from '../audio/music.ts';
+import { SOUND_WORLD_LABELS } from '../audio/sound-worlds.ts';
 import { predictClears, type FullLines } from '../core/board.ts';
 import {
   addLines,
@@ -778,6 +779,12 @@ export class Game {
         const muted = audio.toggleMute();
         if (!muted) audio.playPickup();
         return muted;
+      },
+      soundWorldLabel: () => SOUND_WORLD_LABELS[audio.soundWorld],
+      cycleSoundWorld: () => {
+        const world = audio.cycleSoundWorld();
+        audio.playSoundWorldPreview();
+        return SOUND_WORLD_LABELS[world];
       },
       musicEnabled: () => music.enabled,
       toggleMusic: () => {

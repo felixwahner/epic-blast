@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { AudioEngine } from '../../src/audio/audio-engine.ts';
 import { comboSoundProfile } from '../../src/audio/combo-sound.ts';
+import { DEFAULT_SOUND_WORLD, SOUND_WORLDS } from '../../src/audio/sound-worlds.ts';
 import { STORAGE_KEYS } from '../../src/platform/storage.ts';
 import { memoryStorage } from '../helpers/fakes.ts';
 
@@ -80,5 +81,111 @@ describe('combo sound profile', () => {
     assert(comboSoundProfile(75).milestone);
     assert(!comboSoundProfile(51).milestone);
     assert(!comboSoundProfile(25).milestone);
+  });
+});
+
+const checkTime = (time: number) => assert(Number.isFinite(time) && time >= 0, `bad time ${time}`);
+const param = (value = 0) => {
+  return {
+    value,
+    setValueAtTime: (_: number, t: number) => checkTime(t),
+    linearRampToValueAtTime: (_: number, t: number) => checkTime(t),
+    exponentialRampToValueAtTime: (v: number, t: number) => {
+      checkTime(t);
+      assert(v > 0, `exponential ramp to ${v}`);
+    },
+    setTargetAtTime: (_: number, t: number) => checkTime(t),
+  };
+};
+const node = (extra: object = {}) => ({ connect() {}, disconnect() {}, ...extra });
+
+/** A Web Audio stand-in that records sources and rejects the scheduling values real browsers reject. */
+function recordingContext() {
+  const sources: { start: number; stop: number }[] = [];
+  const source = () => {
+    const entry = { start: -1, stop: -1 };
+    sources.push(entry);
+    return node({
+      frequency: param(440),
+      detune: param(),
+      type: 'sine',
+      buffer: null,
+      onended: null,
+      start: (t = 0) => (entry.start = t),
+      stop: (t = 0) => (entry.stop = t),
+    });
+  };
+  class Ctx {
+    state = 'running';
+    currentTime = 3;
+    sampleRate = 8000;
+    destination = node();
+    resume = () => Promise.resolve();
+    createOscillator = source;
+    createBufferSource = source;
+    createGain = () => node({ gain: param(1) });
+    createBiquadFilter = () => node({ frequency: param(350), Q: param(1), type: 'lowpass' });
+    createConvolver = () => node({ buffer: null });
+    createWaveShaper = () => node({ curve: null, oversample: 'none' });
+    createDynamicsCompressor = () =>
+      node({ threshold: param(), ratio: param(), knee: param(), attack: param(), release: param() });
+    createBuffer = (channels: number, length: number, sampleRate: number) => {
+      const data = Array.from({ length: channels }, () => new Float32Array(length));
+      return { sampleRate, length, getChannelData: (c: number) => data[c] };
+    };
+  }
+  return { sources, contextClass: () => Ctx as unknown as new () => AudioContext };
+}
+
+describe('sound worlds', () => {
+  it('defaults to the impact world and cycles through every world, storing the choice', () => {
+    const storage = memoryStorage();
+    const audio = new AudioEngine({ storage, contextClass: () => undefined });
+    assert.equal(audio.soundWorld, DEFAULT_SOUND_WORLD);
+    const seen = SOUND_WORLDS.map(() => audio.cycleSoundWorld());
+    assert.deepEqual([...seen].sort(), [...SOUND_WORLDS].sort());
+    assert.equal(storage.getItem(STORAGE_KEYS.soundWorld), audio.soundWorld);
+    assert.equal(new AudioEngine({ storage, contextClass: () => undefined }).soundWorld, audio.soundWorld);
+  });
+
+  it('ignores an unknown stored world', () => {
+    const storage = memoryStorage({ [STORAGE_KEYS.soundWorld]: 'kazoo' });
+    assert.equal(new AudioEngine({ storage, contextClass: () => undefined }).soundWorld, DEFAULT_SOUND_WORLD);
+  });
+
+  for (const world of SOUND_WORLDS) {
+    it(`schedules every event in the ${world} world at valid times`, () => {
+      const { sources, contextClass } = recordingContext();
+      const storage = memoryStorage({ [STORAGE_KEYS.soundWorld]: world });
+      const audio = new AudioEngine({ storage, contextClass });
+      audio.init();
+      audio.playPickup();
+      audio.playCancel();
+      audio.playPlace();
+      for (const [lines, combo] of [
+        [1, 0],
+        [2, 4],
+        [3, 10],
+        [2, 20],
+        [4, 40],
+        [1, 50],
+      ])
+        audio.playClear(lines, combo, 0.14);
+      audio.playComboFanfare();
+      audio.playNewRecord();
+      audio.playRevive();
+      audio.playGameOver();
+      assert(sources.length > 40);
+      for (const { start, stop } of sources) assert(start >= 3 && stop > start, `${world}: ${start}..${stop}`);
+    });
+  }
+
+  it('stays silent while muted', () => {
+    const { sources, contextClass } = recordingContext();
+    const audio = new AudioEngine({ storage: memoryStorage({ [STORAGE_KEYS.muted]: 'true' }), contextClass });
+    audio.init();
+    audio.playPlace();
+    audio.playClear(2, 10);
+    assert.equal(sources.length, 0);
   });
 });

@@ -36,10 +36,14 @@ test('remembers option toggles across reloads', async ({ page }) => {
   await expect(page.locator('#btn-effects')).toHaveAttribute('aria-pressed', 'true');
   await page.locator('#btn-vibration').click();
   await expect(page.locator('#btn-vibration')).toHaveAttribute('aria-pressed', 'false');
+  await expect(page.locator('#btn-sound-world')).toHaveText('WUCHT');
+  await page.locator('#btn-sound-world').click();
+  await expect(page.locator('#btn-sound-world')).toHaveText('HOLZ & STEIN');
   await page.reload();
   await expect(page.locator('body')).toHaveClass(/reduced-effects/);
   await expect(page.locator('#btn-effects')).toHaveText('EFFEKTE: WENIG');
   await expect(page.locator('#btn-vibration')).toHaveAttribute('aria-pressed', 'false');
+  await expect(page.locator('#btn-sound-world')).toHaveText('HOLZ & STEIN');
 });
 
 test('the header holds only the logo and a menu, which leads to new game', async ({ page }, info) => {
