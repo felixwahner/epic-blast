@@ -1,0 +1,80 @@
+# Builds the game on every push to main and uploads dist/ to an FTP server.
+# Setup (secret and variable names): see "Deployment" in README.md.
+name: Deploy to FTP
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# One deploy at a time; a newer push waits for the running upload instead of cutting it off.
+concurrency:
+  group: deploy-ftp
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # Typecheck + unit tests, so a broken build never reaches the server.
+      - run: npm test
+
+      - run: npx vite build
+
+      - name: Install lftp
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq lftp
+
+      - name: Upload dist/
+        env:
+          FTP_HOST: ${{ secrets.FTP_HOST }}
+          FTP_USER: ${{ secrets.FTP_USER }}
+          LFTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+          FTP_REMOTE_DIR: ${{ vars.FTP_REMOTE_DIR }}
+          FTP_PROTOCOL: ${{ vars.FTP_PROTOCOL || 'ftps' }}
+          FTP_PORT: ${{ vars.FTP_PORT }}
+          FTP_DELETE_STALE: ${{ vars.FTP_DELETE_STALE || 'false' }}
+        run: |
+          set -euo pipefail
+          for name in FTP_HOST FTP_USER LFTP_PASSWORD FTP_REMOTE_DIR; do
+            if [ -z "${!name}" ]; then
+              echo "::error::$name is not set. See 'Deployment' in README.md."
+              exit 1
+            fi
+          done
+
+          case "$FTP_PROTOCOL" in
+            ftp)  url="ftp://$FTP_HOST";  tls="set ftp:ssl-allow no;" ;;
+            ftps) url="ftp://$FTP_HOST";  tls="set ftp:ssl-force yes; set ftp:ssl-protect-data yes;" ;;
+            sftp) url="sftp://$FTP_HOST"; tls="set sftp:auto-confirm yes;" ;;
+            *) echo "::error::FTP_PROTOCOL must be ftp, ftps or sftp (got '$FTP_PROTOCOL')."; exit 1 ;;
+          esac
+          [ -n "$FTP_PORT" ] && url="$url:$FTP_PORT"
+
+          # Entry files go up last, so a visitor never gets an index.html or sw.js
+          # that points at assets which aren't on the server yet.
+          entry="-x ^index\.html$ -x ^sw\.js$ -x ^manifest\.webmanifest$"
+          delete=""
+          [ "$FTP_DELETE_STALE" = "true" ] && delete="mirror -R --delete --parallel=4 -x ^\.htaccess$ -x ^\.well-known/ dist ."
+
+          lftp -c "
+            set net:max-retries 3; set net:timeout 30; $tls
+            open --env-password -u \"$FTP_USER\" $url
+            mkdir -pf \"$FTP_REMOTE_DIR\"
+            cd \"$FTP_REMOTE_DIR\"
+            mirror -R --parallel=4 --verbose $entry dist .
+            put -O . dist/manifest.webmanifest dist/sw.js dist/index.html
+            $delete
+          "
