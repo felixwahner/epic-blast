@@ -2381,3 +2381,57 @@ body::after {
     transform: translate(var(--from-x), var(--from-y));
   }
 }
+
+/* The level rail spans only the board; the logo trims its transparent top margin so the
+   board can move up. With the installed app's close button the corners split: close on the
+   left, menu on the right, both clear of the centered logo. */
+.game-logo {
+  --logo-w: clamp(184px, 52vw, 236px);
+  width: var(--logo-w);
+  margin: calc(var(--logo-w) * -0.09) 0 calc(var(--logo-w) * -0.02);
+}
+.level-status {
+  padding-inline: var(--board-left, 0px) var(--board-right, 0px);
+}
+.game-header:has(#btn-close-app:not([hidden])) .header-controls {
+  right: calc(var(--board-right, 5px) + 2px);
+}
+#btn-close-app {
+  right: auto;
+  left: calc(var(--board-left, 5px) + 2px);
+}
+@media (max-height: 650px) {
+  .game-logo {
+    --logo-w: 140px;
+  }
+}
+@media (max-width: 600px) {
+  .game-logo {
+    --logo-w: clamp(172px, 49vw, 204px);
+  }
+}
+@media (max-width: 600px) and (max-height: 650px) {
+  .game-logo {
+    --logo-w: 130px;
+  }
+}
+/* BEST rides directly under the score as a small plaque, so long scores keep the full width. */
+.scoreboard .best {
+  position: static;
+  transform: none;
+  flex-direction: row;
+  align-items: baseline;
+  gap: 7px;
+  margin-top: -6px;
+  padding: 3px 10px 4px;
+  border: 1px solid color-mix(in srgb, var(--world-primary, #00f5ff) 45%, transparent);
+  border-radius: 999px;
+  background: #0a0618b3;
+  box-shadow: 0 2px 6px #0007;
+}
+.scoreboard .best .score-label {
+  font-size: 8px;
+}
+#best-score-display {
+  font-size: 11px;
+}
