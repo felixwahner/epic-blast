@@ -18,3 +18,10 @@ export const allClearMultiplier = (count: number): number =>
 /** Extra points on top of `clearPoints`, so the whole clear is worth `multiplier` times as much. */
 export const allClearBonus = (clearPoints: number, count: number): number =>
   ALL_CLEAR_BONUS + clearPoints * (allClearMultiplier(count) - 1);
+
+/** Minimum payout of one gold bonus jewel. */
+export const JEWEL_MIN_POINTS = 250;
+
+/** Extra points for gold jewels in a clear: each one pays the clear's points again. */
+export const jewelBonus = (clearPoints: number, jewels: number): number =>
+  jewels * Math.max(JEWEL_MIN_POINTS, clearPoints);

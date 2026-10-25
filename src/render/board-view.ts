@@ -3,6 +3,7 @@ import { GRID_SIZE, type FullLines, type Grid, type Matrix } from '../core/board
 import type { Palette, Theme } from '../theme/themes.ts';
 import type { BlockTextures } from './block-textures.ts';
 import { boardMaterialTiles, clearHighlightRects } from './board-geometry.ts';
+import { createJewelMark } from './jewel-mark.ts';
 import { BLOCK_TEXTURE_SIZE, type Layout } from './layout.ts';
 
 const GHOST_POOL_SIZE = 9;
@@ -14,8 +15,11 @@ export class BoardView {
   readonly preview = new Graphics();
   readonly blocks = new Container();
   readonly ghosts = new Container();
+  /** Gold bonus jewels on placed blocks; drawn above the blocks. */
+  readonly jewelLayer = new Container();
 
   private readonly sprites: Sprite[][];
+  private readonly jewelMarks: Graphics[][];
   private readonly ghostSprites: Sprite[] = [];
   private readonly textures: BlockTextures;
 
@@ -26,6 +30,12 @@ export class BoardView {
       sprite.visible = false;
       this.blocks.addChild(sprite);
       return sprite;
+    }));
+    this.jewelMarks = Array.from({ length: GRID_SIZE }, () => Array.from({ length: GRID_SIZE }, () => {
+      const mark = createJewelMark();
+      mark.visible = false;
+      this.jewelLayer.addChild(mark);
+      return mark;
     }));
     // Pre-created pooled ghost sprites (zero allocation while dragging).
     for (let i = 0; i < GHOST_POOL_SIZE; i++) {
@@ -48,12 +58,19 @@ export class BoardView {
     this.renderSocketBoard(layout, palettes, theme);
   }
 
-  syncBlocks(grid: Grid, layout: Layout): void {
+  /** `jewels` holds the cells (row * 8 + col) that carry a gold bonus jewel. */
+  syncBlocks(grid: Grid, layout: Layout, jewels: ReadonlySet<number> = new Set()): void {
     const cs = layout.cellSize;
     const scale = cs / BLOCK_TEXTURE_SIZE;
     for (let r = 0; r < GRID_SIZE; r++) for (let c = 0; c < GRID_SIZE; c++) {
       const sprite = this.sprites[r][c];
       const cell = grid[r][c];
+      const mark = this.jewelMarks[r][c];
+      mark.visible = cell !== null && jewels.has(r * GRID_SIZE + c);
+      if (mark.visible) {
+        mark.position.set(layout.gridX + c * cs, layout.gridY + r * cs);
+        mark.scale.set(scale);
+      }
       if (cell !== null) {
         sprite.texture = this.textures.blocks[cell];
         sprite.position.set(layout.gridX + c * cs, layout.gridY + r * cs);

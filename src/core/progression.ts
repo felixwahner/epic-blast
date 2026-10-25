@@ -1,6 +1,7 @@
 // Each level requires 100% more additional points than the preceding level.
-// Cumulative thresholds: 0, 100,000, 300,000, 700,000, 1,500,000, ...
-export const levelStart = (level: number): number => Math.round(100000 * (2 ** (level - 1) - 1));
+// Cumulative thresholds: 0, 10,000, 30,000, 70,000, 150,000, ...
+export const FIRST_LEVEL_POINTS = 10000;
+export const levelStart = (level: number): number => Math.round(FIRST_LEVEL_POINTS * (2 ** (level - 1) - 1));
 
 export interface LevelProgress {
   level: number;
@@ -11,7 +12,7 @@ export interface LevelProgress {
 }
 
 export function progression(score: number): LevelProgress {
-  let level = Math.max(1, Math.floor(Math.log1p(score / 100000) / Math.log(2)) + 1);
+  let level = Math.max(1, Math.floor(Math.log1p(score / FIRST_LEVEL_POINTS) / Math.log(2)) + 1);
   while (score >= levelStart(level + 1)) level++;
   while (score < levelStart(level)) level--;
   const start = levelStart(level), next = levelStart(level + 1);

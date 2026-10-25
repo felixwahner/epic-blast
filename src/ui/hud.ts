@@ -15,10 +15,16 @@ export class Hud {
   readonly canvasWrapper = byId('canvas-wrapper');
   readonly pixiMount = byId('pixi-view');
   readonly score = byId('score-display');
-  readonly worldLabel = byId('world-label');
+  readonly worldLabel = byId('world-name');
+  readonly worldButton = byId<HTMLButtonElement>('world-label');
 
   private readonly best = byId('best-score-display');
   private readonly combo = byId('combo-display');
+  private readonly comboFuse = byId('combo-fuse');
+  private readonly worldCount = byId('world-count');
+  private readonly overWorldsButton = byId('btn-over-worlds');
+  private readonly gameOverHints = byId('game-over-hints');
+  private readonly gameOverStats = byId('game-over-stats');
   private readonly comboBox = byId('combo-box');
   private readonly levelStatus = document.querySelector<HTMLElement>('.level-status');
   private readonly levelLabel = byId('level-label');
@@ -45,6 +51,29 @@ export class Hud {
 
   setCombo(value: number): void {
     this.combo.textContent = String(value);
+  }
+
+  /**
+   * Shows how safe the running combo is: all pips lit once this round has a
+   * clear, otherwise one pip per piece still left to clear a line with.
+   */
+  setComboFuse(combo: number, safe: boolean, piecesLeft: number): void {
+    this.comboFuse.hidden = combo === 0;
+    this.comboFuse.classList.toggle('safe', safe);
+    this.comboFuse.classList.toggle('last', !safe && piecesLeft === 1);
+    const lit = safe ? 3 : piecesLeft;
+    [...this.comboFuse.children].forEach((pip, index) => pip.classList.toggle('lit', index < lit));
+    this.comboFuse.title = safe
+      ? 'Kombo gesichert: in dieser Runde wurde schon geräumt'
+      : `Noch ${piecesLeft} ${piecesLeft === 1 ? 'Stück' : 'Stücke'}, um die Kombo zu halten`;
+  }
+
+  /** World collection progress beside the world name; `fresh` marks unseen unlocks. */
+  setWorldCount(unlocked: number, total: number, fresh: boolean): void {
+    this.worldCount.textContent = `${unlocked}/${total}`;
+    this.worldButton.classList.toggle('has-fresh', fresh);
+    this.overWorldsButton.textContent = `WELTEN ${unlocked}/${total}`;
+    this.overWorldsButton.classList.toggle('has-fresh', fresh);
   }
 
   flashCombo(): void {
@@ -87,10 +116,18 @@ export class Hud {
     pulse(this.reviveCount, 'reward-flight');
   }
 
-  showGameOver(score: number, best: number, newRecord: boolean, delayMs = 450): void {
+  /** `hints` name the nearest goals; `stats` are label/value pairs of the finished game. */
+  showGameOver(score: number, best: number, newRecord: boolean, hints: readonly string[] = [], stats: readonly (readonly [string, string])[] = [], delayMs = 450): void {
     this.finalScore.textContent = String(score);
     this.finalBest.textContent = String(best);
     this.newRecordBadge.classList.toggle('hidden', !newRecord);
+    this.gameOverHints.replaceChildren(...hints.map(hint => Object.assign(document.createElement('li'), { textContent: hint })));
+    this.gameOverHints.hidden = hints.length === 0;
+    this.gameOverStats.replaceChildren(...stats.map(([label, value]) => {
+      const item = document.createElement('div');
+      item.append(Object.assign(document.createElement('dt'), { textContent: label }), Object.assign(document.createElement('dd'), { textContent: value }));
+      return item;
+    }));
     clearTimeout(this.gameOverTimer);
     this.gameOverTimer = setTimeout(() => this.gameOverModal.classList.remove('hidden'), delayMs);
   }

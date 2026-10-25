@@ -52,10 +52,10 @@ export const worldSlug = (index: number): string => WORLDS[index][0].toLowerCase
 
 /**
  * Appends shuffled rounds of every world until the order covers `length` worlds.
- * Neon Arcade always opens a game; each later round visits every world once
- * and never repeats the world that ended the previous round.
+ * `first` (Neon Arcade by default) opens a game; each later round visits every
+ * world once and never repeats the world that ended the previous round.
  */
-export function extendWorldOrder(order: readonly number[], length: number, random: () => number = Math.random): number[] {
+export function extendWorldOrder(order: readonly number[], length: number, random: () => number = Math.random, first = 0): number[] {
   const out = [...order];
   while (out.length < length) {
     const round = WORLDS.map((_, index) => index);
@@ -63,9 +63,9 @@ export function extendWorldOrder(order: readonly number[], length: number, rando
       const j = Math.floor(random() * (i + 1));
       [round[i], round[j]] = [round[j], round[i]];
     }
-    const lead = out.length === 0 ? 0 : out[out.length - 1];
+    const lead = out.length === 0 ? first : out[out.length - 1];
     const at = round.indexOf(lead);
-    // The first round starts at Neon Arcade; later rounds push the repeat out of the first slot.
+    // The first round starts at the opening world; later rounds push the repeat out of the first slot.
     if (out.length === 0) [round[0], round[at]] = [round[at], round[0]];
     else if (at === 0) [round[0], round[1]] = [round[1], round[0]];
     out.push(...round);

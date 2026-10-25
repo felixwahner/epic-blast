@@ -12,7 +12,8 @@ const rgb = (color: number) => [(color >> 16) & 255, (color >> 8) & 255, color &
 test('rendered jewel hues match all eight neon palette colors', async ({ page }) => {
   test.setTimeout(120000); // Eight full page loads.
   for (let color = 0; color < 8; color++) {
-    await page.addInitScript(seed => { Math.random = () => seed; }, (color + 0.1) / 8);
+    // Each load must deal a fresh tray instead of resuming the previous one.
+    await page.addInitScript(seed => { Math.random = () => seed; localStorage.removeItem('epic_blast_saved_game'); }, (color + 0.1) / 8);
     await page.goto('/');
     await page.waitForLoadState('networkidle');
     const { box, layout } = await canvasLayout(page);

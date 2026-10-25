@@ -2,6 +2,7 @@ import { Container, Sprite } from 'pixi.js';
 import type { TrayPiece } from '../core/session.ts';
 import { GLOW_NAME, type BlockTextures } from './block-textures.ts';
 import type { TrayPieceBounds } from './drag.ts';
+import { createJewelMark } from './jewel-mark.ts';
 import { BLOCK_TEXTURE_SIZE, slotCenter, type Layout } from './layout.ts';
 
 export interface PieceView {
@@ -140,6 +141,11 @@ export class TrayView {
       container.addChild(sprite);
       this.textures.syncGlow(sprite, piece.colorIdx);
     }));
+    if (piece.jewel) {
+      const mark = createJewelMark();
+      mark.position.set(piece.jewel.col * BLOCK_TEXTURE_SIZE, piece.jewel.row * BLOCK_TEXTURE_SIZE);
+      container.addChild(mark);
+    }
     this.container.addChild(container);
     return {
       piece, container, x: 0, y: 0, origX: 0, origY: 0,

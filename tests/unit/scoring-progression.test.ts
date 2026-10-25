@@ -17,8 +17,8 @@ describe('clear scoring', () => {
 describe('level progression', () => {
   it('uses exponential thresholds', () => {
     assert.equal(progression(0).level, 1);
-    assert.deepEqual([1, 2, 3, 4, 5].map(levelStart), [0, 100000, 300000, 700000, 1500000]);
-    assert(levelStart(15) - levelStart(14) > 19000000);
+    assert.deepEqual([1, 2, 3, 4, 5].map(levelStart), [0, 10000, 30000, 70000, 150000]);
+    assert(levelStart(15) - levelStart(14) > 1900000);
   });
 
   it('switches level exactly at each threshold and doubles the gap', () => {
@@ -34,7 +34,7 @@ describe('level progression', () => {
   });
 
   it('can skip several levels at once', () => {
-    assert.equal(progression(700000).level - progression(0).level, 3);
+    assert.equal(progression(70000).level - progression(0).level, 3);
   });
 });
 
@@ -51,9 +51,9 @@ describe('world progression', () => {
 
 describe('streak recovery eligibility', () => {
   it('requires a combo of 25, no clear this round and a revive', () => {
-    assert(canRecoverStreak(25, false, 1));
+    assert(canRecoverStreak(10, false, 1));
     assert(canRecoverStreak(100, false, 2));
-    assert(!canRecoverStreak(24, false, 1));
+    assert(!canRecoverStreak(9, false, 1));
     assert(!canRecoverStreak(25, true, 1));
     assert(!canRecoverStreak(25, false, 0));
   });

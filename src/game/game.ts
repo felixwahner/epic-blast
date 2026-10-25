@@ -8,7 +8,11 @@ import { MILLION, isNearRecord } from '../audio/announcer.ts';
 import type { AudioEngine } from '../audio/audio-engine.ts';
 import { BackgroundMusic } from '../audio/music.ts';
 import { predictClears, type FullLines } from '../core/board.ts';
-import { progression, worldProgress } from '../core/progression.ts';
+import {
+  addLines, chooseStart, markSeen, nextUnlock, parseCollection, unlockedWorlds, type WorldCollection,
+} from '../core/collection.ts';
+import { TUTORIAL_OPENING, TUTORIAL_TARGET } from '../core/opening.ts';
+import { LINES_PER_WORLD, progression, worldProgress } from '../core/progression.ts';
 import { GameSession, type DealOutcome, type PlacementOutcome } from '../core/session.ts';
 import { Haptics } from '../platform/haptics.ts';
 import { STORAGE_KEYS, readNumber, safeStorage, syncBestScore, type KeyValueStore } from '../platform/storage.ts';
@@ -16,9 +20,9 @@ import { BlockTextures } from '../render/block-textures.ts';
 import { BoardFlash } from '../render/board-flash.ts';
 import { BoardView } from '../render/board-view.ts';
 import { CHARGE_TIME } from '../render/clear-animation.ts';
-import { dragPlacement, hitTestTray, type Point } from '../render/drag.ts';
+import { dragLift, dragPlacement, hitTestTray, type Point } from '../render/drag.ts';
 import { FloatingTexts } from '../render/floating-text.ts';
-import { cellCenter, cellsCentroid, computeLayout, emptyLayout, type Layout } from '../render/layout.ts';
+import { cellCenter, cellsCentroid, computeLayout, emptyLayout, slotCenter, type Layout } from '../render/layout.ts';
 import { ParticleSystem } from '../render/particles.ts';
 import { ScreenShake } from '../render/screen-shake.ts';
 import { TrayView, type PieceView } from '../render/tray-view.ts';
@@ -31,10 +35,18 @@ import { OptionsMenu } from '../ui/options-menu.ts';
 import { RestartConfirm } from '../ui/restart-confirm.ts';
 import { createScoreAnimator, type ScoreAnimator } from '../ui/score-animator.ts';
 import { applyTheme } from '../ui/theme-dom.ts';
+import { TutorialHand } from '../ui/tutorial-hand.ts';
+import { WorldGallery } from '../ui/world-gallery.ts';
 
 /** Delay before the world theme may change after a clear, so the explosion reads first. */
 const THEME_CHANGE_DELAY_MS = 1100;
 const NO_LINES: FullLines = { rows: [], cols: [] };
+/** The game over screen points at the record when the score got at least this close. */
+const RECORD_HINT_SHARE = 0.6;
+/** ...and at the next level once this share of the way there. */
+const LEVEL_HINT_PROGRESS = 0.6;
+
+const formatNumber = (value: number): string => value.toLocaleString('de-DE');
 
 /** Canvas backing-store density; capped so 3x phones don't pay for 9x the fill rate. */
 const canvasResolution = () => Math.min(window.devicePixelRatio || 1, 2);
@@ -91,6 +103,9 @@ export class Game {
   private worldOrder: number[] = extendWorldOrder([], 1);
   /** "Record in sight" plays at most once per game. */
   private nearRecordCalled = false;
+  /** Worlds unlocked across all games, and the opening world. */
+  private readonly collection: WorldCollection;
+  private readonly hand: TutorialHand;
   /** Board material variants per world slug, loaded when the world first appears. */
   private readonly boardMaterials = new Map<string, Texture[]>();
   private readonly boardLoads = new Set<string>();
@@ -105,6 +120,8 @@ export class Game {
     this.effects = new VisualEffects(storage);
     this.haptics = new Haptics(storage);
     this.session = new GameSession({ bestScore: readNumber(storage, STORAGE_KEYS.bestScore) });
+    this.collection = parseCollection(storage.getItem(STORAGE_KEYS.worlds), WORLDS.length);
+    this.hand = new TutorialHand(this.hud.pixiMount);
     this.celebrations = new Celebrations(this.hud.canvasWrapper);
     this.scoreAnimator = createScoreAnimator(this.hud.score, { host: this.hud.container, reducedMotion: this.reduced });
     this.hud.setBest(this.session.bestScore);
@@ -132,7 +149,7 @@ export class Game {
     // Back to front. The clear preview sits above blocks and ghosts so it stays visible.
     this.app.stage.addChild(this.root);
     this.root.addChild(
-      this.board.background, this.board.materialLayer, this.board.blocks, this.board.ghosts, this.board.preview,
+      this.board.background, this.board.materialLayer, this.board.blocks, this.board.jewelLayer, this.board.ghosts, this.board.preview,
       this.flash.graphics, this.trayBackdrop, this.tray.container, this.dragLayer, particleLayer, textLayer,
     );
   }
@@ -145,7 +162,7 @@ export class Game {
     window.addEventListener('resize', () => {
       if (!this.resizeFrame) this.resizeFrame = requestAnimationFrame(() => this.resize());
     });
-    this.startNewGame();
+    if (!this.resumeSavedGame()) this.startNewGame();
     this.app.ticker.add(delta => this.update(delta / 60));
   }
 
@@ -191,7 +208,8 @@ export class Game {
     const wasApplied = this.themeApplied;
     this.theme = next;
     this.themeApplied = true;
-    if (previous.name !== next.name && this.session.clearedLines > 0) {
+    if (markSeen(this.collection, next.index)) this.saveCollection();
+    if (wasApplied && previous.name !== next.name && this.session.clearedLines > 0) {
       this.texts.spawn(this.layout.viewWidth / 2, this.layout.gridY + 50, next.name, next.primary, 18, this.layout.viewWidth);
     }
     applyTheme(next, this.hud.container, this.hud.worldLabel);
@@ -205,7 +223,7 @@ export class Game {
   private rebuildBlockTextures(): void {
     const pixelSize = this.layout.cellSize * this.app.renderer.resolution || undefined;
     const disposeOld = this.textures.rebuild(this.theme.palettes, this.theme.material, this.referenceStone, pixelSize);
-    this.board.syncBlocks(this.session.grid, this.layout);
+    this.syncBoard();
     this.tray.retexture();
     this.board.retextureGhosts();
     disposeOld();
@@ -236,8 +254,9 @@ export class Game {
     this.renderBoardBackground();
     this.flash.relayout(layout);
     if (Math.round(layout.cellSize * this.app.renderer.resolution) !== this.textures.pixelSize) this.rebuildBlockTextures();
-    this.board.syncBlocks(this.session.grid, layout);
+    this.syncBoard();
     this.tray.relayout(layout);
+    this.positionHand();
     this.scoreAnimator.resize();
     if (this.drag) this.drag.cell = '';
   }
@@ -246,14 +265,69 @@ export class Game {
 
   private startNewGame(): void {
     this.audio.announcer.reset();
-    this.themeChangeAt = 0;
-    this.worldOrder = extendWorldOrder([], 1);
-    this.hud.closeRecovery();
-    this.celebrations.reset();
-    const outcome = this.session.start();
+    this.worldOrder = extendWorldOrder([], 1, Math.random, this.collection.start);
+    const tutorial = !this.storage.getItem(STORAGE_KEYS.tutorialDone);
+    const outcome = this.session.start(tutorial ? TUTORIAL_OPENING : null);
     this.nearRecordCalled = false;
     this.audio.announcer.announce('start');
+    this.resetPresentation();
+    this.updateProgressionUI();
+    this.handleDeal(outcome);
+    if (tutorial) this.positionHand();
+  }
 
+  /** Continues the game saved before the page was closed. Returns false when there is none. */
+  private resumeSavedGame(): boolean {
+    let saved: { session?: unknown; worldOrder?: unknown; nearRecordCalled?: unknown } | null = null;
+    try { saved = JSON.parse(this.storage.getItem(STORAGE_KEYS.savedGame) || 'null'); } catch { return false; }
+    if (!saved || !this.session.restore(saved.session)) return false;
+    const order = saved.worldOrder;
+    const validOrder = Array.isArray(order) && order.length > 0
+      && order.every(index => Number.isInteger(index) && index >= 0 && index < WORLDS.length);
+    this.worldOrder = validOrder ? order : extendWorldOrder([], 1, Math.random, this.collection.start);
+    this.nearRecordCalled = Boolean(saved.nearRecordCalled);
+    this.resetPresentation();
+    this.scoreAnimator.reset(this.session.score);
+    this.hud.setRecordGlow(this.session.recordCelebrated);
+    this.updateWorldTheme(true);
+    this.updateProgressionUI();
+    const { session } = this;
+    if (session.recoveryPending) {
+      this.hud.offerRecovery(session.combo, session.revives);
+    } else {
+      this.handleDeal({ kind: 'dealt', roundId: session.roundId, pieces: session.tray.filter(p => p !== null), gameOver: session.isGameOver });
+    }
+    return true;
+  }
+
+  /** Writes the game in progress, so closing the page never loses it. */
+  private saveGame(): void {
+    const { session } = this;
+    // A finished game without revives cannot continue; the next visit starts fresh.
+    if (session.isGameOver && session.revives === 0) {
+      this.storage.setItem(STORAGE_KEYS.savedGame, '');
+      return;
+    }
+    this.storage.setItem(STORAGE_KEYS.savedGame, JSON.stringify({
+      session: session.snapshot(), worldOrder: this.worldOrder, nearRecordCalled: this.nearRecordCalled,
+    }));
+  }
+
+  private saveCollection(): void {
+    this.storage.setItem(STORAGE_KEYS.worlds, JSON.stringify(this.collection));
+    this.updateWorldCount();
+  }
+
+  private updateWorldCount(): void {
+    this.hud.setWorldCount(unlockedWorlds(this.collection, WORLDS.length).length, WORLDS.length, this.collection.fresh.length > 0);
+  }
+
+  /** Board, effects and overlays back to a clean state for a new or resumed game. */
+  private resetPresentation(): void {
+    this.themeChangeAt = 0;
+    this.hud.closeRecovery();
+    this.celebrations.reset();
+    this.hand.hide();
     this.scoreAnimator.reset();
     this.effects.updateComboMood(this.hud.canvasWrapper, 0);
     this.hud.setRecordGlow(false);
@@ -266,22 +340,52 @@ export class Game {
     this.texts.clear();
     this.hud.setCombo(0);
     this.hud.hideGameOver();
-    this.board.syncBlocks(this.session.grid, this.layout);
-    this.updateProgressionUI();
-    this.handleDeal(outcome);
+    this.syncBoard();
+    this.updateWorldCount();
+  }
+
+  private syncBoard(): void {
+    this.board.syncBlocks(this.session.grid, this.layout, this.session.jewels);
+  }
+
+  private updateCombo(): void {
+    const { session } = this;
+    this.hud.setCombo(session.combo);
+    this.hud.setComboFuse(session.combo, session.turnHasClear, session.tray.filter(p => p !== null).length);
+  }
+
+  /** Points the tutorial hand from the first tray piece to its target, while the first game waits for it. */
+  private positionHand(): void {
+    const { session, layout } = this;
+    const piece = session.tray[TUTORIAL_TARGET.slot];
+    const waiting = !this.storage.getItem(STORAGE_KEYS.tutorialDone) && session.roundId === 1 && session.roundPlacements === 0 && piece;
+    if (!waiting || !layout.cellSize) { if (!waiting) this.hand.hide(); return; }
+    // The hand ends where a finger has to be: dragged pieces float above the pointer.
+    const center = cellCenter(layout, TUTORIAL_TARGET.row + (piece.height - 1) / 2, TUTORIAL_TARGET.col + (piece.width - 1) / 2);
+    const to = { x: center.x, y: center.y + dragLift(piece.height, layout.cellSize) };
+    this.hand.show(slotCenter(layout, TUTORIAL_TARGET.slot), to);
+  }
+
+  private finishTutorial(): void {
+    if (this.storage.getItem(STORAGE_KEYS.tutorialDone)) return;
+    this.storage.setItem(STORAGE_KEYS.tutorialDone, '1');
+    this.hand.hide();
   }
 
   private handleDeal(outcome: DealOutcome): void {
     if (outcome.kind === 'recovery-offer') {
       this.hud.offerRecovery(outcome.combo, outcome.revives);
+      this.saveGame();
       return;
     }
-    this.hud.setCombo(this.session.combo);
+    this.updateCombo();
     this.tray.setPieces(outcome.pieces, this.layout);
-    this.predictor.start(outcome.roundId, this.session.encodedGrid(), this.session.tray.map(p => (p ? { matrix: p.matrix } : null)),
+    // A resumed round may already be partly played; the solver only judges whole rounds.
+    if (this.session.roundPlacements === 0) this.predictor.start(outcome.roundId, this.session.encodedGrid(), this.session.tray.map(p => (p ? { matrix: p.matrix } : null)),
       (id, result) => this.session.setRoundBest(id, result));
     this.refreshFits();
     if (outcome.gameOver) this.showGameOver();
+    this.saveGame();
   }
 
   private refreshFits(): void {
@@ -291,6 +395,7 @@ export class Game {
   private place(drag: DragState, col: number, row: number): void {
     const outcome = this.session.place(drag.slot, col, row);
     if (!outcome) return;
+    this.finishTutorial();
     const { layout } = this;
 
     for (const cell of outcome.cells) {
@@ -305,11 +410,11 @@ export class Game {
     this.drag = null;
     this.board.clearGhost();
     this.board.clearPreview();
-    this.board.syncBlocks(this.session.grid, layout);
+    this.syncBoard();
 
     this.presentClear(outcome);
     this.presentAwards(outcome);
-    this.hud.setCombo(this.session.combo);
+    this.updateCombo();
     this.celebrations.celebrate(outcome.events);
     for (const kind of outcome.events) this.audio.announcer.announce(kind);
 
@@ -318,6 +423,7 @@ export class Game {
     } else {
       this.refreshFits();
       if (outcome.gameOver) this.showGameOver();
+      this.saveGame();
     }
   }
 
@@ -338,6 +444,7 @@ export class Game {
       announcer.announce((world - 1) % WORLDS.length === 0 ? 'eclipse' : 'world');
     }
     if (clear.allClear) announcer.announce('sweep', clear.allClearMultiplier);
+    this.collectLines(clear.lines);
     this.shake.add(0.35 + clear.lines * 0.12 + Math.min(clear.combo, 15) * 0.012);
 
     const epicenter = cellsCentroid(layout, clear.cells);
@@ -348,6 +455,15 @@ export class Game {
     }
     if (clear.combo >= 2) this.hud.flashCombo();
     if (clear.lines >= 3) this.audio.playComboFanfare();
+    if (clear.jewels) {
+      if (clear.lines < 3) this.audio.playComboFanfare();
+      for (const cell of clear.cells) {
+        if (!cell.jewel) continue;
+        const center = cellCenter(layout, cell.row, cell.col);
+        this.particles.spawnPuff(center.x, center.y, 0xffd23f, 14);
+      }
+      this.texts.spawn(layout.viewWidth / 2, layout.gridY + layout.gridWidth / 2 - 40, `GOLD +${formatNumber(clear.jewelPoints)}`, '#ffd23f', 18, layout.viewWidth);
+    }
     if (clear.allClear) {
       this.audio.playComboFanfare();
       this.shake.add(0.5);
@@ -365,8 +481,10 @@ export class Game {
         this.scoreAnimator.add(award.points, this.toClient(epicenter), { combo: outcome.clear!.combo, delay: this.reduced() ? 0 : CHARGE_TIME });
       } else {
         const centerY = layout.gridY + layout.gridWidth / 2;
-        const bonus = { x: layout.viewWidth / 2, y: epicenter.y + (epicenter.y > centerY ? -84 : 84) };
-        this.scoreAnimator.add(award.points, this.toClient(bonus), { bonus: true, delay: 0.32 });
+        // Board clear and gold jewel bonuses fly in from opposite sides of the clear.
+        const offset = (epicenter.y > centerY ? -84 : 84) * (award.kind === 'jewel' ? -0.6 : 1);
+        const bonus = { x: layout.viewWidth / 2, y: epicenter.y + offset };
+        this.scoreAnimator.add(award.points, this.toClient(bonus), { bonus: true, delay: award.kind === 'jewel' ? 0.2 : 0.32 });
       }
       if (award.levelUp) {
         const { level, gained } = award.levelUp;
@@ -402,6 +520,16 @@ export class Game {
     this.hud.setProgress(this.session.score, progression(this.session.score), this.session.revives);
   }
 
+  /** Adds cleared lines to the world collection and announces worlds this unlocked. */
+  private collectLines(lines: number): void {
+    const unlocked = addLines(this.collection, lines, WORLDS.length);
+    this.saveCollection();
+    unlocked.forEach((index, order) => setTimeout(() => {
+      const { layout } = this;
+      this.texts.spawn(layout.viewWidth / 2, layout.gridY + layout.gridWidth * 0.3, `🔓 ${WORLDS[index][0]} FREI!`, WORLDS[index][1], 14, layout.viewWidth);
+    }, 900 + order * 700));
+  }
+
   private showGameOver(): void {
     const { score, bestScore } = this.session;
     this.audio.playGameOver();
@@ -409,7 +537,34 @@ export class Game {
     this.audio.announcer.announce('over', newRecord ? 1 : 0);
     this.shake.add(0.4);
     if (newRecord) this.audio.playNewRecord();
-    this.hud.showGameOver(score, bestScore, newRecord);
+    this.hud.showGameOver(score, bestScore, newRecord, this.gameOverHints(newRecord), this.gameOverStats());
+  }
+
+  /** The nearest goals, so a lost game already points at the next one. */
+  private gameOverHints(newRecord: boolean): string[] {
+    const { score, bestScore, level } = this.session;
+    const hints: string[] = [];
+    if (!newRecord && bestScore > 0 && score >= bestScore * RECORD_HINT_SHARE) {
+      hints.push(`Nur ${formatNumber(bestScore - score + 1)} Punkte bis zum Rekord!`);
+    }
+    const unlock = nextUnlock(this.collection, WORLDS.length);
+    if (unlock) hints.push(`Noch ${unlock.remaining} ${unlock.remaining === 1 ? 'Linie' : 'Linien'} bis ${WORLDS[unlock.index][0]}`);
+    const next = progression(score);
+    if (hints.length < 2 && next.progress >= LEVEL_HINT_PROGRESS) {
+      hints.push(`Noch ${formatNumber(next.next - score)} Punkte bis Level ${level + 1}`);
+    }
+    return hints.slice(0, 2);
+  }
+
+  private gameOverStats(): [string, string][] {
+    const { clearedLines, maxCombo, allClears } = this.session;
+    const stats: [string, string][] = [
+      ['LINIEN', formatNumber(clearedLines)],
+      ['MAX KOMBO', String(maxCombo)],
+      ['WELT', String(Math.floor(clearedLines / LINES_PER_WORLD) + 1)],
+    ];
+    if (allClears) stats.push(['CLEARS', String(allClears)]);
+    return stats;
   }
 
   private revive(): void {
@@ -427,6 +582,7 @@ export class Game {
     this.handleDeal(outcome);
     this.tray.playEntrance(layout, this.reduced());
     this.updateProgressionUI();
+    this.saveGame();
   }
 
   private finishRecovery(accepted: boolean): void {
@@ -482,6 +638,25 @@ export class Game {
       resized: () => this.resize(),
     });
     this.effects.bindToggle(document.getElementById('btn-effects')!);
+    new WorldGallery({
+      collection: () => this.collection,
+      choose: index => {
+        chooseStart(this.collection, index);
+        this.saveCollection();
+        // A game that has not cleared anything yet switches right away.
+        const { session } = this;
+        if (session.clearedLines > 0 || session.isGameOver) return false;
+        this.worldOrder = extendWorldOrder([], 1, Math.random, index);
+        this.updateWorldTheme(true);
+        this.saveGame();
+        return true;
+      },
+      opened: () => {
+        if (!this.collection.fresh.length) return;
+        this.collection.fresh = [];
+        this.saveCollection();
+      },
+    }, [this.hud.worldButton, document.getElementById('btn-options-worlds')!, document.getElementById('btn-over-worlds')!]);
     new RestartConfirm(() => {
       audio.init();
       this.startNewGame();
@@ -512,6 +687,7 @@ export class Game {
 
   private onPointerDown(event: FederatedPointerEvent): void {
     if (this.session.isGameOver || this.drag) return;
+    this.hand.hide();
     this.audio.init();
     const pointer = { x: event.global.x, y: event.global.y };
     const slot = hitTestTray(this.layout, this.tray.bounds(this.layout), pointer, event.pointerType === 'touch');

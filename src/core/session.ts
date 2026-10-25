@@ -2,22 +2,26 @@
 // The Game orchestrator calls these methods and turns the returned outcomes
 // into visuals and sound.
 import {
-  canFitAnywhere, canPlace, clearGrid, createGrid, encodeGrid, findFullLines, isGridEmpty,
-  lineCells, placeShape, shapeSize, type CellPosition, type Grid, type Matrix,
+  GRID_SIZE, canFitAnywhere, canPlace, clearGrid, createGrid, encodeGrid, findFullLines, isGridEmpty,
+  lineCells, placeShape, shapeCells, shapeSize, type CellPosition, type Grid, type Matrix,
 } from './board.ts';
 import { progression } from './progression.ts';
-import { allClearBonus, allClearMultiplier, clearScore } from './scoring.ts';
+import { allClearBonus, allClearMultiplier, clearScore, jewelBonus } from './scoring.ts';
 import { SHAPE_DEFINITIONS, isSatisfyingShape, pickWeightedShape, type RandomSource, type ShapeDefinition } from './shapes.ts';
 import { canRecoverStreak } from './streak-recovery.ts';
 import { createHelpDealer, type HelpDealer } from '../ai/helpful-dealer.ts';
 import { reviveDefinitions } from '../ai/revive.ts';
-import { boardQuality, compare, moves, type RoundScore, type RowMasks, type SolverPiece } from '../ai/solver.ts';
+import { boardQuality, canPlaceAll, compare, moves, type RoundScore, type RowMasks, type SolverPiece } from '../ai/solver.ts';
 
 export const TRAY_SLOTS = 3;
 /** Attempts to find a first tray piece that fits before giving up. */
 const FIRST_PIECE_ATTEMPTS = 20;
 /** Chance that a random tray without any solid piece (line, 2x2, 2x3, 3x3) gets one swapped in. */
 export const SATISFYING_ROUND_CHANCE = 0.5;
+/** Re-deals of the random slots when a tray could not be placed completely. */
+const FAIR_DEAL_ATTEMPTS = 12;
+/** Chance that a randomly dealt piece carries a gold bonus jewel. */
+export const JEWEL_CHANCE = 0.06;
 
 export type CelebrationKind =
   | 'blockbuster' | 'triple' | 'clean' | 'escape' | 'room' | 'perfect' | 'brilliant'
@@ -31,6 +35,8 @@ export interface TrayPiece {
   width: number;
   height: number;
   blockCount: number;
+  /** Cell of the piece (relative to its top-left corner) that holds a gold bonus jewel. */
+  jewel: CellPosition | null;
 }
 
 export interface LevelUp {
@@ -40,7 +46,7 @@ export interface LevelUp {
 
 export interface ScoreAward {
   points: number;
-  kind: 'placement' | 'clear' | 'all-clear';
+  kind: 'placement' | 'clear' | 'all-clear' | 'jewel';
   levelUp: LevelUp | null;
 }
 
@@ -50,6 +56,7 @@ export type DealOutcome =
 
 export interface ClearedCell extends CellPosition {
   color: number;
+  jewel: boolean;
 }
 
 export interface ClearOutcome {
@@ -62,6 +69,9 @@ export interface ClearOutcome {
   allClear: boolean;
   /** Score multiplier of this board clear; 1 when the board was not emptied. */
   allClearMultiplier: number;
+  /** Gold jewels destroyed by this clear, and the extra points they paid. */
+  jewels: number;
+  jewelPoints: number;
 }
 
 export interface PlacementOutcome {
@@ -76,6 +86,36 @@ export interface PlacementOutcome {
   next: DealOutcome | null;
   /** True when no remaining piece fits (also true when `next` dealt an unplayable tray). */
   gameOver: boolean;
+}
+
+/** Board and tray of a scripted opening, e.g. the very first game's tutorial. */
+export interface Opening {
+  /** Palette index per cell, null for empty. */
+  grid: readonly (readonly (number | null)[])[];
+  pieces: readonly SolverPiece[];
+}
+
+/** Plain-data copy of a game in progress, for saving and resuming. */
+export interface SessionSnapshot {
+  version: 1;
+  grid: (number | null)[][];
+  jewels: number[];
+  tray: ({ matrix: number[][]; colorIdx: number; jewel: CellPosition | null } | null)[];
+  score: number;
+  level: number;
+  revives: number;
+  combo: number;
+  maxCombo: number;
+  turnHasClear: boolean;
+  isGameOver: boolean;
+  recoveryPending: boolean;
+  clearedLines: number;
+  allClears: number;
+  roundId: number;
+  roundLines: number;
+  roundPlacements: number;
+  roundStreak: number;
+  recordCelebrated: boolean;
 }
 
 export interface SessionOptions {
@@ -104,6 +144,10 @@ export class GameSession {
   clearedLines = 0;
   /** Board clears this game; each one raises the next board clear's multiplier. */
   allClears = 0;
+  /** Highest combo of this game. */
+  maxCombo = 0;
+  /** Board cells (row * 8 + col) holding a gold bonus jewel. */
+  readonly jewels = new Set<number>();
 
   roundId = 0;
   roundLines = 0;
@@ -135,9 +179,10 @@ export class GameSession {
     this.bestScore = options.bestScore ?? 0;
   }
 
-  /** Resets everything except the best score and deals the first round. */
-  start(): DealOutcome {
+  /** Resets everything except the best score and deals the first round, or the given opening. */
+  start(opening: Opening | null = null): DealOutcome {
     clearGrid(this.grid);
+    this.jewels.clear();
     this.tray = Array<TrayPiece | null>(TRAY_SLOTS).fill(null);
     this.score = 0;
     this.level = 1;
@@ -148,12 +193,47 @@ export class GameSession {
     this.recoveryPending = false;
     this.clearedLines = 0;
     this.allClears = 0;
+    this.maxCombo = 0;
+    this.roundId = 0;
     this.roundLines = 0;
     this.roundPlacements = 0;
     this.roundStreak = 0;
     this.recordCelebrated = false;
     this.helpDealer.reset();
-    return this.deal();
+    opening?.grid.forEach((cells, row) => cells.forEach((cell, col) => { this.grid[row][col] = cell; }));
+    return this.deal(opening?.pieces ?? null);
+  }
+
+  snapshot(): SessionSnapshot {
+    return {
+      version: 1,
+      grid: this.grid.map(row => [...row]),
+      jewels: [...this.jewels],
+      tray: this.tray.map(piece => piece && { matrix: piece.matrix.map(row => [...row]), colorIdx: piece.colorIdx, jewel: piece.jewel }),
+      score: this.score, level: this.level, revives: this.revives, combo: this.combo, maxCombo: this.maxCombo,
+      turnHasClear: this.turnHasClear, isGameOver: this.isGameOver, recoveryPending: this.recoveryPending,
+      clearedLines: this.clearedLines, allClears: this.allClears, roundId: this.roundId, roundLines: this.roundLines,
+      roundPlacements: this.roundPlacements, roundStreak: this.roundStreak, recordCelebrated: this.recordCelebrated,
+    };
+  }
+
+  /** Continues a saved game. Returns false, changing nothing, when the snapshot is unusable. */
+  restore(data: unknown): boolean {
+    if (!isSnapshot(data)) return false;
+    data.grid.forEach((cells, row) => cells.forEach((cell, col) => { this.grid[row][col] = cell; }));
+    this.jewels.clear();
+    for (const index of data.jewels) if (this.grid[Math.floor(index / 8)][index % 8] !== null) this.jewels.add(index);
+    this.tray = data.tray.map((piece, slot) => piece && { ...this.createPiece(piece.matrix, slot), colorIdx: piece.colorIdx, jewel: piece.jewel });
+    ({
+      score: this.score, level: this.level, revives: this.revives, combo: this.combo, maxCombo: this.maxCombo,
+      turnHasClear: this.turnHasClear, isGameOver: this.isGameOver, recoveryPending: this.recoveryPending,
+      clearedLines: this.clearedLines, allClears: this.allClears, roundId: this.roundId, roundLines: this.roundLines,
+      roundPlacements: this.roundPlacements, roundStreak: this.roundStreak, recordCelebrated: this.recordCelebrated,
+    } = data);
+    this.roundBest = null;
+    this.helpDealer.reset();
+    if (this.score > this.bestScore) this.bestScore = this.score;
+    return true;
   }
 
   encodedGrid(): number[] {
@@ -188,13 +268,26 @@ export class GameSession {
     if (!definitions && !this.turnHasClear) this.combo = 0;
     this.turnHasClear = false;
 
-    const helpful = definitions ? null : this.helpDealer.deal(this.encodedGrid(), this.catalog, { combo: this.combo });
+    const rows = this.encodedGrid();
+    const helpful = definitions ? null : this.helpDealer.deal(rows, this.catalog, { combo: this.combo, round: this.roundId + 1 });
+    const fixed = helpful?.length ?? 0;
     const chosen: SolverPiece[] = [];
     for (let slot = 0; slot < TRAY_SLOTS; slot++) {
       chosen.push(definitions?.[slot] ?? helpful?.[slot] ?? this.randomDefinition(slot === 0));
     }
-    if (!definitions) this.addSatisfyingPiece(chosen, helpful?.length ?? 0);
-    chosen.forEach((def, slot) => { this.tray[slot] = this.createPiece(def.matrix, slot); });
+    if (!definitions) {
+      this.addSatisfyingPiece(chosen, fixed);
+      // Fair deals: re-roll the random slots until all three pieces can be placed.
+      for (let attempt = 0; attempt < FAIR_DEAL_ATTEMPTS && !canPlaceAll(rows, chosen); attempt++) {
+        for (let slot = fixed; slot < TRAY_SLOTS; slot++) chosen[slot] = this.randomDefinition(slot === 0);
+        this.addSatisfyingPiece(chosen, fixed);
+      }
+    }
+    chosen.forEach((def, slot) => {
+      const piece = this.createPiece(def.matrix, slot);
+      if (!definitions && slot >= fixed && this.random() < JEWEL_CHANCE) piece.jewel = this.pickJewelCell(def.matrix);
+      this.tray[slot] = piece;
+    });
 
     this.roundLines = 0;
     this.roundPlacements = 0;
@@ -219,6 +312,7 @@ export class GameSession {
     this.roundPlacements++;
 
     const cells = placeShape(this.grid, piece.matrix, col, row, piece.colorIdx);
+    if (piece.jewel) this.jewels.add((row + piece.jewel.row) * 8 + col + piece.jewel.col);
     this.award(piece.blockCount, 'placement');
     this.tray[slot] = null;
 
@@ -285,14 +379,23 @@ export class GameSession {
 
     this.turnHasClear = true;
     this.combo++;
+    this.maxCombo = Math.max(this.maxCombo, this.combo);
     if (this.combo === 3) this.events.push('fire');
     if (this.combo === 5) this.events.push('unstoppable');
     if (this.combo === 10) this.events.push('legendary');
 
     const points = clearScore(this.combo, lines);
-    const cells = lineCells({ rows, cols }).map(cell => ({ ...cell, color: this.grid[cell.row][cell.col]! }));
+    const cells = lineCells({ rows, cols }).map(cell => ({
+      ...cell, color: this.grid[cell.row][cell.col]!, jewel: this.jewels.has(cell.row * 8 + cell.col),
+    }));
     this.award(points, 'clear');
-    for (const cell of cells) this.grid[cell.row][cell.col] = null;
+    const jewels = cells.filter(cell => cell.jewel).length;
+    const jewelPoints = jewels ? jewelBonus(points, jewels) : 0;
+    if (jewels) this.award(jewelPoints, 'jewel');
+    for (const cell of cells) {
+      this.grid[cell.row][cell.col] = null;
+      this.jewels.delete(cell.row * 8 + cell.col);
+    }
 
     const allClear = isGridEmpty(this.grid);
     let multiplier = 1;
@@ -302,7 +405,7 @@ export class GameSession {
       this.events.push('clean');
       this.award(allClearBonus(points, this.allClears), 'all-clear');
     }
-    return { rows, cols, lines, combo: this.combo, points, cells, allClear, allClearMultiplier: multiplier };
+    return { rows, cols, lines, combo: this.combo, points, cells, allClear, allClearMultiplier: multiplier, jewels, jewelPoints };
   }
 
   private award(points: number, kind: ScoreAward['kind']): void {
@@ -366,7 +469,37 @@ export class GameSession {
       width,
       height,
       blockCount,
+      jewel: null,
     };
   }
+
+  private pickJewelCell(matrix: Matrix): CellPosition {
+    const cells = shapeCells(matrix);
+    return cells[Math.floor(this.random() * cells.length)];
+  }
+}
+
+const isInt = (value: unknown, min: number, max = Number.MAX_SAFE_INTEGER): value is number =>
+  Number.isInteger(value) && (value as number) >= min && (value as number) <= max;
+
+function isMatrix(value: unknown): value is number[][] {
+  return Array.isArray(value) && value.length > 0 && value.length <= 5 && value.every(row =>
+    Array.isArray(row) && row.length === (value[0] as unknown[]).length && row.length <= 5 && row.every(cell => cell === 0 || cell === 1))
+    && value.flat().includes(1);
+}
+
+/** Structural check of saved data, so a corrupt or outdated save starts a fresh game instead. */
+function isSnapshot(data: unknown): data is SessionSnapshot {
+  const d = data as Partial<SessionSnapshot> | null;
+  if (!d || d.version !== 1) return false;
+  const counters = [d.score, d.level, d.revives, d.combo, d.maxCombo, d.clearedLines, d.allClears, d.roundId, d.roundLines, d.roundPlacements, d.roundStreak];
+  if (!counters.every(value => isInt(value, 0)) || !isInt(d.level, 1)) return false;
+  if (![d.turnHasClear, d.isGameOver, d.recoveryPending, d.recordCelebrated].every(value => typeof value === 'boolean')) return false;
+  if (!Array.isArray(d.grid) || d.grid.length !== GRID_SIZE) return false;
+  if (!d.grid.every(row => Array.isArray(row) && row.length === GRID_SIZE && row.every(cell => cell === null || isInt(cell, 0, 63)))) return false;
+  if (!Array.isArray(d.jewels) || !d.jewels.every(index => isInt(index, 0, GRID_SIZE * GRID_SIZE - 1))) return false;
+  if (!Array.isArray(d.tray) || d.tray.length !== TRAY_SLOTS) return false;
+  return d.tray.every(piece => piece === null || (isMatrix(piece.matrix) && isInt(piece.colorIdx, 0, 63) && (
+    piece.jewel === null || (isInt(piece.jewel?.row, 0, 4) && isInt(piece.jewel?.col, 0, 4) && piece.matrix[piece.jewel.row]?.[piece.jewel.col] === 1))));
 }
 
