@@ -57,7 +57,8 @@ export function createScoreAnimator(
   }
 
   function render() {
-    const text = formatNumber(Math.floor(displayed));
+    // The big score reads as one block of digits, without grouping separators.
+    const text = String(Math.floor(displayed));
     if (text === lastText) return;
     if (text.length !== lastText.length) measured = false;
     element.textContent = lastText = text;

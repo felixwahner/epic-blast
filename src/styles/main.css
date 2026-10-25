@@ -2415,3 +2415,23 @@ body::after {
     --logo-w: 130px;
   }
 }
+/* BEST rides directly under the score as a small plaque, so long scores keep the full width. */
+.scoreboard .best {
+  position: static;
+  transform: none;
+  flex-direction: row;
+  align-items: baseline;
+  gap: 7px;
+  margin-top: -6px;
+  padding: 3px 10px 4px;
+  border: 1px solid color-mix(in srgb, var(--world-primary, #00f5ff) 45%, transparent);
+  border-radius: 999px;
+  background: #0a0618b3;
+  box-shadow: 0 2px 6px #0007;
+}
+.scoreboard .best .score-label {
+  font-size: 8px;
+}
+#best-score-display {
+  font-size: 11px;
+}
