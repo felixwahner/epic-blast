@@ -20,32 +20,6 @@
     <div id="game-container">
       <!-- Top Header / Scoreboard -->
       <header id="game-header" class="game-header">
-        <div class="header-start">
-          <button
-            id="btn-new-game"
-            class="pixel-btn"
-            aria-haspopup="dialog"
-            aria-controls="restart-confirm"
-            aria-expanded="false"
-            aria-label="Neues Spiel"
-            title="Neues Spiel"
-          >
-            <svg
-              width="22"
-              height="22"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.8"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M20 12a8 8 0 1 1-2.3-5.7" />
-              <path d="M20 3.5v5h-5" />
-            </svg>
-          </button>
-        </div>
         <div class="header-left">
           <h1 class="game-title">
             <img
@@ -63,8 +37,8 @@
             class="pixel-btn"
             aria-haspopup="dialog"
             aria-controls="options-menu"
-            aria-label="Optionen öffnen"
-            title="Optionen"
+            aria-label="Menü öffnen"
+            title="Menü"
           >
             <svg
               width="22"
@@ -72,15 +46,11 @@
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
-              stroke-width="1.8"
+              stroke-width="2.2"
               stroke-linecap="round"
-              stroke-linejoin="round"
               aria-hidden="true"
             >
-              <path
-                d="m9.5 3-.6 2.3-1.6.9L5 5.6 2.5 10l1.7 1.7v1.8L2.5 15 5 19.4l2.3-.6 1.6.9.6 2.3h5l.6-2.3 1.6-.9 2.3.6 2.5-4.4-1.7-1.5v-1.8L21.5 10 19 5.6l-2.3.6-1.6-.9L14.5 3Z"
-              />
-              <circle cx="12" cy="12.5" r="3" />
+              <path d="M5 7h14M5 12h14M5 17h14" />
             </svg>
           </button>
         </div>
@@ -200,10 +170,23 @@
 
     <dialog id="options-menu" class="overlay-dialog overlay-panel options-menu" aria-labelledby="options-title">
       <div class="options-heading">
-        <h2 id="options-title" class="overlay-title">OPTIONEN</h2>
-        <button id="btn-close-options" class="pixel-btn" aria-label="Optionen schließen">✕</button>
+        <h2 id="options-title" class="overlay-title">MENÜ</h2>
+        <button id="btn-close-options" class="pixel-btn" aria-label="Menü schließen">✕</button>
       </div>
       <p class="options-subtitle">TUNE YOUR BLAST</p>
+      <div class="option-row">
+        <span>Neues Spiel</span
+        ><button
+          id="btn-new-game"
+          class="pixel-btn"
+          aria-label="Neues Spiel"
+          aria-haspopup="dialog"
+          aria-controls="restart-confirm"
+          aria-expanded="false"
+        >
+          NEU STARTEN
+        </button>
+      </div>
       <div id="fullscreen-option" class="option-row" hidden>
         <span>Vollbild</span
         ><button

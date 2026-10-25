@@ -6,7 +6,7 @@ test('sound output survives mute and music stays independent', async ({ page }) 
   page.on('pageerror', error => errors.push(error.message));
   await page.goto('/');
   await expect(page.locator('#pixi-view canvas')).toBeVisible();
-  await page.getByRole('button', { name: 'Optionen öffnen' }).click();
+  await page.getByRole('button', { name: 'Menü öffnen' }).click();
   await expect.poll(() => page.evaluate(() => window.audio?.ctx?.state)).toBe('running');
 
   /** Peak level of a pickup sound, observed through an analyser on the real SFX routing. */
