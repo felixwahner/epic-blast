@@ -9,3 +9,8 @@ dist/
 *.tsbuildinfo
 debug.log
 _backup-*.tgz
+
+# Scratch files from local tooling
+/.claude-*
+/.snap-*
+/.preview-*
