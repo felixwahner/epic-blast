@@ -4,12 +4,15 @@
 
 # EPIC BLAST
 
-A Block Blast–style puzzle game for the browser, built with **TypeScript**, **Pixi.js 7** and **Vite**. You drag pieces onto an 8×8 board and clear full rows and columns. It has neon "jewel" blocks, nine themed worlds, a combo system, revives, a recorded stadium announcer and background music. It installs as a PWA.
+A Block Blast–style puzzle game for the browser, built with **TypeScript**, **Pixi.js 7** and **Vite**. You drag pieces onto an 8×8 board and clear full rows and columns. It has neon "jewel" blocks, 19 themed worlds to collect, a combo system, revives, a recorded stadium announcer and background music. It installs as a PWA.
+
+> **Just for fun.** EPIC BLAST is a hobby project, made for the fun of building it and playing it. It isn't a commercial product, has no ads or tracking, and isn't affiliated with Block Blast or its makers. Most of the art, the announcer voice and the logo were made with AI image and audio tools; the prompts are in [`docs/prompts/`](docs/prompts/).
 
 <p align="center">
-  <img src="marketing/gameplay/neon-arcade-combo16.png" alt="Neon Arcade world with a 16x combo" width="250">
-  <img src="marketing/gameplay/neon-arcade-combo10-blast.png" alt="Line clear with a 10x combo in Neon Arcade" width="250">
-  <img src="marketing/gameplay/cosmic-overdrive-combo8.png" alt="Cosmic Overdrive world with an 8x combo" width="250">
+  <img src="docs/screenshots/neon-arcade.webp" alt="Neon Arcade world with a 6x combo" width="200">
+  <img src="docs/screenshots/storm-citadel.webp" alt="Storm Citadel world with a 12x combo" width="200">
+  <img src="docs/screenshots/jackpot-palace.webp" alt="Jackpot Palace world with a 9x combo" width="200">
+  <img src="docs/screenshots/moonlit-dojo.webp" alt="Moonlit Dojo world with a 4x combo" width="200">
 </p>
 
 ---
@@ -28,7 +31,8 @@ A Block Blast–style puzzle game for the browser, built with **TypeScript**, **
 | --- | --- |
 | Placing a piece | 1 per block in the piece |
 | Clearing lines | `lines × 8 × (10 × combo + 6)` |
-| All clear (board empty after a clear) | +300 bonus |
+| All clear (board empty after a clear) | The clearing move pays ×3 (×4, ×5, up to ×6 for each further all clear in the game), plus 300 |
+| Gold jewel cleared | The clear's points again (at least 250) |
 
 **Combo** goes up by one for every move that clears at least one line. If a whole round (three pieces) passes without a clear, the combo resets to 0. Three pips beside the combo show how many pieces are left to keep it (green once the round has a clear). Your best score is saved in the browser, and the game in progress is saved after every move: closing or reloading the page continues where you left off.
 
@@ -41,23 +45,15 @@ A Block Blast–style puzzle game for the browser, built with **TypeScript**, **
 
 ### Worlds
 
-The look changes every **40 cleared lines**, independent of score level. There are nine worlds, each with its own colors and board material:
+The world changes every **20 cleared lines**, independent of score level. There are 19 worlds, each with its own scenery, colors and board material:
 
-1. Neon Arcade (circuit)
-2. Candy Reactor (candy)
-3. Spring Bloom (leaf)
-4. Summer Splash (ice)
-5. Autumn Ember (wood)
-6. Frozen Aurora (ice)
-7. Dungeon Loot (rune)
-8. Cosmic Overdrive (star)
-9. Volcanic Core (lava)
+Neon Arcade, Candy Reactor, Spring Bloom, Summer Splash, Autumn Ember, Frozen Aurora, Dungeon Loot, Cosmic Overdrive, Volcanic Core, Storm Citadel, Deep Sea Abyss, Sky Kingdom, Glitch Dimension, Toy Box, Steam Foundry, Jackpot Palace, Desert Mirage, Sketchbook and Moonlit Dojo.
 
-After world 9 the cycle starts over as **"ECLIPSE 1"**, "ECLIPSE 2", and so on, with each world's two main colors swapped. Within a world, the theme also steps through four stages as you get closer to the next world.
+A game opens in Neon Arcade (or the world you picked in the gallery) and then visits the others in shuffled order. Once every world has been visited, the next round of worlds is called **"ECLIPSE 1"**, "ECLIPSE 2", and so on, with each world's two main colors swapped. Within a world, the theme also steps through four stages as you get closer to the next world.
 
 ### Pieces
 
-There are 37 fixed shapes, each spawned with its own weight: dot; dominoes; straight lines of 3, 4 and 5 (horizontal and vertical); 2×2 and 3×3 squares; small and large corners; L, T, S and Z shapes; and two-cell diagonals.
+There are 39 fixed shapes, each spawned with its own weight: dot; dominoes; straight lines of 3, 4 and 5 (horizontal and vertical); 2×2 and 3×3 squares; 2×3 rectangles; small and large corners; L, T, S and Z shapes; and two-cell diagonals.
 
 Dealing is mostly random, with some help built in:
 - The first piece of each round is re-rolled (up to 20 times) to try to find one that fits.
@@ -69,6 +65,10 @@ Dealing is mostly random, with some help built in:
 ### World collection
 
 Worlds unlock for good, across games: by reaching them in a game, or once enough lines are cleared in total (the n-th world needs n × 40 lines). Tapping the world name below the board opens the gallery, where an unlocked world can be chosen to open every new game. The game over screen shows the nearest goals (the record, the next world, the next level) and a few numbers from the game.
+
+<p align="center">
+  <img src="docs/screenshots/gallery.webp" alt="World gallery with 12 of 19 worlds unlocked" width="240">
+</p>
 
 ### Celebrations
 
@@ -93,13 +93,13 @@ For **Brilliant Move**, a Web Worker searches every position and order for the c
 
 ### Options
 
-The gear button opens the options menu (labels are in German):
+The button left of the logo starts a new game, after a confirmation prompt. The gear button opens the options menu (labels are in German):
 - **Vollbild** – fullscreen, shown only if the browser supports it
 - **Sound** – sound effects and announcer on or off
 - **Hintergrundmusik** – background music on or off
 - **Vibration** – a short vibration on each line clear, on devices that support it
 - **Visuelle Effekte** – full or reduced effects. Reduced is the default when the OS asks for reduced motion.
-- **Neues Spiel** – restart, after a confirmation prompt
+- **Welten** – opens the world gallery
 
 All settings are saved in `localStorage`. The game still works if storage is blocked.
 
@@ -108,7 +108,7 @@ All settings are saved in `localStorage`. The game still works if storage is blo
 ## Audio
 
 - **Sound effects** are made in code with the Web Audio API: pickup, drop impact, line-clear chords that rise with combo, fanfares, game over, new record and revive.
-- **Announcer:** seven recorded calls in `src/assets/audio/announcer/` (`triple`, `unstoppable`, `legendary`, `record`, `level`, `revive`, `over`). There are at least 6.5 seconds between calls, and "Unstoppable" can repeat at most every 45 seconds. Background music gets quieter while the announcer speaks.
+- **Announcer:** 25 recorded English calls in `src/assets/audio/announcer/`, from "Triple clear!" and "Unstoppable!" to "New world!", "Perfect round!" and "One million!". There are at least 6.5 seconds between calls, and frequent ones like "Unstoppable!" or "On fire!" repeat at most every 45 seconds. How the voice was made: [`docs/prompts/voice.md`](docs/prompts/voice.md). Background music gets quieter while the announcer speaks.
 - **Music:** one looping track (`src/assets/audio/music/smth-smth.mp3`) with its own on/off setting. It starts after your first click or tap, because browsers block autoplay.
 - Audio pauses when the tab is hidden.
 
@@ -148,11 +148,13 @@ src/
   main.ts               Starts the audio engine and the game; registers the service worker (production only)
   core/                 Game rules only (no DOM, no Pixi)
     board.ts            8×8 grid, placement, line detection, clear preview
-    shapes.ts           The 37 shapes and weighted random picking
+    shapes.ts           The 39 shapes and weighted random picking
     session.ts          GameSession: rounds, combo, scoring, levels, revives, combo save, celebrations
     scoring.ts          Clear score formula, all-clear bonus
-    progression.ts      Level thresholds and world progress (40 lines per world)
-    streak-recovery.ts  When a combo can be saved (combo ≥ 25)
+    progression.ts      Level thresholds and world progress (20 lines per world)
+    collection.ts       Unlocked worlds across games
+    opening.ts          The prepared board of the very first game
+    streak-recovery.ts  When a combo can be saved (combo ≥ 10)
   ai/
     solver.ts           Bitmask board model and exhaustive round solver
     solver.worker.ts    Runs the solver in a Web Worker
@@ -164,7 +166,7 @@ src/
                         plus Pixi-free layout and drag math
   audio/                Sound effects engine, announcer, background music
   ui/                   Page UI: HUD, options menu, celebrations, score animation, effects, theme colors
-  theme/themes.ts       The nine worlds and palette generation
+  theme/                The 19 worlds, palette generation and world art lookup
   platform/             Safe localStorage, haptics, PWA registration
   styles/main.css
   assets/               Images, font (Press Start 2P), announcer clips, music
@@ -175,8 +177,10 @@ tests/
   build/                Checks on the production build
   e2e/                  Playwright browser tests (with small test pages in harness/)
 tools/                  Promo + icon generators, voice clip tools
-design/                 Source material that doesn't ship (voice takes, prompts, references)
-marketing/promo_images/ Promo images (1280×720, 1280×550, 512×512, 512×384, 200×120)
+docs/
+  prompts/              Prompts for the world boards and scenes, the announcer voice and the logo
+  screenshots/          The screenshots in this README
+marketing/              Gameplay captures and promo images (1280×720, 1280×550, 512×512, 512×384, 200×120)
 ```
 
 Game rules go in `core/` and are tested there. `game/game.ts` only turns the results that `GameSession` returns into visuals and sound.
