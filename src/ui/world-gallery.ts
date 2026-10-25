@@ -1,6 +1,7 @@
 // The world collection: every world as a card, locked ones with the lines still
 // needed. Tapping an unlocked world makes it the opening world of new games.
 import { isUnlocked, unlockLines, unlockedWorlds, type WorldCollection } from '../core/collection.ts';
+import { t } from '../i18n/index.ts';
 import { WORLDS, worldSlug } from '../theme/themes.ts';
 import { sceneURL } from '../theme/world-art.ts';
 import { byId } from './hud.ts';
@@ -40,9 +41,8 @@ export class WorldGallery {
       if (!card || card.classList.contains('locked')) return;
       const index = Number(card.dataset.index);
       const now = this.handlers.choose(index);
-      this.note = now
-        ? `${WORLDS[index][0]} ist jetzt deine Startwelt.`
-        : `${WORLDS[index][0]} eröffnet ab dem nächsten Spiel.`;
+      const world = WORLDS[index][0];
+      this.note = now ? t('gallery.startNow', { world }) : t('gallery.startNext', { world });
       this.render();
     });
   }
@@ -61,8 +61,7 @@ export class WorldGallery {
     const collection = this.handlers.collection();
     const unlocked = unlockedWorlds(collection, WORLDS.length).length;
     this.summary.textContent =
-      this.note ||
-      `${unlocked} / ${WORLDS.length} Welten · ${collection.lines.toLocaleString('de-DE')} Linien insgesamt`;
+      this.note || t('gallery.summary', { unlocked, total: WORLDS.length, lines: collection.lines });
     this.grid.replaceChildren(
       ...WORLDS.map(([name, primary], index) => {
         const open = isUnlocked(collection, index);
@@ -82,13 +81,17 @@ export class WorldGallery {
         label.textContent = name;
         const status = document.createElement('span');
         status.className = 'world-card__status';
-        if (!open) status.textContent = `🔒 ${unlockLines(index) - collection.lines} LINIEN`;
-        else if (collection.start === index) status.textContent = '▶ START';
-        else if (collection.fresh.includes(index)) status.textContent = '★ NEU';
+        if (!open) status.textContent = t('gallery.locked', { count: unlockLines(index) - collection.lines });
+        else if (collection.start === index) status.textContent = t('gallery.start');
+        else if (collection.fresh.includes(index)) status.textContent = t('gallery.new');
         card.append(art, label, status);
         card.setAttribute(
           'aria-label',
-          open ? `${name}${collection.start === index ? ', Startwelt' : ''}` : `${name}, gesperrt`,
+          !open
+            ? t('gallery.cardLocked', { world: name })
+            : collection.start === index
+              ? t('gallery.cardStart', { world: name })
+              : name,
         );
         if (!open) card.setAttribute('aria-disabled', 'true');
         return card;

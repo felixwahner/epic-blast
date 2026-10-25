@@ -41,7 +41,7 @@ A Block Blast–style puzzle game for the browser, built with **TypeScript**, **
 - Levels are based on score, and each level needs twice as many extra points as the one before: Level 2 at 10,000, Level 3 at 30,000, Level 4 at 70,000, Level 5 at 150,000, and so on.
 - You start every game with **1 revive** and earn **+1 revive per level-up**.
 - **Revive after game over:** a revive deals three new pieces that are guaranteed to clear a line, and keeps your combo.
-- **Save your combo:** if your combo is **10 or higher** and a round ends with no clear, the game offers to spend a revive to keep the combo going ("KOMBO RETTEN").
+- **Save your combo:** if your combo is **10 or higher** and a round ends with no clear, the game offers to spend a revive to keep the combo going ("SAVE COMBO").
 
 ### Worlds
 
@@ -93,15 +93,20 @@ For **Brilliant Move**, a Web Worker searches every position and order for the c
 
 ### Options
 
-The button left of the logo starts a new game, after a confirmation prompt. The gear button opens the options menu (labels are in German):
-- **Vollbild** – fullscreen, shown only if the browser supports it
+The menu button in the top-right corner opens the options menu:
+- **New game** – starts a new game, after a confirmation prompt
+- **Fullscreen** – shown only if the browser supports it
 - **Sound** – sound effects and announcer on or off
-- **Hintergrundmusik** – background music on or off
+- **Background music** – on or off
 - **Vibration** – a short vibration on each line clear, on devices that support it
-- **Visuelle Effekte** – full or reduced effects. Reduced is the default when the OS asks for reduced motion.
-- **Welten** – opens the world gallery
+- **Visual effects** – full or reduced effects. Reduced is the default when the OS asks for reduced motion.
+- **Worlds** – opens the world gallery
 
 All settings are saved in `localStorage`. The game still works if storage is blocked.
+
+### Languages
+
+The game is available in **English**, **German** and **Spanish** and follows the browser's language. Any other language falls back to English. Adding `?lang=de` (or `en`, `es`) to the URL picks a language by hand. World names and the recorded announcer stay in English.
 
 ---
 
@@ -166,6 +171,7 @@ src/
                         plus Pixi-free layout and drag math
   audio/                Sound effects engine, announcer, background music
   ui/                   Page UI: HUD, options menu, celebrations, score animation, effects, theme colors
+  i18n/                 Language detection, t() lookup and the translation files (locales/en.json, de.json, es.json)
   theme/                The 19 worlds, palette generation and world art lookup
   platform/             Safe localStorage, haptics, PWA registration
   styles/main.css
@@ -184,6 +190,8 @@ marketing/              Gameplay captures and promo images (1280×720, 1280×550
 ```
 
 Game rules go in `core/` and are tested there. `game/game.ts` only turns the results that `GameSession` returns into visuals and sound.
+
+Texts shown in the game live in `src/i18n/locales/`: add a key to `en.json` first, then to `de.json` and `es.json` (a unit test checks that every language has the same keys and placeholders). Static texts in `index.html` get a `data-i18n`, `data-i18n-aria-label` or `data-i18n-title` attribute; code calls `t('key', { name: value })`.
 
 ---
 

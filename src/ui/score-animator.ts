@@ -1,4 +1,5 @@
 // The game awards points immediately; the HUD receives clear bonuses on arrival.
+import { formatNumber, t as translate } from '../i18n/index.ts';
 
 export interface ScoreFlightOptions {
   /** Seconds before the award appears (synchronised with the detonation). */
@@ -56,7 +57,7 @@ export function createScoreAnimator(
   }
 
   function render() {
-    const text = Math.floor(displayed).toLocaleString();
+    const text = formatNumber(Math.floor(displayed));
     if (text === lastText) return;
     if (text.length !== lastText.length) measured = false;
     element.textContent = lastText = text;
@@ -94,12 +95,12 @@ export function createScoreAnimator(
     if (bonus || combo >= 2) {
       const label = document.createElement('span');
       label.className = 'score-flight-label';
-      label.textContent = bonus ? 'ALL CLEAR' : `COMBO ×${combo}`;
+      label.textContent = bonus ? translate('flight.allClear') : translate('flight.combo', { combo });
       node.append(label);
     }
     const amount = document.createElement('span');
     amount.className = 'score-flight-amount';
-    amount.textContent = `+${points.toLocaleString()}`;
+    amount.textContent = `+${formatNumber(points)}`;
     node.append(amount);
     layer.append(node);
     flights.push({

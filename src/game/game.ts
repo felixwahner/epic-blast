@@ -7,7 +7,6 @@ import { RoundPredictor } from '../ai/round-predictor.ts';
 import { MILLION, isNearRecord } from '../audio/announcer.ts';
 import type { AudioEngine } from '../audio/audio-engine.ts';
 import { BackgroundMusic } from '../audio/music.ts';
-import { SOUND_WORLD_LABELS } from '../audio/sound-worlds.ts';
 import { predictClears, type FullLines } from '../core/board.ts';
 import {
   addLines,
@@ -22,6 +21,7 @@ import { TUTORIAL_OPENING, TUTORIAL_TARGET } from '../core/opening.ts';
 import { LINES_PER_WORLD, progression, worldProgress } from '../core/progression.ts';
 import { comboMilestone } from '../core/scoring.ts';
 import { GameSession, type DealOutcome, type PlacementOutcome } from '../core/session.ts';
+import { formatNumber, t } from '../i18n/index.ts';
 import { Haptics } from '../platform/haptics.ts';
 import { STORAGE_KEYS, readNumber, safeStorage, syncBestScore, type KeyValueStore } from '../platform/storage.ts';
 import { BlockTextures } from '../render/block-textures.ts';
@@ -53,8 +53,6 @@ const NO_LINES: FullLines = { rows: [], cols: [] };
 const RECORD_HINT_SHARE = 0.6;
 /** ...and at the next level once this share of the way there. */
 const LEVEL_HINT_PROGRESS = 0.6;
-
-const formatNumber = (value: number): string => value.toLocaleString('de-DE');
 
 /** Canvas backing-store density; capped so 3x phones don't pay for 9x the fill rate. */
 const canvasResolution = () => Math.min(window.devicePixelRatio || 1, 2);
@@ -560,7 +558,7 @@ export class Game {
       this.texts.spawn(
         layout.viewWidth / 2,
         layout.gridY + layout.gridWidth / 2 - 40,
-        `GOLD +${formatNumber(clear.jewelPoints)}`,
+        t('float.gold', { points: clear.jewelPoints }),
         '#ffd23f',
         18,
         layout.viewWidth,
@@ -572,7 +570,7 @@ export class Game {
       this.texts.spawn(
         layout.viewWidth / 2,
         layout.gridY + layout.gridWidth / 2,
-        `BOARD CLEAR x${clear.allClearMultiplier}`,
+        t('float.boardClear', { multiplier: clear.allClearMultiplier }),
         '#ffd23f',
         18,
         layout.viewWidth,
@@ -609,7 +607,7 @@ export class Game {
         this.texts.spawn(
           layout.viewWidth / 2,
           layout.gridY + 35,
-          `LEVEL ${level}! +${gained} REVIVE`,
+          t('float.levelUp', { level, count: gained }),
           '#00ff66',
           16,
           layout.viewWidth,
@@ -653,7 +651,7 @@ export class Game {
           this.texts.spawn(
             layout.viewWidth / 2,
             layout.gridY + layout.gridWidth * 0.3,
-            `🔓 ${WORLDS[index][0]} FREI!`,
+            t('float.worldUnlocked', { world: WORLDS[index][0] }),
             WORLDS[index][1],
             14,
             layout.viewWidth,
@@ -679,16 +677,13 @@ export class Game {
     const { score, bestScore, level } = this.session;
     const hints: string[] = [];
     if (!newRecord && bestScore > 0 && score >= bestScore * RECORD_HINT_SHARE) {
-      hints.push(`Nur ${formatNumber(bestScore - score + 1)} Punkte bis zum Rekord!`);
+      hints.push(t('gameOver.recordHint', { points: bestScore - score + 1 }));
     }
     const unlock = nextUnlock(this.collection, WORLDS.length);
-    if (unlock)
-      hints.push(
-        `Noch ${unlock.remaining} ${unlock.remaining === 1 ? 'Linie' : 'Linien'} bis ${WORLDS[unlock.index][0]}`,
-      );
+    if (unlock) hints.push(t('gameOver.worldHint', { count: unlock.remaining, world: WORLDS[unlock.index][0] }));
     const next = progression(score);
     if (hints.length < 2 && next.progress >= LEVEL_HINT_PROGRESS) {
-      hints.push(`Noch ${formatNumber(next.next - score)} Punkte bis Level ${level + 1}`);
+      hints.push(t('gameOver.levelHint', { points: next.next - score, level: level + 1 }));
     }
     return hints.slice(0, 2);
   }
@@ -696,11 +691,11 @@ export class Game {
   private gameOverStats(): [string, string][] {
     const { clearedLines, maxCombo, allClears } = this.session;
     const stats: [string, string][] = [
-      ['LINIEN', formatNumber(clearedLines)],
-      ['MAX KOMBO', String(maxCombo)],
-      ['WELT', String(Math.floor(clearedLines / LINES_PER_WORLD) + 1)],
+      [t('gameOver.statLines'), formatNumber(clearedLines)],
+      [t('gameOver.statMaxCombo'), String(maxCombo)],
+      [t('gameOver.statWorld'), String(Math.floor(clearedLines / LINES_PER_WORLD) + 1)],
     ];
-    if (allClears) stats.push(['CLEARS', String(allClears)]);
+    if (allClears) stats.push([t('gameOver.statClears'), String(allClears)]);
     return stats;
   }
 
@@ -718,7 +713,7 @@ export class Game {
     this.texts.spawn(
       layout.viewWidth / 2,
       layout.gridY + layout.gridWidth / 2 - 30,
-      '✨ REVIVED! ✨',
+      t('float.revived'),
       '#00ff66',
       20,
       layout.viewWidth,
@@ -739,7 +734,7 @@ export class Game {
       this.texts.spawn(
         this.layout.viewWidth / 2,
         this.layout.gridY + 40,
-        `COMBO ${combo} GERETTET!`,
+        t('float.comboSaved', { combo }),
         '#00f5ff',
         16,
         this.layout.viewWidth,
@@ -780,11 +775,11 @@ export class Game {
         if (!muted) audio.playPickup();
         return muted;
       },
-      soundWorldLabel: () => SOUND_WORLD_LABELS[audio.soundWorld],
+      soundWorldLabel: () => t(`soundWorld.${audio.soundWorld}`),
       cycleSoundWorld: () => {
         const world = audio.cycleSoundWorld();
         audio.playSoundWorldPreview();
-        return SOUND_WORLD_LABELS[world];
+        return t(`soundWorld.${world}`);
       },
       musicEnabled: () => music.enabled,
       toggleMusic: () => {

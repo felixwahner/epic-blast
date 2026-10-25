@@ -1,6 +1,7 @@
 // DOM heads-up display: scores, combo, level/revive status, game-over modal
 // and the combo recovery dialog.
 import type { LevelProgress } from '../core/progression.ts';
+import { t } from '../i18n/index.ts';
 import { TRAY_LABEL_HEIGHT, type Layout } from '../render/layout.ts';
 import { pulse } from './effects.ts';
 
@@ -63,16 +64,14 @@ export class Hud {
     this.comboFuse.classList.toggle('last', !safe && piecesLeft === 1);
     const lit = safe ? 3 : piecesLeft;
     [...this.comboFuse.children].forEach((pip, index) => pip.classList.toggle('lit', index < lit));
-    this.comboFuse.title = safe
-      ? 'Kombo gesichert: in dieser Runde wurde schon geräumt'
-      : `Noch ${piecesLeft} ${piecesLeft === 1 ? 'Stück' : 'Stücke'}, um die Kombo zu halten`;
+    this.comboFuse.title = safe ? t('combo.safe') : t('combo.piecesLeft', { count: piecesLeft });
   }
 
   /** World collection progress beside the world name; `fresh` marks unseen unlocks. */
   setWorldCount(unlocked: number, total: number, fresh: boolean): void {
     this.worldCount.textContent = `${unlocked}/${total}`;
     this.worldButton.classList.toggle('has-fresh', fresh);
-    this.overWorldsButton.textContent = `WELTEN ${unlocked}/${total}`;
+    this.overWorldsButton.textContent = t('gameOver.worldsCount', { unlocked, total });
     this.overWorldsButton.classList.toggle('has-fresh', fresh);
   }
 
@@ -104,13 +103,13 @@ export class Hud {
   }
 
   setProgress(score: number, state: LevelProgress, revives: number): void {
-    this.levelLabel.textContent = `LEVEL ${state.level}`;
-    this.levelTarget.textContent = `${score.toLocaleString()} / ${state.next.toLocaleString()} · +1 REVIVE`;
+    this.levelLabel.textContent = t('status.level', { level: state.level });
+    this.levelTarget.textContent = t('status.levelTarget', { score, next: state.next });
     this.levelProgress.value = state.progress;
-    this.reviveCount.textContent = `REVIVES: ${revives}`;
-    this.reviveButton.textContent = `REVIVE (${revives})`;
+    this.reviveCount.textContent = t('status.revives', { count: revives });
+    this.reviveButton.textContent = t('gameOver.revive', { count: revives });
     this.reviveButton.hidden = revives === 0;
-    this.reviveButton.title = 'Einen Revive einsetzen und weiterspielen';
+    this.reviveButton.title = t('gameOver.reviveHint');
   }
 
   celebrateLevelUp(): void {
@@ -155,7 +154,7 @@ export class Hud {
   }
 
   offerRecovery(combo: number, revives: number): void {
-    this.recoveryMessage.textContent = `Kombo ${combo} retten? Tausche einen deiner ${revives} Revives und übernimm die Kombo in die nächste Runde.`;
+    this.recoveryMessage.textContent = t('recovery.message', { combo, count: revives });
     this.recoveryDialog.showModal();
   }
 

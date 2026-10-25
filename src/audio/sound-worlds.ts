@@ -5,13 +5,6 @@ export const SOUND_WORLDS = ['impact', 'wood', 'glass', 'arcade'] as const;
 export type SoundWorldId = (typeof SOUND_WORLDS)[number];
 export const DEFAULT_SOUND_WORLD: SoundWorldId = 'impact';
 
-export const SOUND_WORLD_LABELS: Record<SoundWorldId, string> = {
-  impact: 'WUCHT',
-  wood: 'HOLZ & STEIN',
-  glass: 'GLAS & GLOCKEN',
-  arcade: 'ARCADE',
-};
-
 export function parseSoundWorld(value: string | null): SoundWorldId {
   return SOUND_WORLDS.find(id => id === value) ?? DEFAULT_SOUND_WORLD;
 }
