@@ -27,7 +27,7 @@ export function pulse(element: Element | null, name: string): void {
   element.classList.add(name);
   let names = pulsing.get(element);
   if (!names) {
-    const pending = names = new Set<string>();
+    const pending = (names = new Set<string>());
     pulsing.set(element, pending);
     element.addEventListener('animationend', event => {
       if (event.target !== element) return;
@@ -42,7 +42,10 @@ export class VisualEffects {
   reduced: boolean;
   private readonly storage: KeyValueStore;
 
-  constructor(storage: KeyValueStore = safeStorage, prefersReducedMotion = globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false) {
+  constructor(
+    storage: KeyValueStore = safeStorage,
+    prefersReducedMotion = globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false,
+  ) {
     this.storage = storage;
     const saved = storage.getItem(STORAGE_KEYS.effects);
     this.reduced = saved ? saved === 'reduced' : prefersReducedMotion;
@@ -94,17 +97,21 @@ export class VisualEffects {
       wrapper.append(ring);
       ring.addEventListener('animationend', () => ring.remove(), { once: true });
     }
-    for (const [vertical, indices] of [[false, lines.rows], [true, lines.cols]] as const) for (const line of indices) {
-      const beam = document.createElement('div');
-      beam.className = 'clear-beam' + (vertical ? ' vertical' : '');
-      Object.assign(beam.style, {
-        left: `${layout.gridX + (vertical ? line * layout.cellSize : 0)}px`,
-        top: `${layout.gridY + (vertical ? 0 : line * layout.cellSize)}px`,
-        width: `${vertical ? layout.cellSize : layout.gridWidth}px`,
-        height: `${vertical ? layout.gridWidth : layout.cellSize}px`,
-      });
-      host.append(beam);
-      beam.addEventListener('animationend', () => beam.remove(), { once: true });
-    }
+    for (const [vertical, indices] of [
+      [false, lines.rows],
+      [true, lines.cols],
+    ] as const)
+      for (const line of indices) {
+        const beam = document.createElement('div');
+        beam.className = 'clear-beam' + (vertical ? ' vertical' : '');
+        Object.assign(beam.style, {
+          left: `${layout.gridX + (vertical ? line * layout.cellSize : 0)}px`,
+          top: `${layout.gridY + (vertical ? 0 : line * layout.cellSize)}px`,
+          width: `${vertical ? layout.cellSize : layout.gridWidth}px`,
+          height: `${vertical ? layout.gridWidth : layout.cellSize}px`,
+        });
+        host.append(beam);
+        beam.addEventListener('animationend', () => beam.remove(), { once: true });
+      }
   }
 }

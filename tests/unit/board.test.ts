@@ -1,12 +1,24 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
-  GRID_SIZE, canFitAnywhere, canPlace, createGrid, encodeGrid, findFullLines, isGridEmpty,
-  lineCells, placeShape, predictClears, shapeSize,
+  GRID_SIZE,
+  canFitAnywhere,
+  canPlace,
+  createGrid,
+  encodeGrid,
+  findFullLines,
+  isGridEmpty,
+  lineCells,
+  placeShape,
+  predictClears,
+  shapeSize,
 } from '../../src/core/board.ts';
 import { gridFrom } from '../helpers/fakes.ts';
 
-const square = [[1, 1], [1, 1]];
+const square = [
+  [1, 1],
+  [1, 1],
+];
 
 describe('board', () => {
   it('creates an empty 8x8 grid', () => {
@@ -28,7 +40,19 @@ describe('board', () => {
     const grid = createGrid();
     grid[1][1] = 3;
     assert.equal(canPlace(grid, square, 0, 0), false);
-    assert.equal(canPlace(grid, [[1, 0], [0, 1]], 1, 0), true, 'diagonal shape skips the occupied cell');
+    assert.equal(
+      canPlace(
+        grid,
+        [
+          [1, 0],
+          [0, 1],
+        ],
+        1,
+        0,
+      ),
+      true,
+      'diagonal shape skips the occupied cell',
+    );
   });
 
   it('detects full rows and columns independently', () => {
@@ -47,8 +71,21 @@ describe('board', () => {
 
   it('places a shape and reports its absolute cells', () => {
     const grid = createGrid();
-    const cells = placeShape(grid, [[1, 0], [1, 1]], 3, 4, 7);
-    assert.deepEqual(cells, [{ row: 4, col: 3 }, { row: 5, col: 3 }, { row: 5, col: 4 }]);
+    const cells = placeShape(
+      grid,
+      [
+        [1, 0],
+        [1, 1],
+      ],
+      3,
+      4,
+      7,
+    );
+    assert.deepEqual(cells, [
+      { row: 4, col: 3 },
+      { row: 5, col: 3 },
+      { row: 5, col: 4 },
+    ]);
     assert.equal(grid[5][4], 7);
     assert.equal(grid[4][4], null);
   });
@@ -70,6 +107,12 @@ describe('board', () => {
   });
 
   it('measures shapes', () => {
-    assert.deepEqual(shapeSize([[1, 1, 1], [0, 1, 0]]), { width: 3, height: 2, blockCount: 4 });
+    assert.deepEqual(
+      shapeSize([
+        [1, 1, 1],
+        [0, 1, 0],
+      ]),
+      { width: 3, height: 2, blockCount: 4 },
+    );
   });
 });

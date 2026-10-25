@@ -28,7 +28,10 @@ export function unlockedWorlds(collection: WorldCollection, worldCount: number):
 }
 
 /** The next world that clearing lines will unlock, with the lines still missing. */
-export function nextUnlock(collection: WorldCollection, worldCount: number): { index: number; remaining: number } | null {
+export function nextUnlock(
+  collection: WorldCollection,
+  worldCount: number,
+): { index: number; remaining: number } | null {
   for (let index = 0; index < worldCount; index++) {
     if (!isUnlocked(collection, index)) return { index, remaining: unlockLines(index) - collection.lines };
   }
@@ -66,7 +69,8 @@ export function parseCollection(raw: string | null, worldCount: number): WorldCo
   if (!raw) return fallback;
   try {
     const data = JSON.parse(raw) as Partial<WorldCollection>;
-    const validIndex = (value: unknown): value is number => Number.isInteger(value) && (value as number) >= 0 && (value as number) < worldCount;
+    const validIndex = (value: unknown): value is number =>
+      Number.isInteger(value) && (value as number) >= 0 && (value as number) < worldCount;
     const indices = (value: unknown): number[] => (Array.isArray(value) ? [...new Set(value.filter(validIndex))] : []);
     const collection: WorldCollection = {
       lines: Number.isInteger(data.lines) && data.lines! > 0 ? data.lines! : 0,

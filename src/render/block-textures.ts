@@ -11,8 +11,12 @@ const GLOW_MARGIN = 12;
 function drawProceduralBlock(g: Graphics, p: Palette, material: Material): void {
   const s = BLOCK_TEXTURE_SIZE;
   // Opaque full-cell foundation keeps neighbouring blocks joined.
-  g.beginFill(p.sh); g.drawRect(0, 0, s, s); g.endFill();
-  g.beginFill(p.base, 0.65); g.drawRect(1, 1, s - 2, s - 2); g.endFill();
+  g.beginFill(p.sh);
+  g.drawRect(0, 0, s, s);
+  g.endFill();
+  g.beginFill(p.base, 0.65);
+  g.drawRect(1, 1, s - 2, s - 2);
+  g.endFill();
   // Soft colored halo inside the cell footprint; geometry remains aligned.
   for (let spread = 5; spread >= 1; spread--) {
     g.lineStyle(spread * 2, p.base, 0.035);
@@ -20,22 +24,35 @@ function drawProceduralBlock(g: Graphics, p: Palette, material: Material): void 
   }
   g.lineStyle(0);
   // Offset dark extrusion and lower bevel give the blocks weight.
-  g.beginFill(0x02030a, 0.8); g.drawRoundedRect(5, 8, s - 8, s - 10, 3); g.endFill();
-  g.beginFill(p.sh); g.drawRoundedRect(4, 4, s - 10, s - 10, 3); g.endFill();
-  g.beginFill(p.base); g.drawRoundedRect(6, 5, s - 15, s - 16, 2); g.endFill();
+  g.beginFill(0x02030a, 0.8);
+  g.drawRoundedRect(5, 8, s - 8, s - 10, 3);
+  g.endFill();
+  g.beginFill(p.sh);
+  g.drawRoundedRect(4, 4, s - 10, s - 10, 3);
+  g.endFill();
+  g.beginFill(p.base);
+  g.drawRoundedRect(6, 5, s - 15, s - 16, 2);
+  g.endFill();
   // Glassy face: broad upper reflection fading into a darker lower face.
   for (let y = 9; y < s - 13; y++) {
     const t = (y - 9) / (s - 22);
-    g.beginFill(t < 0.4 ? 0xffffff : p.sh, t < 0.4 ? 0.18 * (1 - t / 0.4) : 0.2 * (t - 0.4) / 0.6);
-    g.drawRect(9, y, s - 23, 1); g.endFill();
+    g.beginFill(t < 0.4 ? 0xffffff : p.sh, t < 0.4 ? 0.18 * (1 - t / 0.4) : (0.2 * (t - 0.4)) / 0.6);
+    g.drawRect(9, y, s - 23, 1);
+    g.endFill();
   }
   g.beginFill(p.hi, 0.95);
-  g.drawPolygon([5, 5, s - 7, 5, s - 13, 10, 10, 10, 10, s - 14, 5, s - 8]); g.endFill();
+  g.drawPolygon([5, 5, s - 7, 5, s - 13, 10, 10, 10, 10, s - 14, 5, s - 8]);
+  g.endFill();
   g.beginFill(p.sh, 0.9);
-  g.drawPolygon([s - 7, 6, s - 7, s - 7, 5, s - 7, 11, s - 13, s - 13, s - 13, s - 13, 12]); g.endFill();
+  g.drawPolygon([s - 7, 6, s - 7, s - 7, 5, s - 7, 11, s - 13, s - 13, s - 13, s - 13, 12]);
+  g.endFill();
   // Narrow white glints rather than a single flat square highlight.
-  g.lineStyle(1.5, 0xffffff, 0.8); g.moveTo(8, 7); g.lineTo(s * 0.57, 7);
-  g.lineStyle(1, 0xffffff, 0.4); g.moveTo(7, 9); g.lineTo(7, s * 0.45);
+  g.lineStyle(1.5, 0xffffff, 0.8);
+  g.moveTo(8, 7);
+  g.lineTo(s * 0.57, 7);
+  g.lineStyle(1, 0xffffff, 0.4);
+  g.moveTo(7, 9);
+  g.lineTo(7, s * 0.45);
   g.lineStyle(0);
   drawMaterial(g, material, s, p);
 }
@@ -57,9 +74,15 @@ export class BlockTextures {
    * Regenerates all textures. Returns a disposer for the previous set, to be
    * called once every sprite has been switched to the new textures.
    */
-  rebuild(palettes: readonly Palette[], material: Material, referenceStone: Texture | null, pixelSize = this.pixelSize): () => void {
+  rebuild(
+    palettes: readonly Palette[],
+    material: Material,
+    referenceStone: Texture | null,
+    pixelSize = this.pixelSize,
+  ): () => void {
     this.pixelSize = Math.max(16, Math.round(pixelSize));
-    const oldBlocks = this.blocks, oldGlows = this.glows;
+    const oldBlocks = this.blocks,
+      oldGlows = this.glows;
     this.blocks = palettes.map(p => this.createBlock(p, material, referenceStone));
     this.glows = palettes.map(p => this.createGlow(p));
     return () => {
@@ -119,7 +142,9 @@ export class BlockTextures {
       halo.lineStyle(spread * 2, p.base, 0.03);
       halo.drawRoundedRect(3, 3, s - 6, s - 6, s * 0.14);
     }
-    const texture = this.renderer.generateTexture(halo, { region: new Rectangle(-GLOW_MARGIN, -GLOW_MARGIN, s + GLOW_MARGIN * 2, s + GLOW_MARGIN * 2) });
+    const texture = this.renderer.generateTexture(halo, {
+      region: new Rectangle(-GLOW_MARGIN, -GLOW_MARGIN, s + GLOW_MARGIN * 2, s + GLOW_MARGIN * 2),
+    });
     halo.destroy(true);
     return texture;
   }

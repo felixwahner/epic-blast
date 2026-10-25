@@ -1,7 +1,15 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
-  LINES_PER_UNLOCK, addLines, chooseStart, emptyCollection, isUnlocked, markSeen, nextUnlock, parseCollection, unlockedWorlds,
+  LINES_PER_UNLOCK,
+  addLines,
+  chooseStart,
+  emptyCollection,
+  isUnlocked,
+  markSeen,
+  nextUnlock,
+  parseCollection,
+  unlockedWorlds,
 } from '../../src/core/collection.ts';
 import { extendWorldOrder } from '../../src/theme/themes.ts';
 import { seededRandom } from '../helpers/fakes.ts';
@@ -45,10 +53,18 @@ describe('world collection', () => {
   it('reads saved data defensively', () => {
     assert.deepEqual(parseCollection(null, 19), emptyCollection());
     assert.deepEqual(parseCollection('{oops', 19), emptyCollection());
-    assert.deepEqual(parseCollection(JSON.stringify({ lines: -4, seen: [3, 3, 99, 'x'], start: 7, fresh: [3] }), 19),
-      { lines: 0, seen: [0, 3], start: 0, fresh: [3] });
-    assert.deepEqual(parseCollection(JSON.stringify({ lines: 85, seen: [0], start: 2, fresh: [] }), 19),
-      { lines: 85, seen: [0], start: 2, fresh: [] });
+    assert.deepEqual(parseCollection(JSON.stringify({ lines: -4, seen: [3, 3, 99, 'x'], start: 7, fresh: [3] }), 19), {
+      lines: 0,
+      seen: [0, 3],
+      start: 0,
+      fresh: [3],
+    });
+    assert.deepEqual(parseCollection(JSON.stringify({ lines: 85, seen: [0], start: 2, fresh: [] }), 19), {
+      lines: 85,
+      seen: [0],
+      start: 2,
+      fresh: [],
+    });
   });
 
   it('opens a game with the chosen world and still visits every world', () => {

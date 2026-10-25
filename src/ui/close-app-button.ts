@@ -11,6 +11,9 @@ export function setupCloseAppButton(): void {
   button.addEventListener('click', async () => {
     if (!window.confirm('App schließen? Die laufende Runde geht dabei verloren.')) return;
     const closed = await closeApp(window);
-    if (!closed) window.alert('Dein Gerät erlaubt das Schließen aus dem Spiel heraus nicht. Wische zum Schließen vom unteren Rand nach oben oder nutze die App-Übersicht.');
+    if (!closed)
+      window.alert(
+        'Dein Gerät erlaubt das Schließen aus dem Spiel heraus nicht. Wische zum Schließen vom unteren Rand nach oben oder nutze die App-Übersicht.',
+      );
   });
 }

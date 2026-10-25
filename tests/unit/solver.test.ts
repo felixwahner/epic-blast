@@ -44,7 +44,8 @@ describe('solver', () => {
     const board = [252, 255, 255, 255, 255, 255, 255, 255];
     const pieces = [single, { matrix: [[1, 1]] }, single];
     const result = solve(board, pieces);
-    let replay = board, lines = 0;
+    let replay = board,
+      lines = 0;
     const remaining: (SolverPiece | null)[] = pieces.slice();
     for (const move of result.path) {
       assert(moves(replay, remaining).some(m => m.slot === move.slot && m.x === move.x && m.y === move.y));

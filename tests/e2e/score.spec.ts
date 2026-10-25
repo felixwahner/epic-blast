@@ -15,7 +15,10 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('clear points travel to the HUD before its counter increases', async ({ page }) => {
-  await page.evaluate(() => { window.animator.add(128, window.flightOrigin(), { delay: 0.14 }); window.animator.update(0.3); });
+  await page.evaluate(() => {
+    window.animator.add(128, window.flightOrigin(), { delay: 0.14 });
+    window.animator.update(0.3);
+  });
   await expect(page.locator('.score-flight-amount')).toHaveText('+128');
   await expect(page.locator('#score-display')).toHaveText('0');
   const start = (await page.locator('.score-flight').boundingBox())!;
@@ -58,14 +61,23 @@ test('overlapping awards and placement points are counted once; restart cancels 
 for (const preference of ['system', 'game']) {
   test(`${preference} reduced motion keeps the award readable without a flight`, async ({ page }) => {
     if (preference === 'system') await page.emulateMedia({ reducedMotion: 'reduce' });
-    else await page.evaluate(() => { window.gentle = true; });
-    await page.evaluate(() => { window.animator.add(208, window.flightOrigin(), { combo: 2 }); window.animator.update(0.15); });
+    else
+      await page.evaluate(() => {
+        window.gentle = true;
+      });
+    await page.evaluate(() => {
+      window.animator.add(208, window.flightOrigin(), { combo: 2 });
+      window.animator.update(0.15);
+    });
     await expect(page.locator('.score-flight-label')).toHaveText('COMBO ×2');
     const start = (await page.locator('.score-flight').boundingBox())!;
     await page.evaluate(() => window.animator.update(0.15));
     const end = (await page.locator('.score-flight').boundingBox())!;
     expect(end.y).toBeCloseTo(start.y, 1);
-    await page.evaluate(() => { window.animator.update(0.1); window.animator.update(0.6); });
+    await page.evaluate(() => {
+      window.animator.update(0.1);
+      window.animator.update(0.6);
+    });
     await expect(page.locator('#score-display')).toHaveText('208');
     await expect(page.locator('.score-flight')).toHaveCount(0);
   });
@@ -73,7 +85,10 @@ for (const preference of ['system', 'game']) {
 
 test('large scores fit a narrow phone', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 740 });
-  await page.evaluate(async () => { window.animator.reset(123456789); await document.fonts.ready; });
+  await page.evaluate(async () => {
+    window.animator.reset(123456789);
+    await document.fonts.ready;
+  });
   const score = (await page.locator('#score-display').boundingBox())!;
   expect(score.x).toBeGreaterThanOrEqual(0);
   expect(score.x + score.width).toBeLessThanOrEqual(320);

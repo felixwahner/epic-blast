@@ -9,8 +9,15 @@ function engine(muted: boolean) {
   let resumes = 0;
   class FakeContext {
     state = 'suspended';
-    resume() { resumes++; this.state = 'running'; return Promise.resolve(); }
-    suspend() { this.state = 'suspended'; return Promise.resolve(); }
+    resume() {
+      resumes++;
+      this.state = 'running';
+      return Promise.resolve();
+    }
+    suspend() {
+      this.state = 'suspended';
+      return Promise.resolve();
+    }
   }
   const storage = memoryStorage({ [STORAGE_KEYS.muted]: String(muted) });
   const audio = new AudioEngine({ storage, contextClass: () => FakeContext as unknown as new () => AudioContext });
@@ -58,7 +65,10 @@ describe('audio engine activation', () => {
 
 describe('combo sound profile', () => {
   it('keeps a fixed positive root and bounded stages', () => {
-    assert.deepEqual([1, 4, 10, 20, 40].map(c => comboSoundProfile(c).stage), [0, 1, 2, 3, 4]);
+    assert.deepEqual(
+      [1, 4, 10, 20, 40].map(c => comboSoundProfile(c).stage),
+      [0, 1, 2, 3, 4],
+    );
     for (const combo of [1, 5, 15, 50, 100, 1000, 1000000]) {
       assert.equal(comboSoundProfile(combo).root, 261.63);
       assert(comboSoundProfile(combo).stage <= 4);

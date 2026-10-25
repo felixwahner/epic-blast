@@ -2,8 +2,24 @@
 // Pixi material decoration in render/materials.ts.
 
 export type Material =
-  | 'circuit' | 'candy' | 'leaf' | 'ice' | 'wood' | 'rune' | 'star' | 'lava'
-  | 'bolt' | 'bubble' | 'cloud' | 'pixel' | 'stud' | 'gear' | 'chip' | 'sand' | 'scribble' | 'brush';
+  | 'circuit'
+  | 'candy'
+  | 'leaf'
+  | 'ice'
+  | 'wood'
+  | 'rune'
+  | 'star'
+  | 'lava'
+  | 'bolt'
+  | 'bubble'
+  | 'cloud'
+  | 'pixel'
+  | 'stud'
+  | 'gear'
+  | 'chip'
+  | 'sand'
+  | 'scribble'
+  | 'brush';
 
 export interface Palette {
   base: number;
@@ -55,7 +71,12 @@ export const worldSlug = (index: number): string => WORLDS[index][0].toLowerCase
  * `first` (Neon Arcade by default) opens a game; each later round visits every
  * world once and never repeats the world that ended the previous round.
  */
-export function extendWorldOrder(order: readonly number[], length: number, random: () => number = Math.random, first = 0): number[] {
+export function extendWorldOrder(
+  order: readonly number[],
+  length: number,
+  random: () => number = Math.random,
+  first = 0,
+): number[] {
   const out = [...order];
   while (out.length < length) {
     const round = WORLDS.map((_, index) => index);
@@ -76,8 +97,12 @@ export function extendWorldOrder(order: readonly number[], length: number, rando
 export const PALETTE_COUNT = 8;
 
 export function mixColor(a: string, b: string, t: number): number {
-  const x = parseInt(a.slice(1), 16), y = parseInt(b.slice(1), 16);
-  return [16, 8, 0].reduce((out, shift) => out | (Math.round(((x >> shift) & 255) * (1 - t) + ((y >> shift) & 255) * t) << shift), 0);
+  const x = parseInt(a.slice(1), 16),
+    y = parseInt(b.slice(1), 16);
+  return [16, 8, 0].reduce(
+    (out, shift) => out | (Math.round(((x >> shift) & 255) * (1 - t) + ((y >> shift) & 255) * t) << shift),
+    0,
+  );
 }
 
 /** Brightness stage (0..3) of a world from its progress (0..1). */
@@ -101,12 +126,23 @@ export function themeFor(world: number, progress = 0, order: readonly number[] =
   const palettes = hues.map((color): Palette => {
     const raw = parseInt(color.slice(1), 16);
     const channels = [16, 8, 0].map(shift => (raw >> shift) & 255);
-    const max = Math.max(...channels), min = Math.min(...channels);
+    const max = Math.max(...channels),
+      min = Math.min(...channels);
     // Preserve hue while enforcing a luminous, saturated neon body, not pastel.
-    const neon = channels.map(channel => Math.round(18 + (channel - min) / Math.max(1, max - min) * 237));
+    const neon = channels.map(channel => Math.round(18 + ((channel - min) / Math.max(1, max - min)) * 237));
     const base = (neon[0] << 16) | (neon[1] << 8) | neon[2];
     const hex = '#' + base.toString(16).padStart(6, '0');
     return { base, hi: mixColor(hex, '#ffffff', 0.28), sh: mixColor(hex, '#000000', 0.55), hex };
   });
-  return { index, slug: worldSlug(index), key: themeKey(world, progress), name: name + (cycle ? ` · ECLIPSE ${cycle}` : ''), primary, secondary, material, stage, palettes };
+  return {
+    index,
+    slug: worldSlug(index),
+    key: themeKey(world, progress),
+    name: name + (cycle ? ` · ECLIPSE ${cycle}` : ''),
+    primary,
+    secondary,
+    material,
+    stage,
+    palettes,
+  };
 }

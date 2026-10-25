@@ -8,7 +8,8 @@ import type { Plugin } from 'vite';
 
 export function listFiles(dir: string): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap(entry =>
-    entry.isDirectory() ? listFiles(join(dir, entry.name)) : [join(dir, entry.name)]);
+    entry.isDirectory() ? listFiles(join(dir, entry.name)) : [join(dir, entry.name)],
+  );
 }
 
 /**
@@ -19,7 +20,9 @@ export const isLazyAsset = (path: string): boolean => /\/(scene|board)-[\w-]+\.w
 
 /** Fills the template placeholders; exported for tests. */
 export function renderServiceWorker(template: string, outDir: string): string {
-  const files = listFiles(outDir).filter(file => !file.endsWith('sw.js')).sort();
+  const files = listFiles(outDir)
+    .filter(file => !file.endsWith('sw.js'))
+    .sort();
   const hash = createHash('sha256');
   for (const file of files) hash.update(relative(outDir, file)).update(readFileSync(file));
   const version = hash.digest('hex').slice(0, 16);

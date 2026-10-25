@@ -25,18 +25,22 @@ export class BoardView {
 
   constructor(textures: BlockTextures) {
     this.textures = textures;
-    this.sprites = Array.from({ length: GRID_SIZE }, () => Array.from({ length: GRID_SIZE }, () => {
-      const sprite = new Sprite(textures.blocks[0]);
-      sprite.visible = false;
-      this.blocks.addChild(sprite);
-      return sprite;
-    }));
-    this.jewelMarks = Array.from({ length: GRID_SIZE }, () => Array.from({ length: GRID_SIZE }, () => {
-      const mark = createJewelMark();
-      mark.visible = false;
-      this.jewelLayer.addChild(mark);
-      return mark;
-    }));
+    this.sprites = Array.from({ length: GRID_SIZE }, () =>
+      Array.from({ length: GRID_SIZE }, () => {
+        const sprite = new Sprite(textures.blocks[0]);
+        sprite.visible = false;
+        this.blocks.addChild(sprite);
+        return sprite;
+      }),
+    );
+    this.jewelMarks = Array.from({ length: GRID_SIZE }, () =>
+      Array.from({ length: GRID_SIZE }, () => {
+        const mark = createJewelMark();
+        mark.visible = false;
+        this.jewelLayer.addChild(mark);
+        return mark;
+      }),
+    );
     // Pre-created pooled ghost sprites (zero allocation while dragging).
     for (let i = 0; i < GHOST_POOL_SIZE; i++) {
       const ghost = new Sprite(textures.blocks[0]);
@@ -47,7 +51,12 @@ export class BoardView {
     }
   }
 
-  renderBackground(layout: Layout, palettes: readonly Palette[], theme: Theme, materialVariants: readonly Texture[] | undefined): void {
+  renderBackground(
+    layout: Layout,
+    palettes: readonly Palette[],
+    theme: Theme,
+    materialVariants: readonly Texture[] | undefined,
+  ): void {
     const bg = this.background;
     bg.clear();
     for (const child of this.materialLayer.removeChildren()) child.destroy();
@@ -62,41 +71,44 @@ export class BoardView {
   syncBlocks(grid: Grid, layout: Layout, jewels: ReadonlySet<number> = new Set()): void {
     const cs = layout.cellSize;
     const scale = cs / BLOCK_TEXTURE_SIZE;
-    for (let r = 0; r < GRID_SIZE; r++) for (let c = 0; c < GRID_SIZE; c++) {
-      const sprite = this.sprites[r][c];
-      const cell = grid[r][c];
-      const mark = this.jewelMarks[r][c];
-      mark.visible = cell !== null && jewels.has(r * GRID_SIZE + c);
-      if (mark.visible) {
-        mark.position.set(layout.gridX + c * cs, layout.gridY + r * cs);
-        mark.scale.set(scale);
+    for (let r = 0; r < GRID_SIZE; r++)
+      for (let c = 0; c < GRID_SIZE; c++) {
+        const sprite = this.sprites[r][c];
+        const cell = grid[r][c];
+        const mark = this.jewelMarks[r][c];
+        mark.visible = cell !== null && jewels.has(r * GRID_SIZE + c);
+        if (mark.visible) {
+          mark.position.set(layout.gridX + c * cs, layout.gridY + r * cs);
+          mark.scale.set(scale);
+        }
+        if (cell !== null) {
+          sprite.texture = this.textures.blocks[cell];
+          sprite.position.set(layout.gridX + c * cs, layout.gridY + r * cs);
+          sprite.scale.set(scale);
+          sprite.visible = true;
+          this.textures.syncGlow(sprite, cell);
+        } else {
+          sprite.visible = false;
+          this.textures.hideGlow(sprite);
+        }
       }
-      if (cell !== null) {
-        sprite.texture = this.textures.blocks[cell];
-        sprite.position.set(layout.gridX + c * cs, layout.gridY + r * cs);
-        sprite.scale.set(scale);
-        sprite.visible = true;
-        this.textures.syncGlow(sprite, cell);
-      } else {
-        sprite.visible = false;
-        this.textures.hideGlow(sprite);
-      }
-    }
   }
 
   showGhost(matrix: Matrix, colorIdx: number, col: number, row: number, layout: Layout): void {
     this.clearGhost();
     const cs = layout.cellSize;
     let index = 0;
-    matrix.forEach((cells, r) => cells.forEach((cell, c) => {
-      if (cell !== 1 || index >= this.ghostSprites.length) return;
-      const sprite = this.ghostSprites[index++];
-      sprite.texture = this.textures.blocks[colorIdx];
-      sprite.position.set(layout.gridX + (col + c) * cs, layout.gridY + (row + r) * cs);
-      sprite.scale.set(cs / BLOCK_TEXTURE_SIZE);
-      sprite.alpha = 0.55;
-      sprite.visible = true;
-    }));
+    matrix.forEach((cells, r) =>
+      cells.forEach((cell, c) => {
+        if (cell !== 1 || index >= this.ghostSprites.length) return;
+        const sprite = this.ghostSprites[index++];
+        sprite.texture = this.textures.blocks[colorIdx];
+        sprite.position.set(layout.gridX + (col + c) * cs, layout.gridY + (row + r) * cs);
+        sprite.scale.set(cs / BLOCK_TEXTURE_SIZE);
+        sprite.alpha = 0.55;
+        sprite.visible = true;
+      }),
+    );
   }
 
   clearGhost(): void {
@@ -148,10 +160,13 @@ export class BoardView {
     rim.drawRoundedRect(x - 2, y - 2, size + 4, size + 4, 4);
     for (let spread = 9; spread >= 1; spread -= 2) {
       rim.lineStyle(spread, 0xccfaff, 0.055);
-      rim.moveTo(x + 8, y - 2); rim.lineTo(x + size * 0.32, y - 2);
-      rim.moveTo(x - 2, y + 8); rim.lineTo(x - 2, y + size * 0.22);
+      rim.moveTo(x + 8, y - 2);
+      rim.lineTo(x + size * 0.32, y - 2);
+      rim.moveTo(x - 2, y + 8);
+      rim.lineTo(x - 2, y + size * 0.22);
       rim.lineStyle(spread, palettes[1].hi, 0.045);
-      rim.moveTo(x + size * 0.75, y + size + 2); rim.lineTo(x + size - 6, y + size + 2);
+      rim.moveTo(x + size * 0.75, y + size + 2);
+      rim.lineTo(x + size - 6, y + size + 2);
     }
     this.materialLayer.addChild(rim);
   }
@@ -164,31 +179,45 @@ export class BoardView {
     g.drawRect(gx, gy, gw, gw);
     g.endFill();
     const cellGap = 2;
-    for (let r = 0; r < GRID_SIZE; r++) for (let c = 0; c < GRID_SIZE; c++) {
-      const cx = gx + c * cs;
-      const cy = gy + r * cs;
-      g.lineStyle(1, palettes[0].hi, 0.12);
-      g.beginFill(palettes[0].sh, 0.35);
-      g.drawRoundedRect(cx + cellGap, cy + cellGap, cs - cellGap * 2, cs - cellGap * 2, 3);
-      g.endFill();
-      // Quiet material markings on empty sockets, matching each world.
-      g.lineStyle(1, palettes[0].hi, 0.045);
-      const x = cx + cs * 0.25, y = cy + cs * 0.25;
-      if (theme.material === 'ice' || theme.material === 'lava') {
-        g.moveTo(x, y); g.lineTo(x + cs * 0.3, y + cs * 0.25); g.lineTo(x + cs * 0.2, y + cs * 0.5);
-      } else if (theme.material === 'rune') {
-        g.drawPolygon([x + cs * 0.25, y, x + cs * 0.4, y + cs * 0.25, x + cs * 0.25, y + cs * 0.5, x + cs * 0.1, y + cs * 0.25]);
-      } else if (theme.material === 'star') {
-        g.drawCircle(x + cs * 0.2, y + cs * 0.15, 1);
-      } else {
-        g.moveTo(x, y + cs * 0.1); g.lineTo(x + cs * 0.5, y + cs * 0.3);
+    for (let r = 0; r < GRID_SIZE; r++)
+      for (let c = 0; c < GRID_SIZE; c++) {
+        const cx = gx + c * cs;
+        const cy = gy + r * cs;
+        g.lineStyle(1, palettes[0].hi, 0.12);
+        g.beginFill(palettes[0].sh, 0.35);
+        g.drawRoundedRect(cx + cellGap, cy + cellGap, cs - cellGap * 2, cs - cellGap * 2, 3);
+        g.endFill();
+        // Quiet material markings on empty sockets, matching each world.
+        g.lineStyle(1, palettes[0].hi, 0.045);
+        const x = cx + cs * 0.25,
+          y = cy + cs * 0.25;
+        if (theme.material === 'ice' || theme.material === 'lava') {
+          g.moveTo(x, y);
+          g.lineTo(x + cs * 0.3, y + cs * 0.25);
+          g.lineTo(x + cs * 0.2, y + cs * 0.5);
+        } else if (theme.material === 'rune') {
+          g.drawPolygon([
+            x + cs * 0.25,
+            y,
+            x + cs * 0.4,
+            y + cs * 0.25,
+            x + cs * 0.25,
+            y + cs * 0.5,
+            x + cs * 0.1,
+            y + cs * 0.25,
+          ]);
+        } else if (theme.material === 'star') {
+          g.drawCircle(x + cs * 0.2, y + cs * 0.15, 1);
+        } else {
+          g.moveTo(x, y + cs * 0.1);
+          g.lineTo(x + cs * 0.5, y + cs * 0.3);
+        }
+        g.lineStyle(0);
+        // Socket inner shadow
+        g.beginFill(0x0a0b12, 0.22);
+        g.drawRect(cx + cellGap, cy + cellGap, cs - cellGap * 2, 2);
+        g.drawRect(cx + cellGap, cy + cellGap, 2, cs - cellGap * 2);
+        g.endFill();
       }
-      g.lineStyle(0);
-      // Socket inner shadow
-      g.beginFill(0x0a0b12, 0.22);
-      g.drawRect(cx + cellGap, cy + cellGap, cs - cellGap * 2, 2);
-      g.drawRect(cx + cellGap, cy + cellGap, 2, cs - cellGap * 2);
-      g.endFill();
-    }
   }
 }

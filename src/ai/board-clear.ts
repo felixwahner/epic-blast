@@ -15,7 +15,10 @@ const THREE_PIECE_BUDGET = 2500;
 
 const bitCount = (mask: number): number => {
   let n = 0;
-  while (mask) { mask &= mask - 1; n++; }
+  while (mask) {
+    mask &= mask - 1;
+    n++;
+  }
   return n;
 };
 
@@ -27,7 +30,10 @@ function cellsKey(rows: readonly number[]): string {
   if (!used.length) return '';
   const all = rows.reduce((or, mask) => or | mask, 0);
   const shift = Math.log2(all & -all);
-  return rows.slice(used[0], used.at(-1)! + 1).map(mask => mask >> shift).join(',');
+  return rows
+    .slice(used[0], used.at(-1)! + 1)
+    .map(mask => mask >> shift)
+    .join(',');
 }
 
 const matrixKey = (matrix: Matrix): string =>
@@ -62,9 +68,13 @@ export function finishingShape(rows: RowMasks, catalog: readonly ShapeDefinition
   for (let y = 0; y < 8; y++) if (!rowCandidates.includes(y) && rows[y] & ~colMask) return null;
 
   for (let subset = 0; subset < 1 << rowCandidates.length; subset++) {
-    let rowSel = 0, rowGap = 0;
+    let rowSel = 0,
+      rowGap = 0;
     rowCandidates.forEach((y, i) => {
-      if (subset & (1 << i)) { rowSel |= 1 << y; rowGap += 8 - bitCount(rows[y]); }
+      if (subset & (1 << i)) {
+        rowSel |= 1 << y;
+        rowGap += 8 - bitCount(rows[y]);
+      }
     });
     if (rowGap > MAX_PIECE_CELLS) continue;
     // Occupied cells outside the chosen rows must be cleared by their columns.
@@ -88,7 +98,10 @@ export function finishingShape(rows: RowMasks, catalog: readonly ShapeDefinition
 }
 
 function shuffled<T>(items: readonly T[], random: RandomSource): T[] {
-  return items.map(item => ({ item, rank: random() })).sort((a, b) => a.rank - b.rank).map(x => x.item);
+  return items
+    .map(item => ({ item, rank: random() }))
+    .sort((a, b) => a.rank - b.rank)
+    .map(x => x.item);
 }
 
 /**
@@ -107,22 +120,24 @@ export function boardClearPath(
 
   const ordered = shuffled(catalog, random);
   const firsts: { def: ShapeDefinition; rows: number[]; cells: number }[] = [];
-  for (const def of ordered) for (const move of moves(rows, [def])) {
-    const next = applyMove(rows, def, move);
-    const finisher = finishingShape(next.rows, catalog);
-    if (finisher) return [def, finisher];
-    firsts.push({ def, rows: next.rows, cells: filledCells(next.rows) });
-  }
+  for (const def of ordered)
+    for (const move of moves(rows, [def])) {
+      const next = applyMove(rows, def, move);
+      const finisher = finishingShape(next.rows, catalog);
+      if (finisher) return [def, finisher];
+      firsts.push({ def, rows: next.rows, cells: filledCells(next.rows) });
+    }
   if (maxPieces < 3 || filledCells(rows) > THREE_PIECE_MAX_CELLS) return null;
 
   let budget = THREE_PIECE_BUDGET;
   firsts.sort((a, b) => a.cells - b.cells);
   for (const first of firsts.slice(0, THREE_PIECE_FIRST_MOVES)) {
-    for (const def of ordered) for (const move of moves(first.rows, [def])) {
-      const finisher = finishingShape(applyMove(first.rows, def, move).rows, catalog);
-      if (finisher) return [first.def, def, finisher];
-      if (--budget <= 0) return null;
-    }
+    for (const def of ordered)
+      for (const move of moves(first.rows, [def])) {
+        const finisher = finishingShape(applyMove(first.rows, def, move).rows, catalog);
+        if (finisher) return [first.def, def, finisher];
+        if (--budget <= 0) return null;
+      }
   }
   return null;
 }

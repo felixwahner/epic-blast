@@ -1,7 +1,13 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
-  HELP_CHANCE, OPENING_HELP_CHANCE, OPENING_ROUNDS, TIGHT_BOARD_CELLS, TIGHT_HELP_CHANCE, createHelpDealer, helpChance,
+  HELP_CHANCE,
+  OPENING_HELP_CHANCE,
+  OPENING_ROUNDS,
+  TIGHT_BOARD_CELLS,
+  TIGHT_HELP_CHANCE,
+  createHelpDealer,
+  helpChance,
 } from '../../src/ai/helpful-dealer.ts';
 import { canPlaceAll } from '../../src/ai/solver.ts';
 import { isGridEmpty } from '../../src/core/board.ts';
@@ -13,7 +19,14 @@ import { noHelp, seededRandom } from '../helpers/fakes.ts';
 
 const dot = { matrix: [[1]], weight: 1 };
 const bar5 = { matrix: [[1, 1, 1, 1, 1]], weight: 1 };
-const square3 = { matrix: [[1, 1, 1], [1, 1, 1], [1, 1, 1]], weight: 1 };
+const square3 = {
+  matrix: [
+    [1, 1, 1],
+    [1, 1, 1],
+    [1, 1, 1],
+  ],
+  weight: 1,
+};
 const crowded = [254, 127, 127, 127, 127, 0, 0, 0];
 const tight = [254, 127, 127, 127, 127, 15, 0, 0];
 
@@ -51,7 +64,11 @@ describe('fair deals', () => {
     let fair = 0;
     for (let i = 0; i < 200; i++) {
       // Room for one 3x3 block only, then dots.
-      session.grid.forEach((row, r) => row.forEach((_, c) => { row[c] = r < 3 && c < 3 ? null : r === 7 && c === 7 ? null : 1; }));
+      session.grid.forEach((row, r) =>
+        row.forEach((_, c) => {
+          row[c] = r < 3 && c < 3 ? null : r === 7 && c === 7 ? null : 1;
+        }),
+      );
       session.deal();
       if (canPlaceAll(session.encodedGrid(), session.tray)) fair++;
     }
@@ -81,11 +98,15 @@ describe('gold jewels', () => {
   it('appears on a small share of random pieces', () => {
     const session = new GameSession({ random: seededRandom(5), helpDealer: noHelp });
     session.start();
-    let jewels = 0, pieces = 0;
+    let jewels = 0,
+      pieces = 0;
     for (let i = 0; i < 1000; i++) {
       session.grid.forEach(row => row.fill(null));
       session.deal();
-      for (const piece of session.tray) { pieces++; if (piece?.jewel) jewels++; }
+      for (const piece of session.tray) {
+        pieces++;
+        if (piece?.jewel) jewels++;
+      }
     }
     assert(jewels / pieces > 0.03 && jewels / pieces < 0.09, `share ${jewels / pieces}`);
   });
@@ -116,7 +137,10 @@ describe('saving and resuming', () => {
     const resumed = new GameSession({ random: seededRandom(1), helpDealer: noHelp });
     assert(resumed.restore(snapshot));
     assert.deepEqual(resumed.snapshot(), session.snapshot());
-    assert.deepEqual(resumed.tray.map(p => p?.matrix ?? null), session.tray.map(p => p?.matrix ?? null));
+    assert.deepEqual(
+      resumed.tray.map(p => p?.matrix ?? null),
+      session.tray.map(p => p?.matrix ?? null),
+    );
     assert.equal(resumed.bestScore, 4321);
   });
 
@@ -124,8 +148,14 @@ describe('saving and resuming', () => {
     const session = new GameSession({ random: seededRandom(3), helpDealer: noHelp });
     session.start();
     const before = session.snapshot();
-    for (const bad of [null, {}, { ...before, version: 2 }, { ...before, grid: [[1]] }, { ...before, score: -1 },
-      { ...before, tray: [{ matrix: [[2]], colorIdx: 0, jewel: null }, null, null] }]) {
+    for (const bad of [
+      null,
+      {},
+      { ...before, version: 2 },
+      { ...before, grid: [[1]] },
+      { ...before, score: -1 },
+      { ...before, tray: [{ matrix: [[2]], colorIdx: 0, jewel: null }, null, null] },
+    ]) {
       assert.equal(session.restore(bad), false);
     }
     assert.deepEqual(session.snapshot(), before);

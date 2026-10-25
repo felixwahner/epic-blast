@@ -12,8 +12,14 @@ function fakeEnvironment(displayMode: string | null, options: { standalone?: boo
     document: {
       fullscreenEnabled: options.enabled ?? true,
       fullscreenElement: null,
-      addEventListener: ((type: string, fn: () => void, opts: unknown) => { listeners.push({ type, fn, options: opts }); }) as Document['addEventListener'],
-      documentElement: { requestFullscreen: async (opts?: FullscreenOptions) => { requests.push(opts); } },
+      addEventListener: ((type: string, fn: () => void, opts: unknown) => {
+        listeners.push({ type, fn, options: opts });
+      }) as Document['addEventListener'],
+      documentElement: {
+        requestFullscreen: async (opts?: FullscreenOptions) => {
+          requests.push(opts);
+        },
+      },
     },
   };
   return { env, listeners, requests };

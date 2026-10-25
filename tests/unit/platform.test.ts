@@ -7,7 +7,13 @@ import { memoryStorage } from '../helpers/fakes.ts';
 describe('haptics', () => {
   it('sends a single short pulse per clear', () => {
     const calls: number[] = [];
-    const device = { vibrate(ms: number) { assert.equal(this, device); calls.push(ms); return true; } };
+    const device = {
+      vibrate(ms: number) {
+        assert.equal(this, device);
+        calls.push(ms);
+        return true;
+      },
+    };
     const haptics = new Haptics(memoryStorage());
     assert.equal(haptics.lineClear(device), true);
     assert.deepEqual(calls, [10]);
@@ -17,13 +23,25 @@ describe('haptics', () => {
     const haptics = new Haptics(memoryStorage());
     assert.equal(haptics.lineClear({}), false);
     assert.equal(haptics.lineClear({ vibrate: () => false }), false);
-    assert.equal(haptics.lineClear({ vibrate() { throw new Error('blocked'); } }), false);
+    assert.equal(
+      haptics.lineClear({
+        vibrate() {
+          throw new Error('blocked');
+        },
+      }),
+      false,
+    );
   });
 
   it('can be switched off and remembers the choice', () => {
     const storage = memoryStorage();
     const calls: number[] = [];
-    const device = { vibrate: (ms: number) => { calls.push(ms); return true; } };
+    const device = {
+      vibrate: (ms: number) => {
+        calls.push(ms);
+        return true;
+      },
+    };
     const haptics = new Haptics(storage);
     assert.equal(haptics.toggle(), false);
     assert.equal(haptics.lineClear(device), false);
@@ -39,7 +57,12 @@ describe('storage', () => {
   it('survives a throwing localStorage', () => {
     const globals = globalThis as Record<string, unknown>;
     const saved = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
-    Object.defineProperty(globalThis, 'localStorage', { configurable: true, get() { throw new Error('SecurityError'); } });
+    Object.defineProperty(globalThis, 'localStorage', {
+      configurable: true,
+      get() {
+        throw new Error('SecurityError');
+      },
+    });
     try {
       assert.equal(safeStorage.getItem('x'), null);
       assert.doesNotThrow(() => safeStorage.setItem('x', '1'));

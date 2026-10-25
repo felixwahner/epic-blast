@@ -15,7 +15,8 @@ export function progression(score: number): LevelProgress {
   let level = Math.max(1, Math.floor(Math.log1p(score / FIRST_LEVEL_POINTS) / Math.log(2)) + 1);
   while (score >= levelStart(level + 1)) level++;
   while (score < levelStart(level)) level--;
-  const start = levelStart(level), next = levelStart(level + 1);
+  const start = levelStart(level),
+    next = levelStart(level + 1);
   return { level, start, next, progress: (score - start) / (next - start) };
 }
 

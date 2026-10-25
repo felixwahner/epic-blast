@@ -10,7 +10,13 @@ import { ScreenShake } from '../../src/render/screen-shake.ts';
 const fixedLayout = { ...computeLayout(400, 700), gridX: 12, gridY: 20, cellSize: 40, gridWidth: 320 } satisfies Layout;
 
 describe('layout', () => {
-  for (const [w, h] of [[390, 844], [1100, 1000], [320, 568], [768, 1024], [1920, 600]]) {
+  for (const [w, h] of [
+    [390, 844],
+    [1100, 1000],
+    [320, 568],
+    [768, 1024],
+    [1920, 600],
+  ]) {
     it(`fits board and tray into ${w}x${h}`, () => {
       const l = computeLayout(w, h);
       assert.equal(l.gridWidth, l.cellSize * 8);
@@ -34,15 +40,16 @@ describe('layout', () => {
 
 describe('drag geometry', () => {
   it('keeps tall and growing pieces 32px above the finger', () => {
-    for (const cellSize of [24, 32, 40, 48, 56]) for (const height of [1, 2, 3, 4, 5]) {
-      const fingerY = 500;
-      const top = fingerY - height * cellSize / 2 - dragLift(height, cellSize);
-      assert(top + height * cellSize <= fingerY - 32);
-      for (const scale of [0.56, 0.8, 1]) {
-        const visualTop = top + height * cellSize * (1 - scale) / 2;
-        assert(visualTop + height * cellSize * scale <= fingerY - 32);
+    for (const cellSize of [24, 32, 40, 48, 56])
+      for (const height of [1, 2, 3, 4, 5]) {
+        const fingerY = 500;
+        const top = fingerY - (height * cellSize) / 2 - dragLift(height, cellSize);
+        assert(top + height * cellSize <= fingerY - 32);
+        for (const scale of [0.56, 0.8, 1]) {
+          const visualTop = top + (height * cellSize * (1 - scale)) / 2;
+          assert(visualTop + height * cellSize * scale <= fingerY - 32);
+        }
       }
-    }
     assert.equal(dragLift(1, 40), 72);
     assert.equal(dragLift(5, 40), 132);
   });
@@ -60,14 +67,21 @@ describe('drag geometry', () => {
 
   it('gives touch input the whole slot but mouse input only the piece', () => {
     const l = fixedLayout;
-    const pieces = [{ slot: 0, x: 40, y: l.trayY + 30, width: 20, height: 20 }, { slot: 2, x: 260, y: l.trayY + 30, width: 20, height: 20 }];
+    const pieces = [
+      { slot: 0, x: 40, y: l.trayY + 30, width: 20, height: 20 },
+      { slot: 2, x: 260, y: l.trayY + 30, width: 20, height: 20 },
+    ];
     const slotEdge = { x: l.gridX + 2, y: l.trayY + 5 };
     assert.equal(hitTestTray(l, pieces, slotEdge, true), 0);
     assert.equal(hitTestTray(l, pieces, slotEdge, false), null);
     assert.equal(hitTestTray(l, pieces, { x: 50, y: l.trayY + 40 }, false), 0);
     const emptyMiddle = { x: l.gridX + l.slotWidth * 1.5, y: l.trayY + 40 };
     assert.equal(hitTestTray(l, pieces, emptyMiddle, true), null, 'an empty slot never selects a neighbour');
-    assert.equal(hitTestTray(l, pieces, { x: l.gridX + l.slotWidth * 2, y: l.trayY + 40 }, true), 2, 'exclusive right edge');
+    assert.equal(
+      hitTestTray(l, pieces, { x: l.gridX + l.slotWidth * 2, y: l.trayY + 40 }, true),
+      2,
+      'exclusive right edge',
+    );
   });
 });
 
@@ -96,17 +110,20 @@ describe('clear animation', () => {
   });
 
   it('keeps fragment perspective bounded', () => {
-    for (const depth of [-0.42, 0, 0.78]) for (const age of [0, 0.2, 0.8]) {
-      const scale = fragmentProjection(age, depth, 8);
-      assert(scale.x > 0 && scale.y > 0 && scale.y < 2);
-    }
+    for (const depth of [-0.42, 0, 0.78])
+      for (const age of [0, 0.2, 0.8]) {
+        const scale = fragmentProjection(age, depth, 8);
+        assert(scale.x > 0 && scale.y > 0 && scale.y < 2);
+      }
   });
 });
 
 describe('jewel shading', () => {
   it('keeps white specular highlights, saturated faces and dark bevels', () => {
     for (const color of [0x12ffff, 0xff12c0, 0x9020ff]) {
-      const dark = jewelColor(0.2, color), body = jewelColor(0.72, color), light = jewelColor(1, color, 1);
+      const dark = jewelColor(0.2, color),
+        body = jewelColor(0.72, color),
+        light = jewelColor(1, color, 1);
       assert(Math.max(...dark) < 80, 'lower bevel remains dark');
       assert((Math.max(...body) - Math.min(...body)) / Math.max(...body) > 0.75, 'face remains saturated');
       assert(Math.min(...light) > 245, 'specular reflection stays nearly white');
@@ -115,7 +132,8 @@ describe('jewel shading', () => {
 
   it('transitions continuously without hard bands', () => {
     for (let step = 1; step <= 1000; step++) {
-      const a = jewelColor((step - 1) / 1000, 0xff1290), b = jewelColor(step / 1000, 0xff1290);
+      const a = jewelColor((step - 1) / 1000, 0xff1290),
+        b = jewelColor(step / 1000, 0xff1290);
       assert(b.every((value, index) => Math.abs(value - a[index]) <= 4));
     }
   });

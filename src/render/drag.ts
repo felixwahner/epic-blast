@@ -3,7 +3,7 @@ import type { Layout } from './layout.ts';
 
 /** Keep the bottom edge above the finger, even for tall pieces. */
 export function dragLift(height: number, cellSize: number): number {
-  return Math.max(72, height * cellSize / 2 + 32);
+  return Math.max(72, (height * cellSize) / 2 + 32);
 }
 
 export interface Point {
@@ -49,10 +49,16 @@ export function trayHitArea(layout: Layout, piece: TrayPieceBounds, touch: boole
 }
 
 /** Returns the slot of the first piece under the pointer, or null. */
-export function hitTestTray(layout: Layout, pieces: readonly TrayPieceBounds[], point: Point, touch: boolean): number | null {
+export function hitTestTray(
+  layout: Layout,
+  pieces: readonly TrayPieceBounds[],
+  point: Point,
+  touch: boolean,
+): number | null {
   for (const piece of pieces) {
     const area = trayHitArea(layout, piece, touch);
-    if (point.x >= area.left && point.x < area.right && point.y >= area.top && point.y <= area.bottom) return piece.slot;
+    if (point.x >= area.left && point.x < area.right && point.y >= area.top && point.y <= area.bottom)
+      return piece.slot;
   }
   return null;
 }
@@ -70,7 +76,13 @@ export interface DragPlacement {
  * Positions a dragged piece above the pointer and snaps it to the nearest grid
  * cell. `scale` is the piece's current visual scale (1 = board size).
  */
-export function dragPlacement(layout: Layout, pointer: Point, widthCells: number, heightCells: number, scale: number): DragPlacement {
+export function dragPlacement(
+  layout: Layout,
+  pointer: Point,
+  widthCells: number,
+  heightCells: number,
+  scale: number,
+): DragPlacement {
   const fullWidth = widthCells * layout.cellSize;
   const fullHeight = heightCells * layout.cellSize;
   const anchor = {

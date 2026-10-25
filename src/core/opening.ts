@@ -17,8 +17,18 @@ export const TUTORIAL_OPENING: Opening = {
     [3, 3, 4, _, _, _, 7, 6],
   ],
   pieces: [
-    { matrix: [[1, 1, 1], [1, 1, 1]] },
-    { matrix: [[1, 1], [1, 1]] },
+    {
+      matrix: [
+        [1, 1, 1],
+        [1, 1, 1],
+      ],
+    },
+    {
+      matrix: [
+        [1, 1],
+        [1, 1],
+      ],
+    },
     { matrix: [[1, 1, 1]] },
   ],
 };

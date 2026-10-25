@@ -34,9 +34,13 @@ const shadingCache = new WeakMap<object, Map<string, JewelShading>>();
 /** Sizes kept per source image; resizing only ever needs the current and the previous one. */
 const SHADING_CACHE_SIZES = 4;
 
-function jewelShading(image: CanvasImageSource & { width: number; height: number }, size: number, neon: boolean): JewelShading {
+function jewelShading(
+  image: CanvasImageSource & { width: number; height: number },
+  size: number,
+  neon: boolean,
+): JewelShading {
   let sizes = shadingCache.get(image);
-  if (!sizes) shadingCache.set(image, sizes = new Map());
+  if (!sizes) shadingCache.set(image, (sizes = new Map()));
   const key = `${size}:${neon}`;
   const cached = sizes.get(key);
   if (cached) return cached;
@@ -47,18 +51,35 @@ function jewelShading(image: CanvasImageSource & { width: number; height: number
   const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
   ctx.imageSmoothingQuality = 'high';
   // Retain complete rounded outline and all four bevels of the source jewel.
-  ctx.drawImage(image, image.width * 0.085, image.height * 0.085, image.width * 0.82, image.height * 0.82, 0, 0, size, size);
+  ctx.drawImage(
+    image,
+    image.width * 0.085,
+    image.height * 0.085,
+    image.width * 0.82,
+    image.height * 0.82,
+    0,
+    0,
+    size,
+    size,
+  );
   const data = ctx.getImageData(0, 0, size, size).data;
   const count = size * size;
   const shading: JewelShading = {
-    alpha: new Uint8ClampedArray(count), shade: new Float64Array(count), keep: new Float64Array(count),
-    white: new Float64Array(count), lower: new Float64Array(count), right: new Float64Array(count),
+    alpha: new Uint8ClampedArray(count),
+    shade: new Float64Array(count),
+    keep: new Float64Array(count),
+    white: new Float64Array(count),
+    lower: new Float64Array(count),
+    right: new Float64Array(count),
   };
   for (let p = 0, i = 0; p < count; p++, i += 4) {
     shading.alpha[p] = data[i + 3] > 240 ? 255 : data[i + 3];
     // Preserve the original cyan tile's soft shading, and only whiten real highlights.
-    const r = data[i], g = data[i + 1], b = data[i + 2];
-    const x = (p % size) / size, y = Math.floor(p / size) / size;
+    const r = data[i],
+      g = data[i + 1],
+      b = data[i + 2];
+    const x = (p % size) / size,
+      y = Math.floor(p / size) / size;
     // Stretch the source's soft bevel shading so lit and shadowed facets read crisply.
     const rawLight = clamp01(0.5 + ((g * 0.6 + b * 0.4) / 255 - 0.5) * 1.6);
     // The face emits clean color; deep shading belongs only to the bevels.
@@ -73,7 +94,8 @@ function jewelShading(image: CanvasImageSource & { width: number; height: number
     // A broad soft top-facet reflection, not a sharp drawn inner outline.
     const upper = 0.62 * Math.exp(-Math.pow((y - 0.065) / 0.045, 2)) * (0.75 + 0.25 * (1 - x));
     // Broad translucent reflection across the face gives depth to the material.
-    const faceMask = clamp01((x - 0.14) * 12) * clamp01((0.86 - x) * 12) * clamp01((y - 0.16) * 12) * clamp01((0.84 - y) * 12);
+    const faceMask =
+      clamp01((x - 0.14) * 12) * clamp01((0.86 - x) * 12) * clamp01((y - 0.16) * 12) * clamp01((0.84 - y) * 12);
     const reflection = 0.14 * Math.exp(-Math.pow((y - (0.28 + 0.18 * x)) / 0.18, 2)) * faceMask;
     const specular = Math.min(neon ? 0.8 : 0.9, white + upper + (neon ? 0 : reflection));
     // The terms of jewelColor() that do not depend on the colour.
@@ -89,7 +111,12 @@ function jewelShading(image: CanvasImageSource & { width: number; height: number
   return shading;
 }
 
-export function jewelSurface(image: CanvasImageSource & { width: number; height: number }, color: number, size = 256, material: Material = 'ice'): HTMLCanvasElement {
+export function jewelSurface(
+  image: CanvasImageSource & { width: number; height: number },
+  color: number,
+  size = 256,
+  material: Material = 'ice',
+): HTMLCanvasElement {
   const shading = jewelShading(image, size, material === 'circuit');
   const canvas = document.createElement('canvas');
   canvas.width = size;
@@ -97,10 +124,16 @@ export function jewelSurface(image: CanvasImageSource & { width: number; height:
   const ctx = canvas.getContext('2d')!;
   const pixels = ctx.createImageData(size, size);
   const out = pixels.data;
-  const red = (color >> 16) & 255, green = (color >> 8) & 255, blue = color & 255;
+  const red = (color >> 16) & 255,
+    green = (color >> 8) & 255,
+    blue = color & 255;
   const { alpha, shade, keep, white, lower, right } = shading;
   for (let p = 0, i = 0; p < alpha.length; p++, i += 4) {
-    const k = shade[p], s = keep[p], w = white[p], l = lower[p], r = right[p];
+    const k = shade[p],
+      s = keep[p],
+      w = white[p],
+      l = lower[p],
+      r = right[p];
     out[i] = Math.round(Math.round(red * k * s + w) * l * r);
     out[i + 1] = Math.round(Math.round(green * k * s + w) * l * r);
     out[i + 2] = Math.round(Math.round(blue * k * s + w) * l * r);

@@ -20,8 +20,16 @@ export interface Layout {
 }
 
 export const emptyLayout = (): Layout => ({
-  viewWidth: 0, viewHeight: 0, cellSize: 0, gridWidth: 0, gridX: 0, gridY: 0,
-  trayY: 0, trayHeight: 0, slotWidth: 0, trayScale: 0.56,
+  viewWidth: 0,
+  viewHeight: 0,
+  cellSize: 0,
+  gridWidth: 0,
+  gridX: 0,
+  gridY: 0,
+  trayY: 0,
+  trayHeight: 0,
+  slotWidth: 0,
+  trayScale: 0.56,
 });
 
 export function computeLayout(width: number, height: number): Layout {
@@ -38,9 +46,11 @@ export function computeLayout(width: number, height: number): Layout {
   const trayY = gridY + gridWidth + 20;
   const slotWidth = gridWidth / 3;
   // Fit even five-cell shapes inside a slot with room at both edges.
-  const trayScale = Math.min(0.56,
+  const trayScale = Math.min(
+    0.56,
     (slotWidth - 16) / (5 * cellSize),
-    (trayHeight - TRAY_LABEL_HEIGHT - 12) / (5 * cellSize));
+    (trayHeight - TRAY_LABEL_HEIGHT - 12) / (5 * cellSize),
+  );
   return { viewWidth: w, viewHeight: h, cellSize, gridWidth, gridX, gridY, trayY, trayHeight, slotWidth, trayScale };
 }
 
@@ -53,7 +63,10 @@ export function cellCenter(layout: Layout, row: number, col: number): { x: numbe
 }
 
 /** Average center of a set of cells, e.g. the epicenter of a line clear. */
-export function cellsCentroid(layout: Layout, cells: readonly { row: number; col: number }[]): { x: number; y: number } {
+export function cellsCentroid(
+  layout: Layout,
+  cells: readonly { row: number; col: number }[],
+): { x: number; y: number } {
   const row = cells.reduce((sum, c) => sum + c.row, 0) / cells.length;
   const col = cells.reduce((sum, c) => sum + c.col, 0) / cells.length;
   return cellCenter(layout, row, col);

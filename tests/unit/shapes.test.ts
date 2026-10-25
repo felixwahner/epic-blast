@@ -21,10 +21,25 @@ describe('shape catalog', () => {
   });
 
   it('picks shapes proportionally to their weight', () => {
-    const catalog = [{ matrix: [[1]], weight: 1 }, { matrix: [[1, 1]], weight: 3 }];
-    assert.equal(pickWeightedShape(catalog, () => 0), catalog[0]);
-    assert.equal(pickWeightedShape(catalog, () => 0.249), catalog[0]);
-    assert.equal(pickWeightedShape(catalog, () => 0.25), catalog[1]);
-    assert.equal(pickWeightedShape(catalog, () => 0.999), catalog[1]);
+    const catalog = [
+      { matrix: [[1]], weight: 1 },
+      { matrix: [[1, 1]], weight: 3 },
+    ];
+    assert.equal(
+      pickWeightedShape(catalog, () => 0),
+      catalog[0],
+    );
+    assert.equal(
+      pickWeightedShape(catalog, () => 0.249),
+      catalog[0],
+    );
+    assert.equal(
+      pickWeightedShape(catalog, () => 0.25),
+      catalog[1],
+    );
+    assert.equal(
+      pickWeightedShape(catalog, () => 0.999),
+      catalog[1],
+    );
   });
 });

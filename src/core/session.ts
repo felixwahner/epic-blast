@@ -2,16 +2,43 @@
 // The Game orchestrator calls these methods and turns the returned outcomes
 // into visuals and sound.
 import {
-  GRID_SIZE, canFitAnywhere, canPlace, clearGrid, createGrid, encodeGrid, findFullLines, isGridEmpty,
-  lineCells, placeShape, shapeCells, shapeSize, type CellPosition, type Grid, type Matrix,
+  GRID_SIZE,
+  canFitAnywhere,
+  canPlace,
+  clearGrid,
+  createGrid,
+  encodeGrid,
+  findFullLines,
+  isGridEmpty,
+  lineCells,
+  placeShape,
+  shapeCells,
+  shapeSize,
+  type CellPosition,
+  type Grid,
+  type Matrix,
 } from './board.ts';
 import { progression } from './progression.ts';
 import { allClearBonus, allClearMultiplier, comboClearScore, jewelBonus } from './scoring.ts';
-import { SHAPE_DEFINITIONS, isSatisfyingShape, pickWeightedShape, type RandomSource, type ShapeDefinition } from './shapes.ts';
+import {
+  SHAPE_DEFINITIONS,
+  isSatisfyingShape,
+  pickWeightedShape,
+  type RandomSource,
+  type ShapeDefinition,
+} from './shapes.ts';
 import { canRecoverStreak } from './streak-recovery.ts';
 import { createHelpDealer, type HelpDealer } from '../ai/helpful-dealer.ts';
 import { reviveDefinitions } from '../ai/revive.ts';
-import { boardQuality, canPlaceAll, compare, moves, type RoundScore, type RowMasks, type SolverPiece } from '../ai/solver.ts';
+import {
+  boardQuality,
+  canPlaceAll,
+  compare,
+  moves,
+  type RoundScore,
+  type RowMasks,
+  type SolverPiece,
+} from '../ai/solver.ts';
 
 export const TRAY_SLOTS = 3;
 /** Attempts to find a first tray piece that fits before giving up. */
@@ -24,8 +51,20 @@ const FAIR_DEAL_ATTEMPTS = 12;
 export const JEWEL_CHANCE = 0.06;
 
 export type CelebrationKind =
-  | 'blockbuster' | 'triple' | 'clean' | 'escape' | 'room' | 'perfect' | 'brilliant'
-  | 'fire' | 'unstoppable' | 'legendary' | 'finish' | 'record' | 'cross' | 'zone';
+  | 'blockbuster'
+  | 'triple'
+  | 'clean'
+  | 'escape'
+  | 'room'
+  | 'perfect'
+  | 'brilliant'
+  | 'fire'
+  | 'unstoppable'
+  | 'legendary'
+  | 'finish'
+  | 'record'
+  | 'cross'
+  | 'zone';
 
 export interface TrayPiece {
   id: string;
@@ -200,7 +239,11 @@ export class GameSession {
     this.roundStreak = 0;
     this.recordCelebrated = false;
     this.helpDealer.reset();
-    opening?.grid.forEach((cells, row) => cells.forEach((cell, col) => { this.grid[row][col] = cell; }));
+    opening?.grid.forEach((cells, row) =>
+      cells.forEach((cell, col) => {
+        this.grid[row][col] = cell;
+      }),
+    );
     return this.deal(opening?.pieces ?? null);
   }
 
@@ -209,26 +252,57 @@ export class GameSession {
       version: 1,
       grid: this.grid.map(row => [...row]),
       jewels: [...this.jewels],
-      tray: this.tray.map(piece => piece && { matrix: piece.matrix.map(row => [...row]), colorIdx: piece.colorIdx, jewel: piece.jewel }),
-      score: this.score, level: this.level, revives: this.revives, combo: this.combo, maxCombo: this.maxCombo,
-      turnHasClear: this.turnHasClear, isGameOver: this.isGameOver, recoveryPending: this.recoveryPending,
-      clearedLines: this.clearedLines, allClears: this.allClears, roundId: this.roundId, roundLines: this.roundLines,
-      roundPlacements: this.roundPlacements, roundStreak: this.roundStreak, recordCelebrated: this.recordCelebrated,
+      tray: this.tray.map(
+        piece => piece && { matrix: piece.matrix.map(row => [...row]), colorIdx: piece.colorIdx, jewel: piece.jewel },
+      ),
+      score: this.score,
+      level: this.level,
+      revives: this.revives,
+      combo: this.combo,
+      maxCombo: this.maxCombo,
+      turnHasClear: this.turnHasClear,
+      isGameOver: this.isGameOver,
+      recoveryPending: this.recoveryPending,
+      clearedLines: this.clearedLines,
+      allClears: this.allClears,
+      roundId: this.roundId,
+      roundLines: this.roundLines,
+      roundPlacements: this.roundPlacements,
+      roundStreak: this.roundStreak,
+      recordCelebrated: this.recordCelebrated,
     };
   }
 
   /** Continues a saved game. Returns false, changing nothing, when the snapshot is unusable. */
   restore(data: unknown): boolean {
     if (!isSnapshot(data)) return false;
-    data.grid.forEach((cells, row) => cells.forEach((cell, col) => { this.grid[row][col] = cell; }));
+    data.grid.forEach((cells, row) =>
+      cells.forEach((cell, col) => {
+        this.grid[row][col] = cell;
+      }),
+    );
     this.jewels.clear();
     for (const index of data.jewels) if (this.grid[Math.floor(index / 8)][index % 8] !== null) this.jewels.add(index);
-    this.tray = data.tray.map((piece, slot) => piece && { ...this.createPiece(piece.matrix, slot), colorIdx: piece.colorIdx, jewel: piece.jewel });
+    this.tray = data.tray.map(
+      (piece, slot) =>
+        piece && { ...this.createPiece(piece.matrix, slot), colorIdx: piece.colorIdx, jewel: piece.jewel },
+    );
     ({
-      score: this.score, level: this.level, revives: this.revives, combo: this.combo, maxCombo: this.maxCombo,
-      turnHasClear: this.turnHasClear, isGameOver: this.isGameOver, recoveryPending: this.recoveryPending,
-      clearedLines: this.clearedLines, allClears: this.allClears, roundId: this.roundId, roundLines: this.roundLines,
-      roundPlacements: this.roundPlacements, roundStreak: this.roundStreak, recordCelebrated: this.recordCelebrated,
+      score: this.score,
+      level: this.level,
+      revives: this.revives,
+      combo: this.combo,
+      maxCombo: this.maxCombo,
+      turnHasClear: this.turnHasClear,
+      isGameOver: this.isGameOver,
+      recoveryPending: this.recoveryPending,
+      clearedLines: this.clearedLines,
+      allClears: this.allClears,
+      roundId: this.roundId,
+      roundLines: this.roundLines,
+      roundPlacements: this.roundPlacements,
+      roundStreak: this.roundStreak,
+      recordCelebrated: this.recordCelebrated,
     } = data);
     this.roundBest = null;
     this.helpDealer.reset();
@@ -269,7 +343,9 @@ export class GameSession {
     this.turnHasClear = false;
 
     const rows = this.encodedGrid();
-    const helpful = definitions ? null : this.helpDealer.deal(rows, this.catalog, { combo: this.combo, round: this.roundId + 1 });
+    const helpful = definitions
+      ? null
+      : this.helpDealer.deal(rows, this.catalog, { combo: this.combo, round: this.roundId + 1 });
     const fixed = helpful?.length ?? 0;
     const chosen: SolverPiece[] = [];
     for (let slot = 0; slot < TRAY_SLOTS; slot++) {
@@ -328,8 +404,13 @@ export class GameSession {
       if (this.roundStreak > 0 && this.roundStreak % 5 === 0) this.events.push('zone');
       if (this.roundPlacements === 3 && isGridEmpty(this.grid)) this.events.push('perfect');
       if (this.roundPlacements === 3 && previousLines === 0 && cleared >= 2) this.events.push('finish');
-      const actual = { placed: this.roundPlacements, lines: this.roundLines, quality: boardQuality(this.encodedGrid()) };
-      if (this.roundBest && this.roundPlacements === 3 && compare(actual, this.roundBest) === 0) this.events.push('brilliant');
+      const actual = {
+        placed: this.roundPlacements,
+        lines: this.roundLines,
+        quality: boardQuality(this.encodedGrid()),
+      };
+      if (this.roundBest && this.roundPlacements === 3 && compare(actual, this.roundBest) === 0)
+        this.events.push('brilliant');
       next = this.deal();
       gameOver = next.kind === 'dealt' && next.gameOver;
     } else {
@@ -389,7 +470,9 @@ export class GameSession {
 
     const points = comboClearScore(previousCombo, lines);
     const cells = lineCells({ rows, cols }).map(cell => ({
-      ...cell, color: this.grid[cell.row][cell.col]!, jewel: this.jewels.has(cell.row * 8 + cell.col),
+      ...cell,
+      color: this.grid[cell.row][cell.col]!,
+      jewel: this.jewels.has(cell.row * 8 + cell.col),
     }));
     this.award(points, 'clear');
     const jewels = cells.filter(cell => cell.jewel).length;
@@ -408,7 +491,18 @@ export class GameSession {
       this.events.push('clean');
       this.award(allClearBonus(points, this.allClears), 'all-clear');
     }
-    return { rows, cols, lines, combo: this.combo, points, cells, allClear, allClearMultiplier: multiplier, jewels, jewelPoints };
+    return {
+      rows,
+      cols,
+      lines,
+      combo: this.combo,
+      points,
+      cells,
+      allClear,
+      allClearMultiplier: multiplier,
+      jewels,
+      jewelPoints,
+    };
   }
 
   private award(points: number, kind: ScoreAward['kind']): void {
@@ -486,23 +580,58 @@ const isInt = (value: unknown, min: number, max = Number.MAX_SAFE_INTEGER): valu
   Number.isInteger(value) && (value as number) >= min && (value as number) <= max;
 
 function isMatrix(value: unknown): value is number[][] {
-  return Array.isArray(value) && value.length > 0 && value.length <= 5 && value.every(row =>
-    Array.isArray(row) && row.length === (value[0] as unknown[]).length && row.length <= 5 && row.every(cell => cell === 0 || cell === 1))
-    && value.flat().includes(1);
+  return (
+    Array.isArray(value) &&
+    value.length > 0 &&
+    value.length <= 5 &&
+    value.every(
+      row =>
+        Array.isArray(row) &&
+        row.length === (value[0] as unknown[]).length &&
+        row.length <= 5 &&
+        row.every(cell => cell === 0 || cell === 1),
+    ) &&
+    value.flat().includes(1)
+  );
 }
 
 /** Structural check of saved data, so a corrupt or outdated save starts a fresh game instead. */
 function isSnapshot(data: unknown): data is SessionSnapshot {
   const d = data as Partial<SessionSnapshot> | null;
   if (!d || d.version !== 1) return false;
-  const counters = [d.score, d.level, d.revives, d.combo, d.maxCombo, d.clearedLines, d.allClears, d.roundId, d.roundLines, d.roundPlacements, d.roundStreak];
+  const counters = [
+    d.score,
+    d.level,
+    d.revives,
+    d.combo,
+    d.maxCombo,
+    d.clearedLines,
+    d.allClears,
+    d.roundId,
+    d.roundLines,
+    d.roundPlacements,
+    d.roundStreak,
+  ];
   if (!counters.every(value => isInt(value, 0)) || !isInt(d.level, 1)) return false;
-  if (![d.turnHasClear, d.isGameOver, d.recoveryPending, d.recordCelebrated].every(value => typeof value === 'boolean')) return false;
+  if (![d.turnHasClear, d.isGameOver, d.recoveryPending, d.recordCelebrated].every(value => typeof value === 'boolean'))
+    return false;
   if (!Array.isArray(d.grid) || d.grid.length !== GRID_SIZE) return false;
-  if (!d.grid.every(row => Array.isArray(row) && row.length === GRID_SIZE && row.every(cell => cell === null || isInt(cell, 0, 63)))) return false;
+  if (
+    !d.grid.every(
+      row => Array.isArray(row) && row.length === GRID_SIZE && row.every(cell => cell === null || isInt(cell, 0, 63)),
+    )
+  )
+    return false;
   if (!Array.isArray(d.jewels) || !d.jewels.every(index => isInt(index, 0, GRID_SIZE * GRID_SIZE - 1))) return false;
   if (!Array.isArray(d.tray) || d.tray.length !== TRAY_SLOTS) return false;
-  return d.tray.every(piece => piece === null || (isMatrix(piece.matrix) && isInt(piece.colorIdx, 0, 63) && (
-    piece.jewel === null || (isInt(piece.jewel?.row, 0, 4) && isInt(piece.jewel?.col, 0, 4) && piece.matrix[piece.jewel.row]?.[piece.jewel.col] === 1))));
+  return d.tray.every(
+    piece =>
+      piece === null ||
+      (isMatrix(piece.matrix) &&
+        isInt(piece.colorIdx, 0, 63) &&
+        (piece.jewel === null ||
+          (isInt(piece.jewel?.row, 0, 4) &&
+            isInt(piece.jewel?.col, 0, 4) &&
+            piece.matrix[piece.jewel.row]?.[piece.jewel.col] === 1))),
+  );
 }
-

@@ -12,7 +12,11 @@ export interface AudioEngineOptions {
 }
 
 const defaultContextClass = (): AudioContextConstructor | undefined => {
-  const host = globalThis as unknown as { AudioContext?: AudioContextConstructor; webkitAudioContext?: AudioContextConstructor; window?: { AudioContext?: AudioContextConstructor; webkitAudioContext?: AudioContextConstructor } };
+  const host = globalThis as unknown as {
+    AudioContext?: AudioContextConstructor;
+    webkitAudioContext?: AudioContextConstructor;
+    window?: { AudioContext?: AudioContextConstructor; webkitAudioContext?: AudioContextConstructor };
+  };
   const scope = host.window ?? host;
   return scope.AudioContext ?? scope.webkitAudioContext;
 };
@@ -66,7 +70,14 @@ export class AudioEngine {
   }
 
   /** Simple oscillator with an exponential decay envelope. */
-  private voice(type: OscillatorType, freq: number, startTime: number, duration: number, startGain: number, endGain: number): void {
+  private voice(
+    type: OscillatorType,
+    freq: number,
+    startTime: number,
+    duration: number,
+    startGain: number,
+    endGain: number,
+  ): void {
     if (this.isMuted || !this.ctx) return;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
@@ -81,9 +92,16 @@ export class AudioEngine {
   }
 
   /** Short tone with a fast linear attack; nodes disconnect themselves when done. */
-  private tone(start: number, duration: number, frequency: number, amplitude: number, type: OscillatorType = 'sine'): void {
+  private tone(
+    start: number,
+    duration: number,
+    frequency: number,
+    amplitude: number,
+    type: OscillatorType = 'sine',
+  ): void {
     const ctx = this.ctx!;
-    const osc = ctx.createOscillator(), gain = ctx.createGain();
+    const osc = ctx.createOscillator(),
+      gain = ctx.createGain();
     osc.type = type;
     osc.frequency.value = frequency;
     gain.gain.setValueAtTime(0.001, start);
@@ -93,7 +111,10 @@ export class AudioEngine {
     gain.connect(ctx.destination);
     osc.start(start);
     osc.stop(start + duration + 0.01);
-    osc.onended = () => { osc.disconnect(); gain.disconnect(); };
+    osc.onended = () => {
+      osc.disconnect();
+      gain.disconnect();
+    };
   }
 
   /** Pick up a block piece: quick ascending blip. */
@@ -160,10 +181,16 @@ export class AudioEngine {
     gain.gain.setValueAtTime(0.001, now);
     gain.gain.linearRampToValueAtTime(0.3 * this.volume, now + 0.003);
     gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
-    source.connect(filter); filter.connect(gain); gain.connect(ctx.destination);
+    source.connect(filter);
+    filter.connect(gain);
+    gain.connect(ctx.destination);
     source.start(now);
     source.stop(now + 0.12);
-    source.onended = () => { source.disconnect(); filter.disconnect(); gain.disconnect(); };
+    source.onended = () => {
+      source.disconnect();
+      filter.disconnect();
+      gain.disconnect();
+    };
   }
 
   /** Sub kick plus an audible harmonic for small phone speakers. */
@@ -180,9 +207,14 @@ export class AudioEngine {
       gain.gain.setValueAtTime(0.001, now);
       gain.gain.linearRampToValueAtTime(Math.min(strength, 2) * (index ? 0.18 : 0.55) * this.volume, now + 0.008);
       gain.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
-      oscillator.connect(gain); gain.connect(ctx.destination);
-      oscillator.start(now); oscillator.stop(now + 0.6);
-      oscillator.onended = () => { oscillator.disconnect(); gain.disconnect(); };
+      oscillator.connect(gain);
+      gain.connect(ctx.destination);
+      oscillator.start(now);
+      oscillator.stop(now + 0.6);
+      oscillator.onended = () => {
+        oscillator.disconnect();
+        gain.disconnect();
+      };
     });
   }
 
@@ -197,7 +229,8 @@ export class AudioEngine {
     tone(0, 0.16, 1046.5, 0.3, true);
     tone(0.025, 0.22, 1318.5, 0.19, true);
     this.playBassImpact(0.85 + Math.min(3, lineCount - 1) * 0.15, delay);
-    if (stage >= 1 || lineCount >= 2) for (const frequency of [261.63, 329.63, 392]) tone(0.035, 0.5, frequency, 0.11, true);
+    if (stage >= 1 || lineCount >= 2)
+      for (const frequency of [261.63, 329.63, 392]) tone(0.035, 0.5, frequency, 0.11, true);
     if (stage >= 2) {
       for (const frequency of [523.25, 659.25]) tone(0.19, 0.25, frequency, 0.11);
       tone(0.14, 0.18, 98, 0.28);
@@ -210,7 +243,9 @@ export class AudioEngine {
     if (milestone) {
       this.playBassImpact(0.65, delay + 0.16);
       this.playBassImpact(0.5, delay + 0.32);
-      [523.25, 659.25, 783.99, 1046.5].forEach((frequency, index) => tone(0.45 + index * 0.04, 0.5, frequency, 0.1, true));
+      [523.25, 659.25, 783.99, 1046.5].forEach((frequency, index) =>
+        tone(0.45 + index * 0.04, 0.5, frequency, 0.1, true),
+      );
     }
   }
 
@@ -222,15 +257,21 @@ export class AudioEngine {
     [523.25, 659.25, 783.99].forEach((frequency, index) => {
       const start = now + index * 0.055;
       const ctx = this.ctx!;
-      const osc = ctx.createOscillator(), gain = ctx.createGain();
+      const osc = ctx.createOscillator(),
+        gain = ctx.createGain();
       osc.type = 'triangle';
       osc.frequency.value = frequency;
       gain.gain.setValueAtTime(0.001, start);
       gain.gain.linearRampToValueAtTime(0.12 * this.volume, start + 0.008);
       gain.gain.exponentialRampToValueAtTime(0.001, start + 0.4);
-      osc.connect(gain); gain.connect(ctx.destination);
-      osc.start(start); osc.stop(start + 0.42);
-      osc.onended = () => { osc.disconnect(); gain.disconnect(); };
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(start);
+      osc.stop(start + 0.42);
+      osc.onended = () => {
+        osc.disconnect();
+        gain.disconnect();
+      };
     });
   }
 
@@ -249,7 +290,12 @@ export class AudioEngine {
     this.init();
     if (this.isMuted || !this.ctx) return;
     let t = this.ctx.currentTime;
-    for (const { f, d } of [{ f: 523.25, d: 0.1 }, { f: 659.25, d: 0.1 }, { f: 783.99, d: 0.1 }, { f: 1046.5, d: 0.35 }]) {
+    for (const { f, d } of [
+      { f: 523.25, d: 0.1 },
+      { f: 659.25, d: 0.1 },
+      { f: 783.99, d: 0.1 },
+      { f: 1046.5, d: 0.35 },
+    ]) {
       this.voice('square', f, t, d + 0.05, 0.25, 0.001 / this.volume);
       t += d;
     }

@@ -3,9 +3,9 @@ export function registerServiceWorker(): void {
   if (!('serviceWorker' in navigator)) return;
   window.addEventListener('load', async () => {
     try {
-      const registration = await navigator.serviceWorker.register(
-        new URL('sw.js', document.baseURI), { updateViaCache: 'none' },
-      );
+      const registration = await navigator.serviceWorker.register(new URL('sw.js', document.baseURI), {
+        updateViaCache: 'none',
+      });
       const checkUpdate = (): void => {
         registration.update().catch(error => console.warn('PWA update check failed:', error));
       };
@@ -34,9 +34,12 @@ export const browserEnvironment = (): FullscreenEnvironment => window as unknown
 
 /** True when the game runs as an installed app rather than in a browser tab. */
 export function isInstalledApp(env: Pick<FullscreenEnvironment, 'matchMedia' | 'navigator'>): boolean {
-  return env.navigator.standalone === true
-    || ['fullscreen', 'standalone', 'minimal-ui', 'window-controls-overlay']
-      .some(mode => env.matchMedia(`(display-mode: ${mode})`).matches);
+  return (
+    env.navigator.standalone === true ||
+    ['fullscreen', 'standalone', 'minimal-ui', 'window-controls-overlay'].some(
+      mode => env.matchMedia(`(display-mode: ${mode})`).matches,
+    )
+  );
 }
 
 /**
@@ -48,9 +51,14 @@ export function enterFullscreenOnFirstTouch(env: FullscreenEnvironment = browser
   const { document } = env;
   if (!isInstalledApp(env) || env.matchMedia('(display-mode: fullscreen)').matches) return;
   if (!document.fullscreenEnabled || typeof document.documentElement.requestFullscreen !== 'function') return;
-  document.addEventListener('pointerdown', () => {
-    if (document.fullscreenElement) return;
-    document.documentElement.requestFullscreen({ navigationUI: 'hide' })
-      .catch(error => console.warn('Fullscreen request failed:', error));
-  }, { once: true, capture: true });
+  document.addEventListener(
+    'pointerdown',
+    () => {
+      if (document.fullscreenElement) return;
+      document.documentElement
+        .requestFullscreen({ navigationUI: 'hide' })
+        .catch(error => console.warn('Fullscreen request failed:', error));
+    },
+    { once: true, capture: true },
+  );
 }

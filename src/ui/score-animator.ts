@@ -24,7 +24,10 @@ interface Flight {
   side: number;
 }
 
-export function createScoreAnimator(element: HTMLElement, { host, reducedMotion }: { host: HTMLElement; reducedMotion: () => boolean }): ScoreAnimator {
+export function createScoreAnimator(
+  element: HTMLElement,
+  { host, reducedMotion }: { host: HTMLElement; reducedMotion: () => boolean },
+): ScoreAnimator {
   const layer = document.createElement('div');
   layer.className = 'score-flight-layer';
   layer.setAttribute('aria-hidden', 'true');
@@ -64,16 +67,23 @@ export function createScoreAnimator(element: HTMLElement, { host, reducedMotion 
     target += points;
     impact?.cancel();
     const reduced = gentle();
-    impact = element.animate(reduced ? [
-      { color: '#ffffff' }, { color: '#fff2ac' },
-    ] : [
-      { transform: 'scale(1)', color: '#ffffff' },
-      { transform: `scale(${emphatic ? 1.18 : 1.04})`, color: '#ffffff', offset: 0.22 },
-      { transform: 'scale(1)', color: '#fff2ac' },
-    ], { duration: reduced ? 180 : emphatic ? 440 : 180, easing: 'cubic-bezier(.16, 1, .3, 1)' });
+    impact = element.animate(
+      reduced
+        ? [{ color: '#ffffff' }, { color: '#fff2ac' }]
+        : [
+            { transform: 'scale(1)', color: '#ffffff' },
+            { transform: `scale(${emphatic ? 1.18 : 1.04})`, color: '#ffffff', offset: 0.22 },
+            { transform: 'scale(1)', color: '#fff2ac' },
+          ],
+      { duration: reduced ? 180 : emphatic ? 440 : 180, easing: 'cubic-bezier(.16, 1, .3, 1)' },
+    );
   }
 
-  function add(points: number, origin?: { x: number; y: number } | null, { delay = 0, combo = 0, bonus = false }: ScoreFlightOptions = {}) {
+  function add(
+    points: number,
+    origin?: { x: number; y: number } | null,
+    { delay = 0, combo = 0, bonus = false }: ScoreFlightOptions = {},
+  ) {
     if (!origin) {
       receive(points, false);
       return;
@@ -93,7 +103,9 @@ export function createScoreAnimator(element: HTMLElement, { host, reducedMotion 
     node.append(amount);
     layer.append(node);
     flights.push({
-      node, points, age: -delay,
+      node,
+      points,
+      age: -delay,
       x: Math.max(0.2, Math.min(0.8, (origin.x - bounds.left) / bounds.width)),
       y: Math.max(0.14, Math.min(0.88, (origin.y - bounds.top) / bounds.height)),
       side: bonus ? -1 : 1,
@@ -117,11 +129,14 @@ export function createScoreAnimator(element: HTMLElement, { host, reducedMotion 
       // An accelerating, curved flight leaves time to read the award first.
       const t = travel * travel;
       const x = (flight.x + (destination.x - flight.x) * t) * bounds.width + Math.sin(t * Math.PI) * 32 * flight.side;
-      const y = (flight.y + (destination.y - flight.y) * t) * bounds.height - Math.min(flight.age / 0.26, 1) * 10 * (1 - t);
+      const y =
+        (flight.y + (destination.y - flight.y) * t) * bounds.height - Math.min(flight.age / 0.26, 1) * 10 * (1 - t);
       const reveal = Math.min(flight.age / 0.12, 1);
       const scale = reduced ? 1 : (0.85 + 0.15 * (1 - (1 - reveal) ** 3)) * (1 - 0.62 * t);
       flight.node.style.transform = `translate(${reduced ? flight.x * bounds.width : x}px, ${reduced ? flight.y * bounds.height : y}px) translate(-50%, -50%) scale(${scale})`;
-      flight.node.style.opacity = String(reduced ? Math.min(1, reveal * 2, (duration - flight.age) / 0.1) : Math.min(reveal, (1 - travel) / 0.12));
+      flight.node.style.opacity = String(
+        reduced ? Math.min(1, reveal * 2, (duration - flight.age) / 0.1) : Math.min(reveal, (1 - travel) / 0.12),
+      );
       flight.node.classList.toggle('score-flight--travel', !reduced && travel > 0);
       const label = flight.node.firstElementChild as HTMLElement | null;
       if (label?.classList.contains('score-flight-label')) label.style.opacity = String(1 - Math.min(1, travel * 4));
