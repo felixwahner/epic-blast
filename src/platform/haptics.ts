@@ -24,7 +24,7 @@ export class Haptics {
   }
 
   /** A single short pulse per clear, independent of sound settings. */
-  lineClear(device: VibrationDevice | undefined = globalThis.navigator as VibrationDevice | undefined): boolean {
+  lineClear(device: VibrationDevice | undefined = globalThis.navigator): boolean {
     if (!this.on || typeof device?.vibrate !== 'function') return false;
     try {
       return device.vibrate(10);

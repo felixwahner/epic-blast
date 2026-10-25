@@ -87,9 +87,9 @@ describe('background music', () => {
     // Rapid off/on must cancel the delayed pause.
     music.stop();
     music.tick();
-    const before = counters.pauses;
+    const pausesBefore = counters.pauses;
     await wait(80);
-    assert.equal(counters.pauses, before);
+    assert.equal(counters.pauses, pausesBefore);
     music.stop();
     await wait(70);
   });

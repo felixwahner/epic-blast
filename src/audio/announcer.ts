@@ -125,7 +125,7 @@ export class StadiumAnnouncer {
   constructor({
     enabled = () => true,
     context = () => null,
-    host = globalThis.window as AnnouncerHost | undefined,
+    host = globalThis.window,
     fetchClip = url => fetch(url),
   }: AnnouncerOptions = {}) {
     this.host = host;
@@ -153,7 +153,7 @@ export class StadiumAnnouncer {
     return this.loading;
   }
 
-  announce(event: AnnouncerEvent | string, value = 0): void {
+  announce(event: string, value = 0): void {
     const call = callFor(event as AnnouncerEvent, value);
     if (!call || !this.enabled() || this.host?.document?.hidden) return;
     if (this.pending && this.pending.priority > call[1]) return;

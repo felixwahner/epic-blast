@@ -119,7 +119,7 @@ export function solve(rows: RowMasks, pieces: readonly (SolverPiece | null)[]): 
   // Memo keyed by numbers instead of strings: rows 0-3 and the remaining pieces in
   // the outer key, rows 4-7 in the inner one.
   const memo = new Map<number, Map<number, SearchResult>>();
-  const board = new Array<number>(8);
+  const board = Array.from({ length: 8 }, () => 0);
 
   function search(remaining: number): SearchResult {
     const high = ((board[0] | board[1] << 8 | board[2] << 16) + board[3] * 2 ** 24) * 2 ** pieces.length + remaining;

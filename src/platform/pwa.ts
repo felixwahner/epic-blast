@@ -6,7 +6,9 @@ export function registerServiceWorker(): void {
       const registration = await navigator.serviceWorker.register(
         new URL('sw.js', document.baseURI), { updateViaCache: 'none' },
       );
-      const checkUpdate = () => registration.update().catch(error => console.warn('PWA update check failed:', error));
+      const checkUpdate = (): void => {
+        registration.update().catch(error => console.warn('PWA update check failed:', error));
+      };
       window.addEventListener('online', checkUpdate);
       document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible') checkUpdate();

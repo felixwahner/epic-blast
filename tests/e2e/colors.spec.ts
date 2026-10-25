@@ -45,6 +45,6 @@ test('rendered jewel hues match all eight neon palette colors', async ({ page })
     expect(sample.count, `visible color ${color}`).toBeGreaterThan(30);
     expect(sample.saturation, `palette ${color} must look neon, not pastel`).toBeGreaterThan(0.65);
     const expected = rgb(themeFor(1).palettes[color].base), delta = Math.abs(hue(sample.rgb) - hue(expected));
-    expect(Math.min(delta, 360 - delta), `palette ${color}: rendered ${sample.rgb} expected ${expected}`).toBeLessThan(12);
+    expect(Math.min(delta, 360 - delta), `palette ${color}: rendered ${sample.rgb.join(',')} expected ${expected.join(',')}`).toBeLessThan(12);
   }
 });

@@ -147,7 +147,7 @@ describe('board-aware dealer', () => {
     const crowded = board(['#######.', '#######.', '#######.', '#######.', '#######.', '', '##......', '']);
     const path = createHelpDealer(() => 0).deal(crowded, SHAPE_DEFINITIONS);
     assert(path, 'line-clear help still applies');
-    assert(!emptiesBoard(crowded, path!));
+    assert(!emptiesBoard(crowded, path));
   });
 });
 

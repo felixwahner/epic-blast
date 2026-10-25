@@ -7,7 +7,7 @@ export function memoryStorage(initial: Record<string, string> = {}): KeyValueSto
   return {
     data,
     getItem: key => data.get(key) ?? null,
-    setItem: (key, value) => { data.set(key, String(value)); },
+    setItem: (key, value) => { data.set(key, value); },
   };
 }
 
