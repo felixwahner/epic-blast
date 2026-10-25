@@ -30,14 +30,14 @@ A Block Blast–style puzzle game for the browser, built with **TypeScript**, **
 | Clearing lines | `lines × 8 × (10 × combo + 6)` |
 | All clear (board empty after a clear) | +300 bonus |
 
-**Combo** goes up by one for every move that clears at least one line. If a whole round (three pieces) passes without a clear, the combo resets to 0. Your best score is saved in the browser.
+**Combo** goes up by one for every move that clears at least one line. If a whole round (three pieces) passes without a clear, the combo resets to 0. Three pips beside the combo show how many pieces are left to keep it (green once the round has a clear). Your best score is saved in the browser, and the game in progress is saved after every move: closing or reloading the page continues where you left off.
 
 ### Levels and revives
 
-- Levels are based on score, and each level needs twice as many extra points as the one before: Level 2 at 100,000, Level 3 at 300,000, Level 4 at 700,000, Level 5 at 1,500,000, and so on.
+- Levels are based on score, and each level needs twice as many extra points as the one before: Level 2 at 10,000, Level 3 at 30,000, Level 4 at 70,000, Level 5 at 150,000, and so on.
 - You start every game with **1 revive** and earn **+1 revive per level-up**.
 - **Revive after game over:** a revive deals three new pieces that are guaranteed to clear a line, and keeps your combo.
-- **Save your combo:** if your combo is **25 or higher** and a round ends with no clear, the game offers to spend a revive to keep the combo going ("KOMBO RETTEN").
+- **Save your combo:** if your combo is **10 or higher** and a round ends with no clear, the game offers to spend a revive to keep the combo going ("KOMBO RETTEN").
 
 ### Worlds
 
@@ -61,7 +61,14 @@ There are 37 fixed shapes, each spawned with its own weight: dot; dominoes; stra
 
 Dealing is mostly random, with some help built in:
 - The first piece of each round is re-rolled (up to 20 times) to try to find one that fits.
-- **Helpful dealer:** in about 15% of rounds, the game searches one or two moves ahead and deals a piece that can clear a line. After a helpful round there is a 3-round cooldown.
+- **Helpful dealer:** the game sometimes searches one or two moves ahead and deals a piece that can clear a line. It helps more in the first four rounds of a game and on tight boards (36+ blocks, where the cooldown is skipped), and less in between.
+- **Fair deals:** random trays are re-dealt (up to 12 times) until all three pieces can be placed in some order.
+- **Gold jewels:** about 6% of random pieces carry a gold jewel on one block. Clearing it pays the clear's points again (at least 250).
+- **First game:** the very first game starts on a prepared board where the first piece clears two lines and empties the board, with an animated hand showing the drag.
+
+### World collection
+
+Worlds unlock for good, across games: by reaching them in a game, or once enough lines are cleared in total (the n-th world needs n × 40 lines). Tapping the world name below the board opens the gallery, where an unlocked world can be chosen to open every new game. The game over screen shows the nearest goals (the record, the next world, the next level) and a few numbers from the game.
 
 ### Celebrations
 

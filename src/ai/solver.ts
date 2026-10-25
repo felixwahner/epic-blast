@@ -60,6 +60,21 @@ export function applyMove(rows: RowMasks, piece: SolverPiece, move: Pick<Move, '
   return { rows: next, lines: fullRows.length + bitCount(columns) };
 }
 
+/** True when every piece can be placed in some order, with clears resolved in between. */
+export function canPlaceAll(rows: RowMasks, pieces: readonly (SolverPiece | null)[]): boolean {
+  const rest = pieces.filter((piece): piece is SolverPiece => piece !== null);
+  if (!rest.length) return true;
+  const tried = new Set<string>();
+  return rest.some((piece, index) => {
+    // Identical shapes lead to the same positions; try each one once.
+    const key = JSON.stringify(piece.matrix);
+    if (tried.has(key)) return false;
+    tried.add(key);
+    const others = rest.filter((_, other) => other !== index);
+    return moves(rows, [piece]).some(move => canPlaceAll(applyMove(rows, piece, move).rows, others));
+  });
+}
+
 /** Heuristic for future room: empty cells first, then adjacent empty pairs. */
 export function boardQuality(rows: RowMasks): number {
   let empty = 0, space = 0;

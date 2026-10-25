@@ -12,6 +12,12 @@ export const HELP_COOLDOWN = 1;
 export const BOARD_CLEAR_MAX_CELLS = 28;
 /** Chance to deal a board-clearing set when one exists. Ignores the help cooldown. */
 export const BOARD_CLEAR_CHANCE = 0.6;
+/** The first rounds of a game are dealt generously, so combos start early. */
+export const OPENING_ROUNDS = 4;
+export const OPENING_HELP_CHANCE = 0.6;
+/** Boards with at least this many blocks are tight: help comes more often and skips the cooldown. */
+export const TIGHT_BOARD_CELLS = 36;
+export const TIGHT_HELP_CHANCE = 0.6;
 
 function shuffled<T>(items: readonly T[], random: RandomSource): T[] {
   return items.map(item => ({ item, rank: random() })).sort((a, b) => a.rank - b.rank).map(x => x.item);
@@ -50,6 +56,18 @@ export function helpfulDefinitions(rows: RowMasks, catalog: readonly ShapeDefini
 export interface DealContext {
   /** Current combo; a running combo raises the help chance. */
   combo: number;
+  /** 1-based number of the round being dealt; the opening rounds get more help. */
+  round?: number;
+}
+
+/**
+ * Help chance for the game's phase: generous in the opening and on tight boards,
+ * leaner in between so the middle of a game builds tension.
+ */
+export function helpChance(context: DealContext, filled: number): number {
+  if (filled >= TIGHT_BOARD_CELLS) return TIGHT_HELP_CHANCE;
+  if ((context.round ?? Infinity) <= OPENING_ROUNDS) return OPENING_HELP_CHANCE;
+  return context.combo > 0 ? COMBO_HELP_CHANCE : HELP_CHANCE;
 }
 
 export interface HelpDealer {
@@ -67,8 +85,8 @@ export function createHelpDealer(random: RandomSource = Math.random): HelpDealer
         const sweep = boardClearPath(rows, catalog, random);
         if (sweep) { cooldown = HELP_COOLDOWN; return sweep; }
       }
-      if (cooldown > 0) { cooldown--; return null; }
-      if (random() >= (context.combo > 0 ? COMBO_HELP_CHANCE : HELP_CHANCE)) return null;
+      if (cooldown > 0 && filled < TIGHT_BOARD_CELLS) { cooldown--; return null; }
+      if (random() >= helpChance(context, filled)) return null;
       const path = helpfulDefinitions(rows, catalog, random);
       if (path) cooldown = HELP_COOLDOWN;
       return path;

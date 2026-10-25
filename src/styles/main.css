@@ -866,3 +866,73 @@ body::after {
 #btn-close-app svg { width: 18px; height: 18px; }
 #btn-close-app:hover { color: #fff; border-color: #ffffff99; box-shadow: 0 2px 0 #080315; }
 #btn-close-app[hidden] { display: none; }
+
+/* Combo fuse: one pip per piece left to keep the combo; green once the round has a clear. */
+.combo-fuse { display: inline-flex; gap: 4px; margin-left: 2px; }
+.combo-fuse[hidden] { display: none; }
+.combo-fuse i { width: 8px; height: 8px; border-radius: 2px; background: #2a1638; border: 1px solid #ff8ce855; transition: background .2s, box-shadow .2s; }
+.combo-fuse i.lit { background: #ff8ce8; box-shadow: 0 0 6px #ff36d9; }
+.combo-fuse.safe i.lit { background: #00ff66; border-color: #00ff66aa; box-shadow: 0 0 6px #00ff66; }
+.combo-fuse.last i.lit { animation: fuse-warn .8s ease-in-out infinite alternate; }
+@keyframes fuse-warn { to { background: #ff3c64; box-shadow: 0 0 9px #ff3c64; } }
+@media (prefers-reduced-motion: reduce) { .combo-fuse i { animation: none !important; transition: none; } }
+
+/* World name doubles as the button to the world collection. */
+.world-button {
+  display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%;
+  padding: 2px 0; background: none; border: 0; font-family: inherit; cursor: pointer;
+}
+.world-button:focus-visible { outline: 1px dashed var(--world-secondary, #ff36d9); outline-offset: 2px; }
+.world-count { font-size: 0.8em; padding: 2px 5px; color: #fff; border: 1px solid currentColor; border-radius: 3px; opacity: .8; }
+.world-button.has-fresh .world-count, .worlds-btn.has-fresh { position: relative; }
+.world-button.has-fresh .world-count::after, .worlds-btn.has-fresh::after {
+  content: ''; position: absolute; top: -4px; right: -4px; width: 8px; height: 8px; border-radius: 50%;
+  background: #ffd23f; box-shadow: 0 0 6px #ffd23f;
+}
+
+/* Game over: the nearest goals and a few numbers from the game. */
+.near-miss { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; text-align: center; }
+.near-miss[hidden] { display: none; }
+.near-miss li { font-family: Arial, sans-serif; font-weight: 700; font-size: 13px; line-height: 1.4; color: #ffecad; text-shadow: 0 0 8px #ffd23f88; }
+.near-miss li:first-child { font-size: 15px; color: #fff3b0; }
+.game-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(56px, 1fr)); gap: 6px; margin: 0; }
+.game-stats div { padding: 7px 4px; text-align: center; background: #0e0924aa; border: 1px solid #8545a366; border-radius: 4px; }
+.game-stats dt { font-size: 6px; letter-spacing: .5px; color: #c9b4e6; white-space: nowrap; }
+.game-stats dd { margin: 5px 0 0; font-size: 13px; color: #fff; }
+
+/* World collection */
+.overlay-dialog.world-gallery { width: min(94vw, 520px); }
+.gallery-summary { margin: 10px 0 12px; text-align: center; font-size: 9px; line-height: 1.6; color: #ffecad; min-height: 1.6em; }
+.gallery-hint { margin: 14px 0 0; font-family: Arial, sans-serif; font-size: 12px; line-height: 1.5; color: #c9b4e6; text-align: center; }
+.world-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+@media (min-width: 601px) { .world-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; } }
+.world-card {
+  position: relative; display: flex; flex-direction: column; justify-content: flex-end; gap: 4px;
+  aspect-ratio: 3 / 4; padding: 5px; overflow: hidden; text-align: left; cursor: pointer;
+  font-family: inherit; color: #fff; background: #0e0924; border: 2px solid color-mix(in srgb, var(--card-color) 55%, transparent); border-radius: 6px;
+}
+.world-card__art { position: absolute; inset: 0; background: linear-gradient(160deg, var(--card-color), #0e0924) center / cover no-repeat; }
+.world-card::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 45%, #070318ee); }
+.world-card__name, .world-card__status { position: relative; z-index: 1; }
+.world-card__name { font-size: 7px; line-height: 1.5; text-shadow: 0 1px 2px #000; }
+.world-card__status { font-size: 6px; color: #ffecad; min-height: 1em; }
+.world-card.start { border-color: #ffd23f; box-shadow: 0 0 10px #ffd23f88; }
+.world-card.start .world-card__status { color: #ffd23f; }
+.world-card.locked { cursor: default; border-color: #3a2a50; }
+.world-card.locked .world-card__art { filter: grayscale(1) brightness(.3) blur(2px); transform: scale(1.08); }
+.world-card.locked .world-card__name { color: #a99abf; }
+.world-card:not(.locked):hover { border-color: var(--card-color); }
+@media (min-width: 601px) { .world-card__name { font-size: 8px; } .world-card__status { font-size: 7px; } }
+
+/* Tutorial hand: drags from the first tray piece to its spot on the board. */
+.tutorial-hand { position: absolute; left: 0; top: 0; z-index: 4; pointer-events: none; animation: hand-drag 2.2s ease-in-out infinite; }
+.tutorial-hand__icon { display: block; font-size: 38px; line-height: 1; transform: translate(-30%, -8%); filter: drop-shadow(0 3px 4px #000a); }
+@keyframes hand-drag {
+  0%, 12% { transform: translate(var(--from-x), var(--from-y)) scale(1); opacity: 0; }
+  20% { transform: translate(var(--from-x), var(--from-y)) scale(.9); opacity: 1; }
+  70% { transform: translate(var(--to-x), var(--to-y)) scale(.9); opacity: 1; }
+  85%, 100% { transform: translate(var(--to-x), var(--to-y)) scale(1); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tutorial-hand { animation: none; transform: translate(var(--from-x), var(--from-y)); }
+}

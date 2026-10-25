@@ -8,6 +8,9 @@ export const STORAGE_KEYS = {
   effects: 'epic_blast_effects',
   music: 'epic_blast_music',
   installDismissed: 'epic_blast_install_dismissed',
+  worlds: 'epic_blast_worlds',
+  savedGame: 'epic_blast_saved_game',
+  tutorialDone: 'epic_blast_tutorial_done',
 } as const;
 
 export interface KeyValueStore {
