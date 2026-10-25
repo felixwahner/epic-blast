@@ -190,16 +190,25 @@ Production builds include a web app manifest, icons and a service worker that sa
 
 `.github/workflows/deploy-ftp.yml` runs on every push to `main` (and by hand under **Actions → Deploy to FTP → Run workflow**). It runs `npm test`, builds `dist/` and uploads it with lftp. `index.html`, `sw.js` and `manifest.webmanifest` go up last, so visitors never load a page whose assets are still missing.
 
-Set these under **Settings → Secrets and variables → Actions**:
+All values go under **Settings → Secrets and variables → Actions**. That page has two tabs, and each value must be in the right one. The workflow reads secrets only from the **Secrets** tab and variables only from the **Variables** tab. A value in the wrong tab counts as not set.
 
-| Name | Kind | Required | Meaning |
-| --- | --- | --- | --- |
-| `FTP_HOST` | Secret | yes | Server name, e.g. `ftp.example.com` (no `ftp://`) |
-| `FTP_USER` | Secret | yes | Login name |
-| `FTP_PASSWORD` | Secret | yes | Password |
-| `FTP_REMOTE_DIR` | Variable | yes | Target folder on the server, e.g. `/htdocs/epic-blast`. Created if missing |
-| `FTP_PROTOCOL` | Variable | no | `ftps` (default, FTP with TLS), `ftp` (unencrypted) or `sftp` |
-| `FTP_PORT` | Variable | no | Only if the server doesn't use the default port (21 for FTP/FTPS, 22 for SFTP) |
-| `FTP_DELETE_STALE` | Variable | no | `true` deletes files in `FTP_REMOTE_DIR` that are not in the build (old hashed assets). `.htaccess` and `.well-known/` are kept. Default `false` |
+**Tab "Secrets" → "New repository secret"** (hidden in logs):
+
+| Name | Required | Meaning |
+| --- | --- | --- |
+| `FTP_HOST` | yes | Server name, e.g. `ftp.example.com` (no `ftp://`) |
+| `FTP_USER` | yes | Login name |
+| `FTP_PASSWORD` | yes | Password |
+
+**Tab "Variables" → "New repository variable"** (visible in logs):
+
+| Name | Required | Meaning |
+| --- | --- | --- |
+| `FTP_REMOTE_DIR` | yes | Target folder on the server, e.g. `/htdocs/epic-blast`. Created if missing |
+| `FTP_PROTOCOL` | no | `ftps` (default, FTP with TLS), `ftp` (unencrypted) or `sftp` |
+| `FTP_PORT` | no | Only if the server doesn't use the default port (21 for FTP/FTPS, 22 for SFTP) |
+| `FTP_DELETE_STALE` | no | `true` deletes files in `FTP_REMOTE_DIR` that are not in the build (old hashed assets). `.htaccess` and `.well-known/` are kept. Default `false` |
+
+Use repository secrets and variables, not environment ones. The job doesn't use a GitHub environment, so it can't see values stored there. If a run fails with `FTP_… is not set`, check that the value is in the right tab.
 
 Only turn on `FTP_DELETE_STALE` when `FTP_REMOTE_DIR` holds nothing but the game.
