@@ -9,9 +9,9 @@ test('loads the renderer, materials, options and a playable tray', async ({ page
   await expect(page.locator('#score-display')).toHaveText('0');
   await page.screenshot({ path: `test-results/${info.project.name}-game.png`, fullPage: true });
 
-  await page.getByRole('button', { name: 'Optionen öffnen' }).click();
+  await page.getByRole('button', { name: 'Menü öffnen' }).click();
   await expect(page.locator('#options-menu')).toBeVisible();
-  await page.getByRole('button', { name: 'Optionen schließen' }).click();
+  await page.getByRole('button', { name: 'Menü schließen' }).click();
   await expect(page.locator('#options-menu')).not.toBeVisible();
 
   const { box, layout } = await canvasLayout(page);
@@ -27,7 +27,7 @@ test('loads the renderer, materials, options and a playable tray', async ({ page
 
 test('remembers option toggles across reloads', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('button', { name: 'Optionen öffnen' }).click();
+  await page.getByRole('button', { name: 'Menü öffnen' }).click();
   await page.locator('#btn-effects').click();
   await expect(page.locator('#btn-effects')).toHaveAttribute('aria-pressed', 'true');
   await page.locator('#btn-vibration').click();
@@ -38,32 +38,36 @@ test('remembers option toggles across reloads', async ({ page }) => {
   await expect(page.locator('#btn-vibration')).toHaveAttribute('aria-pressed', 'false');
 });
 
-test('new game sits beside the logo and asks in an in-game overlay', async ({ page }, info) => {
+test('the header holds only the logo and a menu, which leads to new game', async ({ page }, info) => {
   await page.goto('/');
-  await expect(page.locator('#options-menu #btn-restart')).toHaveCount(0);
+  const menu = page.getByRole('button', { name: 'Menü öffnen' });
   const newGame = page.getByRole('button', { name: 'Neues Spiel' });
-  const options = page.getByRole('button', { name: 'Optionen öffnen' });
-  const [newGameBox, optionsBox] = [(await newGame.boundingBox())!, (await options.boundingBox())!];
-  // Both buttons flank the logo, vertically centred on it.
-  const logoBox = (await page.locator('.game-logo').boundingBox())!;
-  expect(newGameBox.x + newGameBox.width).toBeLessThanOrEqual(logoBox.x);
-  expect(optionsBox.x).toBeGreaterThanOrEqual(logoBox.x + logoBox.width);
-  expect(Math.abs(newGameBox.y - optionsBox.y)).toBeLessThan(2);
-  expect(Math.abs(newGameBox.y + newGameBox.height / 2 - (logoBox.y + logoBox.height / 2))).toBeLessThan(3);
+  await expect(page.locator('#game-header .pixel-btn:visible')).toHaveCount(1);
+  // The menu sits in the top-right corner, clear of the logo.
+  const [menuBox, logoBox] = [(await menu.boundingBox())!, (await page.locator('.game-logo').boundingBox())!];
+  expect(menuBox.x).toBeGreaterThanOrEqual(logoBox.x + logoBox.width);
+  expect(menuBox.y).toBeLessThan(logoBox.y + logoBox.height / 2);
+  await expect(newGame).toBeHidden();
 
+  const openNewGame = async () => {
+    await menu.click();
+    await newGame.click();
+    await expect(page.locator('#options-menu')).not.toBeVisible();
+  };
   const overlay = page.locator('#restart-confirm');
-  await newGame.click();
+  await openNewGame();
   await expect(overlay).not.toHaveClass(/hidden/);
   await expect(page.getByRole('alertdialog', { name: 'NEUES SPIEL?' })).toBeVisible();
   await page.screenshot({ path: `test-results/${info.project.name}-restart-confirm.png` });
   await page.getByRole('button', { name: 'WEITERSPIELEN' }).click();
   await expect(overlay).toHaveClass(/hidden/);
+  await expect(menu).toBeFocused();
 
-  await newGame.click();
+  await openNewGame();
   await page.keyboard.press('Escape');
   await expect(overlay).toHaveClass(/hidden/);
 
-  await newGame.click();
+  await openNewGame();
   await page.getByRole('button', { name: 'NEU STARTEN' }).click();
   await expect(overlay).toHaveClass(/hidden/);
   await expect(page.locator('#score-display')).toHaveText('0');
