@@ -1,21 +1,23 @@
 // One brief, non-interactive achievement banner per move.
 import type { CelebrationKind } from '../core/session.ts';
+import { t, type MessageKey } from '../i18n/index.ts';
 
-export const CELEBRATION_LABELS: Record<CelebrationKind, string> = {
-  blockbuster: 'BLOCKBUSTER!',
-  triple: 'TRIPLE HIT!',
-  clean: 'CLEAN SWEEP!',
-  escape: 'PHEW! CLOSE ONE!',
-  room: 'ROOM TO BREATHE!',
-  perfect: 'PERFECT ROUND!',
-  brilliant: 'BRILLIANT MOVE!',
-  fire: 'ON FIRE!',
-  unstoppable: 'UNSTOPPABLE!',
-  legendary: 'LEGENDARY!',
-  finish: 'WHAT A FINISH!',
-  record: 'NEW PERSONAL BEST!',
-  cross: 'CROSS STRIKE!',
-  zone: 'IN THE ZONE!',
+/** Translation key of each banner. */
+export const CELEBRATION_LABELS: Record<CelebrationKind, MessageKey> = {
+  blockbuster: 'celebration.blockbuster',
+  triple: 'celebration.triple',
+  clean: 'celebration.clean',
+  escape: 'celebration.escape',
+  room: 'celebration.room',
+  perfect: 'celebration.perfect',
+  brilliant: 'celebration.brilliant',
+  fire: 'celebration.fire',
+  unstoppable: 'celebration.unstoppable',
+  legendary: 'celebration.legendary',
+  finish: 'celebration.finish',
+  record: 'celebration.record',
+  cross: 'celebration.cross',
+  zone: 'celebration.zone',
 };
 
 /** Highest priority first. */
@@ -72,8 +74,9 @@ export class Celebrations {
     banner.replaceChildren();
     const title = document.createElement('span');
     title.className = 'celebration-title';
-    title.setAttribute('aria-label', CELEBRATION_LABELS[kind]);
-    for (const [index, letter] of [...CELEBRATION_LABELS[kind]].entries()) {
+    const label = t(CELEBRATION_LABELS[kind]);
+    title.setAttribute('aria-label', label);
+    for (const [index, letter] of [...label].entries()) {
       const glyph = document.createElement('span');
       glyph.textContent = letter === ' ' ? ' ' : letter;
       glyph.setAttribute('aria-hidden', 'true');

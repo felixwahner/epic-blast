@@ -5,6 +5,7 @@
 import './styles/main.css';
 import { AudioEngine } from './audio/audio-engine.ts';
 import { Game } from './game/game.ts';
+import { translatePage } from './i18n/index.ts';
 import { InstallBanner } from './ui/install-banner.ts';
 import { setupCloseAppButton } from './ui/close-app-button.ts';
 import { enterFullscreenOnFirstTouch, registerServiceWorker } from './platform/pwa.ts';
@@ -16,6 +17,7 @@ declare global {
   }
 }
 
+translatePage();
 if (import.meta.env.PROD) registerServiceWorker();
 enterFullscreenOnFirstTouch();
 // Created right away so an early `beforeinstallprompt` is not missed.

@@ -1,12 +1,12 @@
-# Epic Blast — Logoentwurf
+# Epic Blast: logo concept
 
-Erstellt mit der integrierten Bildgenerierung (image_gen).
+Made with the built-in image generation (image_gen).
 
-Datei: [`src/assets/branding/epic-blast-logo-concept.png`](../../src/assets/branding/epic-blast-logo-concept.png) (im Spiel als `epic-blast-logo.webp`)
+File: [`src/assets/branding/epic-blast-logo-concept.png`](../../src/assets/branding/epic-blast-logo-concept.png) (in the game as `epic-blast-logo.webp`)
 
-Format: PNG, 1536 × 1024 Pixel, transparenter Hintergrund (Alpha-Kanal geprüft).
+Format: PNG, 1536 × 1024 pixels, transparent background (alpha channel checked).
 
-## Verwendeter Prompt
+## Prompt used
 
 Use case: logo-brand
 Asset type: main game title logo for the existing EPIC BLAST block puzzle game.
