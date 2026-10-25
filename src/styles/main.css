@@ -1587,11 +1587,6 @@ body::after {
 }
 
 /* New game: the top-left counterpart of the options gear, confirmed on the board. */
-.header-start {
-  grid-column: 1;
-  grid-row: 1;
-  justify-self: start;
-}
 #btn-new-game {
   display: grid;
   place-items: center;
@@ -1981,29 +1976,6 @@ body::after {
 .game-logo {
   width: clamp(176px, 50vw, 224px);
 }
-#btn-new-game,
-#btn-options {
-  width: 38px;
-  height: 38px;
-  min-height: 0;
-  margin-top: 4px;
-  color: #ffffffe6;
-  text-shadow: none;
-  background: linear-gradient(180deg, #2a1745cc, #120a26cc);
-  border: 1px solid #ffffff4d;
-  box-shadow: 0 2px 0 #080315;
-}
-#btn-new-game svg,
-#btn-options svg {
-  width: 20px;
-  height: 20px;
-}
-#btn-new-game:hover,
-#btn-options:hover {
-  color: #fff;
-  border-color: #ffffff99;
-  box-shadow: 0 2px 0 #080315;
-}
 .scoreboard {
   margin-top: -6px;
   padding-inline: var(--board-left, 4px) var(--board-right, 4px);
@@ -2037,56 +2009,95 @@ body::after {
   }
 }
 
-/* New game and options sit vertically centred right beside the logo; the installed app's
-   close button takes the top-right corner on its own. */
+/* The logo stands alone in the header; one quiet menu button sits in the top-right
+   corner above the board edge and holds new game and the options. */
 .game-header {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 14px;
   position: relative;
 }
-.header-start,
-.header-left,
-.header-controls {
+.header-left {
   grid-column: auto;
   grid-row: auto;
   justify-self: auto;
 }
-#btn-new-game,
-#btn-options {
-  margin-top: 0;
+.header-controls {
+  position: absolute;
+  top: 8px;
+  right: calc(var(--board-right, 5px) + 2px);
+  z-index: 2;
+}
+/* The installed app's close button takes the corner; the menu moves in beside it. */
+.game-header:has(#btn-close-app:not([hidden])) .header-controls {
+  right: calc(var(--board-right, 5px) + 46px);
 }
 #btn-close-app {
   position: absolute;
-  top: 4px;
-  right: var(--board-right, 5px);
+  top: 8px;
+  right: calc(var(--board-right, 5px) + 2px);
 }
-/* Installed app only: the close button, matching the corner buttons. */
+/* Round socket in the world's colours, like a game piece set into the scenery. */
+#btn-options,
 #btn-close-app {
   display: grid;
   place-items: center;
   padding: 0;
-  width: 38px;
-  height: 38px;
+  width: 34px;
+  height: 34px;
   min-height: 0;
-  color: #ffffffe6;
+  border-radius: 50%;
+  color: color-mix(in srgb, var(--world-primary, #00f5ff) 70%, #fff);
   text-shadow: none;
-  background: linear-gradient(180deg, #2a1745cc, #120a26cc);
-  border: 1px solid #ffffff4d;
-  box-shadow: 0 2px 0 #080315;
+  background:
+    radial-gradient(circle at 50% 35%, #ffffff1f, transparent 60%),
+    radial-gradient(circle, color-mix(in srgb, var(--world-secondary, #ff36d9) 28%, #0b0716) 55%, #05030c);
+  border: 2px solid color-mix(in srgb, var(--world-primary, #00f5ff) 75%, #3a2a10);
+  box-shadow:
+    inset 0 2px 3px #0009,
+    inset 0 -1px 0 #ffffff26,
+    0 0 0 1px #0008,
+    0 2px 6px #0008;
 }
+#btn-options svg,
 #btn-close-app svg {
   width: 18px;
   height: 18px;
+  filter: drop-shadow(0 0 3px color-mix(in srgb, var(--world-primary, #00f5ff) 60%, transparent));
 }
+#btn-options:hover,
 #btn-close-app:hover {
   color: #fff;
-  border-color: #ffffff99;
-  box-shadow: 0 2px 0 #080315;
+  border-color: var(--world-primary, #00f5ff);
+  box-shadow:
+    inset 0 2px 3px #0009,
+    0 0 10px color-mix(in srgb, var(--world-primary, #00f5ff) 60%, transparent);
+}
+#btn-options:active,
+#btn-close-app:active {
+  transform: translateY(1px);
 }
 #btn-close-app[hidden] {
   display: none;
+}
+/* New game leads the menu. */
+#btn-new-game {
+  width: auto;
+  height: auto;
+  padding: 8px 12px;
+  font-size: 12px;
+  letter-spacing: 1px;
+  background: linear-gradient(180deg, #ff4cbd, #a01a86);
+  border-color: #ffb9ec;
+  color: #fff;
+  text-shadow: 0 1px 2px #4a0638;
+  box-shadow: 0 3px 0 #4a0638;
+}
+#btn-new-game:hover {
+  border-color: #fff;
+  box-shadow:
+    0 3px 0 #4a0638,
+    0 0 14px #ff36d9aa;
 }
 
 /* Combo fuse: one pip per piece left to keep the combo; green once the round has a clear. */
