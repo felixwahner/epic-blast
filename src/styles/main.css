@@ -1166,6 +1166,11 @@ body {
 .world-scenery.scene-visible {
   opacity: 1;
 }
+/* Parallax: the scenery behind the game slides a few pixels against the board's lean.
+   Scaled up slightly so the shift never uncovers an edge. */
+#game-container > .world-scenery::before {
+  transform: translate(calc(-50% - var(--lean-x, 0) * 10px), calc(-50% - var(--lean-y, 0) * 10px)) scale(1.03);
+}
 #game-container::after {
   content: '';
   position: absolute;

@@ -26,6 +26,7 @@ import { Haptics } from '../platform/haptics.ts';
 import { STORAGE_KEYS, readNumber, safeStorage, syncBestScore, type KeyValueStore } from '../platform/storage.ts';
 import { BlockTextures } from '../render/block-textures.ts';
 import { BoardFlash } from '../render/board-flash.ts';
+import { Board3D } from '../render/board-3d.ts';
 import { BoardView } from '../render/board-view.ts';
 import { CHARGE_TIME } from '../render/clear-animation.ts';
 import { dragLift, dragPlacement, hitTestTray, type Point } from '../render/drag.ts';
@@ -96,6 +97,11 @@ export class Game {
   private readonly dragLayer = new Container();
   private readonly textures: BlockTextures;
   private readonly board: BoardView;
+  /** The board as seen on screen: 3D stones on the world's socket art. */
+  private readonly board3d: Board3D;
+  /** The board's 2D art, kept off stage and baked into the 3D board's texture. */
+  private readonly boardArt = new Container();
+  private leanCss = '';
   private readonly tray: TrayView;
   private readonly particles: ParticleSystem;
   private readonly texts: FloatingTexts;
@@ -129,7 +135,8 @@ export class Game {
       backgroundAlpha: 0,
       resolution: canvasResolution(),
       autoDensity: true,
-      antialias: false,
+      // Multisampling keeps the 3D stones' edges from shimmering while the board leans.
+      antialias: true,
       // Keep the WebGL renderer the game was tuned on; WebGPU stays opt-in.
       preference: 'webgl',
     });
@@ -156,6 +163,9 @@ export class Game {
     this.textures = new BlockTextures(this.app.renderer);
     this.textures.rebuild(this.theme.palettes, this.theme.material, null);
     this.board = new BoardView(this.textures);
+    this.board3d = new Board3D(this.app.renderer);
+    this.board3d.retexture(this.textures.blocks, this.theme.palettes);
+    this.boardArt.addChild(this.board.background, this.board.materialLayer);
     this.tray = new TrayView(this.textures);
     const particleLayer = new Container();
     const textLayer = new Container();
@@ -165,9 +175,8 @@ export class Game {
     // Back to front. The clear preview sits above blocks and ghosts so it stays visible.
     this.app.stage.addChild(this.root);
     this.root.addChild(
-      this.board.background,
-      this.board.materialLayer,
-      this.board.blocks,
+      // The 2D board layers and block sprites stay off stage; the 3D view shows them.
+      this.board3d.view,
       this.board.jewelLayer,
       this.board.ghosts,
       this.board.preview,
@@ -275,6 +284,7 @@ export class Game {
       pixelSize,
       this.theme.slug,
     );
+    this.board3d.retexture(this.textures.blocks, this.theme.palettes);
     this.syncBoard();
     this.tray.retexture();
     this.board.retextureGhosts();
@@ -283,6 +293,7 @@ export class Game {
 
   private renderBoardBackground(): void {
     this.board.renderBackground(this.layout, this.theme.palettes, this.theme, this.boardMaterials.get(this.theme.slug));
+    this.board3d.setBoardArt(this.boardArt);
   }
 
   // --- Layout ---------------------------------------------------------------
@@ -308,6 +319,7 @@ export class Game {
         12,
       )
       .fill({ color: 0x080714, alpha: 0.78 });
+    this.board3d.relayout(layout);
     this.renderBoardBackground();
     this.flash.relayout(layout);
     if (Math.round(layout.cellSize * this.app.renderer.resolution) !== this.textures.pixelSize)
@@ -424,6 +436,7 @@ export class Game {
 
   private syncBoard(): void {
     this.board.syncBlocks(this.session.grid, this.layout, this.session.jewels);
+    this.board3d.sync(this.session.grid, !this.reduced());
   }
 
   private updateCombo(): void {
@@ -866,6 +879,7 @@ export class Game {
   }
 
   private onPointerDown(event: FederatedPointerEvent): void {
+    this.board3d.point(event.global.x, event.global.y);
     if (this.session.isGameOver || this.drag) return;
     this.hand.hide();
     this.audio.init();
@@ -880,6 +894,7 @@ export class Game {
   }
 
   private onPointerMove(event: FederatedPointerEvent): void {
+    this.board3d.point(event.global.x, event.global.y);
     if (!this.drag) return;
     this.drag.pointer = { x: event.global.x, y: event.global.y };
     this.updateDrag();
@@ -946,6 +961,15 @@ export class Game {
     if (this.reduced()) this.shake.reset();
     const offset = this.shake.update(dt);
     this.root.position.set(offset.x, offset.y);
+    this.board3d.update(dt, this.reduced());
+    // The scenery slides a few pixels against the board's lean.
+    const { x, y } = this.board3d.parallax;
+    const lean = `${x.toFixed(3)} ${y.toFixed(3)}`;
+    if (lean !== this.leanCss) {
+      this.leanCss = lean;
+      this.hud.container.style.setProperty('--lean-x', x.toFixed(3));
+      this.hud.container.style.setProperty('--lean-y', y.toFixed(3));
+    }
     this.tray.update(dt, this.layout);
     this.particles.update(dt);
     this.texts.update(dt);
