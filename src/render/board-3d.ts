@@ -222,7 +222,9 @@ export class Board3D {
         }),
     );
     this.bodyMaterials = palettes.map(p => new Material3D({ baseColor: p.sh, roughness: 0.4, metallic: 0 }));
-    for (const row of this.stones) for (const stone of row) if (stone.color !== null) this.paint(stone, stone.color);
+    // Every stone, hidden ones too: the renderer still batches hidden meshes, and one left on
+    // a destroyed material crashes the frame, which blanked the board after a world change.
+    for (const row of this.stones) for (const stone of row) this.paint(stone, stone.color ?? 0);
     oldFaces.forEach(m => m.destroy());
     oldBodies.forEach(m => m.destroy());
     oldGlows.forEach(m => m.destroy());
