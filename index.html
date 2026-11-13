@@ -201,128 +201,201 @@
       </div>
     </div>
 
-    <dialog id="options-menu" class="overlay-dialog overlay-panel options-menu" aria-labelledby="options-title">
-      <div class="options-heading">
-        <h2 id="options-title" class="overlay-title" data-i18n="options.title">MENU</h2>
-        <button id="btn-close-options" class="pixel-btn" aria-label="Close menu" data-i18n-aria-label="options.close">
-          ✕
-        </button>
-      </div>
-      <p class="options-subtitle" data-i18n="options.subtitle">TUNE YOUR BLAST</p>
-      <div class="option-row">
-        <span data-i18n="options.newGame">New game</span
-        ><button
-          id="btn-new-game"
-          class="pixel-btn"
-          aria-label="New game"
-          data-i18n="options.restart"
-          data-i18n-aria-label="options.newGame"
-          aria-haspopup="dialog"
-          aria-controls="restart-confirm"
-          aria-expanded="false"
-        >
-          RESTART
-        </button>
-      </div>
-      <div id="fullscreen-option" class="option-row" hidden>
-        <span data-i18n="options.fullscreen">Fullscreen</span
-        ><button
-          id="btn-fullscreen"
-          class="pixel-btn"
-          title="Enter fullscreen"
-          aria-label="Enter fullscreen"
-          data-i18n-title="options.fullscreenEnter"
-          data-i18n-aria-label="options.fullscreenEnter"
-          aria-pressed="false"
+    <dialog id="options-menu" class="overlay-dialog options-menu" aria-labelledby="options-title">
+      <header class="menu-hero">
+        <button
+          id="btn-close-options"
+          class="menu-close"
+          type="button"
+          aria-label="Close menu"
+          data-i18n-aria-label="options.close"
         >
           <svg
-            width="18"
-            height="18"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
-            stroke-width="2"
+            stroke-width="2.2"
+            stroke-linecap="round"
             aria-hidden="true"
           >
-            <path d="M9 3H3v6m12-6h6v6M3 15v6h6m12-6v6h-6" />
+            <path d="M6 6l12 12M18 6 6 18" />
           </svg>
         </button>
-      </div>
-      <div class="option-row">
-        <span data-i18n="options.sound">Sound</span
-        ><button
-          id="btn-sound"
-          class="pixel-btn"
-          title="Toggle sound"
-          aria-label="Toggle sound"
-          data-i18n-title="options.toggleSound"
-          data-i18n-aria-label="options.toggleSound"
-        >
-          🔊
+        <p class="menu-eyebrow">
+          <span id="menu-world-name"></span><span class="menu-eyebrow-dot" aria-hidden="true">·</span
+          ><span id="menu-world-progress"></span>
+        </p>
+        <h2 id="options-title" class="menu-title" data-i18n="options.title">PAUSED</h2>
+        <dl class="menu-stats">
+          <div>
+            <dt data-i18n="options.score">Score</dt>
+            <dd id="menu-score">0</dd>
+          </div>
+          <div>
+            <dt data-i18n="options.level">Level</dt>
+            <dd id="menu-level">1</dd>
+          </div>
+          <div>
+            <dt data-i18n="options.best">Best</dt>
+            <dd id="menu-best">0</dd>
+          </div>
+        </dl>
+      </header>
+      <div class="menu-body">
+        <button id="btn-resume" class="menu-cta" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15l12.5-7.5z" fill="currentColor" /></svg>
+          <span data-i18n="options.resume">Resume</span>
         </button>
-      </div>
-      <div class="option-row">
-        <span data-i18n="options.soundWorld">Sound world</span
-        ><button
-          id="btn-sound-world"
-          class="pixel-btn"
-          aria-label="Change sound world"
-          data-i18n-aria-label="options.soundWorldChange"
-        >
-          IMPACT
-        </button>
-      </div>
-      <div class="option-row">
-        <span data-i18n="options.music">Background music</span
-        ><button
-          id="btn-music"
-          class="pixel-btn"
-          aria-label="Background music"
-          data-i18n-aria-label="options.music"
-          aria-pressed="true"
-        >
-          ON
-        </button>
-      </div>
-      <div class="option-row">
-        <span data-i18n="options.vibration">Vibration</span
-        ><button
-          id="btn-vibration"
-          class="pixel-btn"
-          title="Turn vibration off"
-          aria-label="Turn vibration off"
-          aria-pressed="true"
-        >
-          <svg
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            aria-hidden="true"
+        <div class="menu-pair">
+          <button
+            id="btn-new-game"
+            class="menu-secondary"
+            type="button"
+            aria-haspopup="dialog"
+            aria-controls="restart-confirm"
+            aria-expanded="false"
           >
-            <rect x="8" y="4" width="8" height="16" rx="2" />
-            <path d="M4 8v8M1 10v4m19-6v8m3-6v4" />
-            <path class="vibration-slash" d="m3 3 18 18" />
-          </svg>
-        </button>
-      </div>
-      <div class="option-row">
-        <span data-i18n="options.effects">Visual effects</span
-        ><button id="btn-effects" aria-pressed="false">EFFECTS: FULL</button>
-      </div>
-      <div class="option-row">
-        <span data-i18n="options.worlds">Worlds</span
-        ><button
-          id="btn-options-worlds"
-          class="pixel-btn"
-          aria-haspopup="dialog"
-          aria-controls="world-gallery"
-          data-i18n="options.viewWorlds"
-        >
-          VIEW
-        </button>
+            <svg
+              class="tile-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M3 12a9 9 0 1 0 3-6.7" />
+              <path d="M3 4v5h5" />
+            </svg>
+            <span data-i18n="options.newGame">New game</span>
+          </button>
+          <button
+            id="btn-options-worlds"
+            class="menu-secondary"
+            type="button"
+            aria-haspopup="dialog"
+            aria-controls="world-gallery"
+          >
+            <svg
+              class="tile-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <circle cx="12" cy="12" r="9" />
+              <path d="M3 12h18M12 3c3 3.2 3 14.8 0 18M12 3c-3 3.2-3 14.8 0 18" />
+            </svg>
+            <span data-i18n="options.worlds">Worlds</span>
+          </button>
+        </div>
+        <h3 class="menu-section" data-i18n="options.settings">Settings</h3>
+        <div class="menu-tiles">
+          <button id="btn-sound" class="menu-tile" type="button" aria-pressed="true">
+            <svg
+              class="tile-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M4 9h4l5-4v14l-5-4H4z" />
+              <path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12" />
+            </svg>
+            <span class="tile-label" data-i18n="options.sound"></span>
+            <span class="tile-state"></span>
+          </button>
+          <button id="btn-music" class="menu-tile" type="button" aria-pressed="true">
+            <svg
+              class="tile-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M9 18V5l11-2v13" />
+              <circle cx="6" cy="18" r="3" />
+              <circle cx="17" cy="16" r="3" />
+            </svg>
+            <span class="tile-label" data-i18n="options.music"></span>
+            <span class="tile-state"></span>
+          </button>
+          <button id="btn-vibration" class="menu-tile" type="button" aria-pressed="true">
+            <svg
+              class="tile-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <rect x="8" y="4" width="8" height="16" rx="2" />
+              <path d="M4 8v8M1 10v4M20 8v8M23 10v4" />
+            </svg>
+            <span class="tile-label" data-i18n="options.vibration"></span>
+            <span class="tile-state"></span>
+          </button>
+          <button id="btn-effects" class="menu-tile" type="button" aria-pressed="true">
+            <svg
+              class="tile-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M12 2l2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4z" />
+            </svg>
+            <span class="tile-label" data-i18n="options.effects"></span>
+            <span class="tile-state"></span>
+          </button>
+          <button id="btn-fullscreen" class="menu-tile" type="button" aria-pressed="false" hidden>
+            <svg
+              class="tile-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M9 3H3v6m12-6h6v6M3 15v6h6m12-6v6h-6" />
+            </svg>
+            <span class="tile-label" data-i18n="options.fullscreen"></span>
+            <span class="tile-state"></span>
+          </button>
+          <button id="btn-sound-world" class="menu-tile menu-tile--cycle" type="button">
+            <svg
+              class="tile-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M2 12h2l2-6 3 12 3-9 3 6 2-3h5" />
+            </svg>
+            <span class="tile-label" data-i18n="options.soundWorld"></span>
+            <span class="tile-state"></span>
+          </button>
+        </div>
       </div>
     </dialog>
     <dialog id="world-gallery" class="overlay-dialog overlay-panel world-gallery" aria-labelledby="gallery-title">

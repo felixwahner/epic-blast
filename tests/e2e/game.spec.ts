@@ -29,21 +29,35 @@ test('loads the renderer, materials, options and a playable tray', async ({ page
   expect(errors).toEqual([]);
 });
 
+test('the pause menu shows the run and resumes', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Open menu' }).click();
+  const menu = page.locator('#options-menu');
+  await expect(menu.getByRole('heading', { name: 'PAUSED' })).toBeVisible();
+  await expect(page.locator('#menu-score')).toHaveText('0');
+  await expect(page.locator('#menu-level')).toHaveText('1');
+  await expect(page.locator('#menu-world-name')).toHaveText(await page.locator('#world-name').innerText());
+  await expect(page.locator('#menu-world-progress')).toHaveText(/^World \d+\/\d+$/);
+  await expect(page.locator('#btn-sound')).toHaveAttribute('aria-pressed', 'true');
+  await page.getByRole('button', { name: 'Resume' }).click();
+  await expect(menu).not.toBeVisible();
+});
+
 test('remembers option toggles across reloads', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: 'Open menu' }).click();
   await page.locator('#btn-effects').click();
-  await expect(page.locator('#btn-effects')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('#btn-effects')).toHaveAttribute('aria-pressed', 'false');
   await page.locator('#btn-vibration').click();
   await expect(page.locator('#btn-vibration')).toHaveAttribute('aria-pressed', 'false');
-  await expect(page.locator('#btn-sound-world')).toHaveText('IMPACT');
+  await expect(page.locator('#btn-sound-world .tile-state')).toHaveText('IMPACT');
   await page.locator('#btn-sound-world').click();
-  await expect(page.locator('#btn-sound-world')).toHaveText('WOOD & STONE');
+  await expect(page.locator('#btn-sound-world .tile-state')).toHaveText('WOOD & STONE');
   await page.reload();
   await expect(page.locator('body')).toHaveClass(/reduced-effects/);
-  await expect(page.locator('#btn-effects')).toHaveText('EFFECTS: LOW');
+  await expect(page.locator('#btn-effects .tile-state')).toHaveText('LOW');
   await expect(page.locator('#btn-vibration')).toHaveAttribute('aria-pressed', 'false');
-  await expect(page.locator('#btn-sound-world')).toHaveText('WOOD & STONE');
+  await expect(page.locator('#btn-sound-world .tile-state')).toHaveText('WOOD & STONE');
 });
 
 test('the header holds only the logo and a menu, which leads to new game', async ({ page }, info) => {

@@ -7,8 +7,8 @@ test.describe('in a German browser', () => {
     await page.goto('/');
     await expect(page.locator('html')).toHaveAttribute('lang', 'de');
     await page.getByRole('button', { name: 'Menü öffnen' }).click();
-    await expect(page.getByRole('heading', { name: 'MENÜ' })).toBeVisible();
-    await expect(page.locator('#btn-effects')).toHaveText(/^EFFEKTE: /);
+    await expect(page.getByRole('heading', { name: 'PAUSE' })).toBeVisible();
+    await expect(page.locator('#btn-effects .tile-state')).toHaveText(/^(VOLL|WENIG)$/);
   });
 });
 
@@ -19,8 +19,8 @@ test.describe('in a Spanish browser', () => {
     await page.goto('/');
     await expect(page.locator('html')).toHaveAttribute('lang', 'es');
     await page.getByRole('button', { name: 'Abrir menú' }).click();
-    await expect(page.getByRole('heading', { name: 'MENÚ' })).toBeVisible();
-    await expect(page.locator('#btn-music')).toHaveText(/^(SÍ|NO)$/);
+    await expect(page.getByRole('heading', { name: 'PAUSA' })).toBeVisible();
+    await expect(page.locator('#btn-music .tile-state')).toHaveText(/^(SÍ|NO)$/);
   });
 });
 

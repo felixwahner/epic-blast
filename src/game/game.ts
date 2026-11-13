@@ -792,6 +792,10 @@ export class Game {
         if (enabled) this.haptics.lineClear();
         return enabled;
       },
+      status: () => {
+        const { score, bestScore, level } = this.session;
+        return { score, best: bestScore, level };
+      },
       resized: () => this.resize(),
     });
     this.effects.bindToggle(document.getElementById('btn-effects')!);
