@@ -8,7 +8,7 @@ import modelURL from '../assets/branding/epic-blast-logo.bin?url';
 import { VERTEX_BYTES, parseLogoModel, type LogoModel } from './logo-model.ts';
 
 /** Largest lean toward the finger, in radians. */
-export const LOGO_MAX_LEAN = (12 * Math.PI) / 180;
+export const LOGO_MAX_LEAN = (16 * Math.PI) / 180;
 /** Camera distance, in logo widths; tools/logo-model/build.py lines the raised parts up for it. */
 const CAMERA = 2.6;
 
