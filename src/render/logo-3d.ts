@@ -1,51 +1,64 @@
-// The header logo as a real 3D model: extruded, bevelled letters with a navy rim, jewel blocks
-// and sparks, built in Blender (tools/logo-model/build.py). It draws on its own little WebGL
-// canvas laid over the <img>, which stays in the page for layout and as the fallback.
+// The header logo as a real 3D model, traced from the painted logo (tools/logo-model/build.py):
+// a thick navy body with every letter, jewel and spark standing in front of it as its own solid.
+// The painted art is projected onto the model, so at rest it looks exactly like the <img>; as it
+// leans, the letters shift against the rim and their sides come into view. It draws on its own
+// little WebGL canvas laid over the <img>, which stays in the page for layout and as the fallback.
 
 import modelURL from '../assets/branding/epic-blast-logo.bin?url';
-import { parseLogoModel, type LogoModel } from './logo-model.ts';
+import { VERTEX_BYTES, parseLogoModel, type LogoModel } from './logo-model.ts';
 
 /** Largest lean toward the finger, in radians. */
 export const LOGO_MAX_LEAN = (12 * Math.PI) / 180;
-/** Resting pose: seen a little from below and the right, like the drawn logo, so the depth always shows. */
-const REST_PITCH = (-9 * Math.PI) / 180;
-const REST_YAW = (-7 * Math.PI) / 180;
-/** Camera distance, in logo widths. */
+/** Camera distance, in logo widths; tools/logo-model/build.py lines the raised parts up for it. */
 const CAMERA = 2.6;
-/** Share of the canvas width the model fills at rest; the rest is room for the lean. */
-const FILL = 0.86;
 
 const VERTEX = `
 attribute vec3 aPos;
 attribute vec3 aNormal;
-attribute vec3 aColor;
+attribute float aKind;
+attribute vec2 aUv;
 uniform mat4 uModel;
 uniform mat4 uProjection;
+uniform vec2 uUvScale;
 varying vec3 vNormal;
-varying vec3 vColor;
 varying vec3 vWorld;
+varying vec2 vUv;
+varying float vSide;
+varying float vBody;
 void main() {
   vec4 world = uModel * vec4(aPos, 1.0);
   vWorld = world.xyz;
   vNormal = mat3(uModel) * aNormal;
-  vColor = aColor;
+  vUv = aUv * uUvScale;
+  vSide = 1.0 - step(0.5, abs(aNormal.z));
+  vBody = 1.0 - step(0.5, aKind);
   gl_Position = uProjection * world;
 }`;
 
 const FRAGMENT = `
 precision mediump float;
+uniform sampler2D uArt;
 varying vec3 vNormal;
-varying vec3 vColor;
 varying vec3 vWorld;
+varying vec2 vUv;
+varying float vSide;
+varying float vBody;
 void main() {
   vec3 n = normalize(vNormal);
-  vec3 view = normalize(-vWorld);
-  vec3 key = normalize(vec3(-0.45, 0.7, 0.75));
-  vec3 fill = normalize(vec3(0.6, -0.3, 0.6));
-  float diffuse = max(dot(n, key), 0.0) * 0.55 + max(dot(n, fill), 0.0) * 0.18;
-  float spec = pow(max(dot(n, normalize(key + view)), 0.0), 36.0) * 0.45;
-  float rim = pow(1.0 - max(dot(n, view), 0.0), 3.0) * 0.12;
-  gl_FragColor = vec4(vColor * (0.52 + diffuse) + spec + rim, 1.0);
+  vec3 light = normalize(vec3(-0.4, 0.6, 1.0));
+  vec3 hv = normalize(light + normalize(-vWorld));
+  // Lit relative to the flat pose, so the faces at rest look exactly like the painted art.
+  float shade = 1.0 + 0.6 * (dot(n, light) - light.z);
+  float gloss = max(0.0, pow(max(dot(n, hv), 0.0), 40.0) - pow(max(hv.z, 0.0), 40.0)) * 0.35;
+  vec4 art = texture2D(uArt, vUv);
+  if (vSide > 0.5) {
+    // Sides carry the colour at their edge of the art; the body's sides are the outline's navy.
+    vec3 edge = art.a > 0.05 ? art.rgb / art.a : vec3(0.0);
+    vec3 side = mix(edge * 0.8, vec3(0.03, 0.05, 0.42), vBody > 0.5 ? 1.0 : 0.35);
+    gl_FragColor = vec4(side * shade + gloss, 1.0);
+    return;
+  }
+  gl_FragColor = vec4(art.rgb * shade + gloss * art.a, art.a);
 }`;
 
 export class Logo3D {
@@ -89,7 +102,9 @@ export class Logo3D {
     this.img = img;
     this.canvas = canvas;
     this.gl = gl;
-    this.aspect = img.naturalHeight / img.naturalWidth;
+    const w = img.naturalWidth;
+    const h = img.naturalHeight;
+    this.aspect = h / w;
     this.program = link(gl, VERTEX, FRAGMENT);
     gl.useProgram(this.program);
 
@@ -98,12 +113,13 @@ export class Logo3D {
     const attrib = (name: string, size: number, type: number, normalized: boolean, offset: number) => {
       const at = gl.getAttribLocation(this.program, name);
       gl.enableVertexAttribArray(at);
-      gl.vertexAttribPointer(at, size, type, normalized, 12, offset);
+      gl.vertexAttribPointer(at, size, type, normalized, VERTEX_BYTES, offset);
     };
     // Positions are int16 in 1/16384 logo widths; the model matrix scales them back.
     attrib('aPos', 3, gl.SHORT, false, 0);
     attrib('aNormal', 3, gl.BYTE, true, 6);
-    attrib('aColor', 3, gl.UNSIGNED_BYTE, true, 9);
+    attrib('aKind', 1, gl.UNSIGNED_BYTE, false, 9);
+    attrib('aUv', 2, gl.UNSIGNED_SHORT, true, 10);
 
     const wide = model.indices instanceof Uint32Array;
     if (wide && !gl.getExtension('OES_element_index_uint')) throw new Error('32-bit indices');
@@ -111,7 +127,26 @@ export class Logo3D {
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, model.indices, gl.STATIC_DRAW);
     this.indexType = wide ? gl.UNSIGNED_INT : gl.UNSIGNED_SHORT;
     this.count = model.indices.length;
+
+    // The art, padded to powers of two so WebGL 1 can mipmap it: it is drawn at about a third of its size.
+    const pad = document.createElement('canvas');
+    pad.width = nextPow2(w);
+    pad.height = nextPow2(h);
+    pad.getContext('2d')?.drawImage(img, 0, 0);
+    gl.bindTexture(gl.TEXTURE_2D, gl.createTexture());
+    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, pad);
+    gl.generateMipmap(gl.TEXTURE_2D);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.uniform2f(gl.getUniformLocation(this.program, 'uUvScale'), w / pad.width, h / pad.height);
+
     gl.enable(gl.DEPTH_TEST);
+    gl.enable(gl.CULL_FACE);
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
 
     new ResizeObserver(() => this.render(this.leanX, this.leanY, true)).observe(img);
   }
@@ -133,9 +168,9 @@ export class Logo3D {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
     // Same sense as the board: the side toward the finger dips away, so the far sides show.
-    const pitch = REST_PITCH - (y || 0) * LOGO_MAX_LEAN;
-    const yaw = REST_YAW + (x || 0) * LOGO_MAX_LEAN;
-    const model = multiply(multiply(rotateX(pitch), rotateY(yaw)), scale(FILL / 16384));
+    const pitch = -(y || 0) * LOGO_MAX_LEAN;
+    const yaw = (x || 0) * LOGO_MAX_LEAN;
+    const model = multiply(multiply(rotateX(pitch), rotateY(yaw)), scale(1 / 16384));
     model[14] = -CAMERA;
     const fovY = 2 * Math.atan(this.aspect / 2 / CAMERA);
     gl.uniformMatrix4fv(gl.getUniformLocation(p, 'uModel'), false, model);
@@ -159,6 +194,8 @@ export class Logo3D {
     this.height = this.canvas.height = h;
   }
 }
+
+const nextPow2 = (n: number): number => 2 ** Math.ceil(Math.log2(Math.max(1, n)));
 
 function link(gl: WebGLRenderingContext, vertex: string, fragment: string): WebGLProgram {
   const program = gl.createProgram();
