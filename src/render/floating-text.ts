@@ -26,15 +26,12 @@ export class FloatingTexts {
       fontStyle: 'italic',
       fontSize,
       fill,
-      stroke: '#000000',
-      strokeThickness: 5,
-      dropShadow: true,
-      dropShadowColor: fill,
-      dropShadowBlur: 12,
-      dropShadowDistance: 3,
+      stroke: { color: '#000000', width: 5 },
+      // v7 drop shadows were fully opaque at a 45° angle; keep that look.
+      dropShadow: { color: fill, blur: 12, distance: 3, angle: Math.PI / 4, alpha: 1 },
       align: 'center',
     });
-    const text = new Text(message, style);
+    const text = new Text({ text: message, style });
     text.anchor.set(0.5);
     text.position.set(x, y);
     const fitScale = Math.min(1, (viewWidth - 36) / Math.max(1, text.width * 1.6));

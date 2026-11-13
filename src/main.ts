@@ -27,4 +27,8 @@ setupCloseAppButton();
 const audio = new AudioEngine();
 window.audio = audio;
 
-window.addEventListener('DOMContentLoaded', () => new Game({ audio }).start());
+window.addEventListener('DOMContentLoaded', () => {
+  Game.create({ audio })
+    .then(game => game.start())
+    .catch(error => console.error('Game failed to start:', error));
+});

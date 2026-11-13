@@ -117,11 +117,10 @@ export class BoardView {
 
   drawClearPreview(lines: FullLines, layout: Layout, color: number, intensity: number): void {
     this.preview.clear();
-    this.preview.lineStyle(0);
     for (const rect of clearHighlightRects(lines, layout)) {
-      this.preview.beginFill(color, intensity * 0.32);
-      this.preview.drawRoundedRect(rect.x, rect.y, rect.width, rect.height, rect.radius);
-      this.preview.endFill();
+      this.preview
+        .roundRect(rect.x, rect.y, rect.width, rect.height, rect.radius)
+        .fill({ color, alpha: intensity * 0.32 });
     }
   }
 
@@ -136,9 +135,7 @@ export class BoardView {
   private renderMaterialBoard(layout: Layout, palettes: readonly Palette[], variants: readonly Texture[]): void {
     const { gridX: x, gridY: y, gridWidth: size } = layout;
     // One dark board plane; empty sockets must never compete with playable blocks.
-    this.background.beginFill(0x080e20, 0.97);
-    this.background.drawRoundedRect(x, y, size, size, 5);
-    this.background.endFill();
+    this.background.roundRect(x, y, size, size, 5).fill({ color: 0x080e20, alpha: 0.97 });
     for (const tile of boardMaterialTiles(layout, variants.length)) {
       const sprite = new Sprite(variants[tile.variant]);
       sprite.position.set(tile.x, tile.y);
@@ -150,23 +147,24 @@ export class BoardView {
     }
     const rim = new Graphics();
     // Dark chassis under the fine illuminated lip.
-    rim.lineStyle(6, 0x070b17, 0.95);
-    rim.drawRoundedRect(x - 3, y - 3, size + 6, size + 6, 6);
+    rim.roundRect(x - 3, y - 3, size + 6, size + 6, 6).stroke({ width: 6, color: 0x070b17, alpha: 0.95 });
     for (let spread = 10; spread >= 2; spread -= 2) {
-      rim.lineStyle(spread, palettes[0].base, 0.025);
-      rim.drawRoundedRect(x - 2, y - 2, size + 4, size + 4, 5);
+      rim
+        .roundRect(x - 2, y - 2, size + 4, size + 4, 5)
+        .stroke({ width: spread, color: palettes[0].base, alpha: 0.025 });
     }
-    rim.lineStyle(1.5, palettes[0].hi, 0.65);
-    rim.drawRoundedRect(x - 2, y - 2, size + 4, size + 4, 4);
+    rim.roundRect(x - 2, y - 2, size + 4, size + 4, 4).stroke({ width: 1.5, color: palettes[0].hi, alpha: 0.65 });
     for (let spread = 9; spread >= 1; spread -= 2) {
-      rim.lineStyle(spread, 0xccfaff, 0.055);
-      rim.moveTo(x + 8, y - 2);
-      rim.lineTo(x + size * 0.32, y - 2);
-      rim.moveTo(x - 2, y + 8);
-      rim.lineTo(x - 2, y + size * 0.22);
-      rim.lineStyle(spread, palettes[1].hi, 0.045);
-      rim.moveTo(x + size * 0.75, y + size + 2);
-      rim.lineTo(x + size - 6, y + size + 2);
+      rim
+        .moveTo(x + 8, y - 2)
+        .lineTo(x + size * 0.32, y - 2)
+        .moveTo(x - 2, y + 8)
+        .lineTo(x - 2, y + size * 0.22)
+        .stroke({ width: spread, color: 0xccfaff, alpha: 0.055 });
+      rim
+        .moveTo(x + size * 0.75, y + size + 2)
+        .lineTo(x + size - 6, y + size + 2)
+        .stroke({ width: spread, color: palettes[1].hi, alpha: 0.045 });
     }
     this.materialLayer.addChild(rim);
   }
@@ -175,20 +173,16 @@ export class BoardView {
   private renderSocketBoard(layout: Layout, palettes: readonly Palette[], theme: Theme): void {
     const g = this.background;
     const { gridX: gx, gridY: gy, cellSize: cs, gridWidth: gw } = layout;
-    g.beginFill(palettes[0].sh, 0.97);
-    g.drawRect(gx, gy, gw, gw);
-    g.endFill();
+    g.rect(gx, gy, gw, gw).fill({ color: palettes[0].sh, alpha: 0.97 });
     const cellGap = 2;
     for (let r = 0; r < GRID_SIZE; r++)
       for (let c = 0; c < GRID_SIZE; c++) {
         const cx = gx + c * cs;
         const cy = gy + r * cs;
-        g.lineStyle(1, palettes[0].hi, 0.12);
-        g.beginFill(palettes[0].sh, 0.35);
-        g.drawRoundedRect(cx + cellGap, cy + cellGap, cs - cellGap * 2, cs - cellGap * 2, 3);
-        g.endFill();
+        g.roundRect(cx + cellGap, cy + cellGap, cs - cellGap * 2, cs - cellGap * 2, 3)
+          .fill({ color: palettes[0].sh, alpha: 0.35 })
+          .stroke({ width: 1, color: palettes[0].hi, alpha: 0.12 });
         // Quiet material markings on empty sockets, matching each world.
-        g.lineStyle(1, palettes[0].hi, 0.045);
         const x = cx + cs * 0.25,
           y = cy + cs * 0.25;
         if (theme.material === 'ice' || theme.material === 'lava') {
@@ -196,7 +190,7 @@ export class BoardView {
           g.lineTo(x + cs * 0.3, y + cs * 0.25);
           g.lineTo(x + cs * 0.2, y + cs * 0.5);
         } else if (theme.material === 'rune') {
-          g.drawPolygon([
+          g.poly([
             x + cs * 0.25,
             y,
             x + cs * 0.4,
@@ -207,17 +201,16 @@ export class BoardView {
             y + cs * 0.25,
           ]);
         } else if (theme.material === 'star') {
-          g.drawCircle(x + cs * 0.2, y + cs * 0.15, 1);
+          g.circle(x + cs * 0.2, y + cs * 0.15, 1);
         } else {
           g.moveTo(x, y + cs * 0.1);
           g.lineTo(x + cs * 0.5, y + cs * 0.3);
         }
-        g.lineStyle(0);
+        g.stroke({ width: 1, color: palettes[0].hi, alpha: 0.045 });
         // Socket inner shadow
-        g.beginFill(0x0a0b12, 0.22);
-        g.drawRect(cx + cellGap, cy + cellGap, cs - cellGap * 2, 2);
-        g.drawRect(cx + cellGap, cy + cellGap, 2, cs - cellGap * 2);
-        g.endFill();
+        g.rect(cx + cellGap, cy + cellGap, cs - cellGap * 2, 2)
+          .rect(cx + cellGap, cy + cellGap, 2, cs - cellGap * 2)
+          .fill({ color: 0x0a0b12, alpha: 0.22 });
       }
   }
 }

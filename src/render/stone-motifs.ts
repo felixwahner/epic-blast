@@ -74,8 +74,6 @@ function motifMask(size: number, motif: StoneMotif): HTMLCanvasElement {
   ctx.lineJoin = 'round';
   ctx.lineWidth = 7;
   const path = new Path2D(motif.path);
-  // CanvasRenderingContext2D.fill, not Array.prototype.fill.
-  // oxlint-disable-next-line unicorn/no-array-fill-with-reference-type
   if (motif.fill) ctx.fill(path, 'evenodd');
   else ctx.stroke(path);
   return mask;
