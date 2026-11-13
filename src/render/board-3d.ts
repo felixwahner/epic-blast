@@ -19,15 +19,21 @@ import type { Layout } from './layout.ts';
 import { Parallax } from './parallax.ts';
 import { roundedBoxData } from './rounded-box.ts';
 
-/** Largest lean of the board, in radians (about 4°). */
-export const MAX_LEAN = 0.075;
+/** Largest lean of the board, in radians (under 2°). */
+export const MAX_LEAN = 0.03;
 /** Cells of margin drawn around the grid, for the rim, shadows and the lean. */
 const MARGIN = 0.6;
 /** Stone body height, in cells. */
 const STONE_HEIGHT = 0.36;
 /** A sync that fills more cells than this at once is a new or resumed game: no drop-in. */
 const MAX_DROPS = 9;
-const DROP_TIME = 0.32;
+/** Seconds a placed stone takes to fall into its socket, then to settle. */
+const DROP_TIME = 0.09;
+const SETTLE_TIME = 0.14;
+/** Height a placed stone falls from, in cells. */
+const DROP_HEIGHT = 0.3;
+/** How far below its surface the board plane's origin sits, for the draw order. */
+const BOARD_SINK = 20;
 /** Glow quad size, in cells: the halo reaches half a cell past the stone. */
 const GLOW_SPAN = 2;
 /** Strength of the additive halo around each stone. */
@@ -79,10 +85,13 @@ export class Board3D {
 
     this.view.root.addChild(this.tilt);
     this.boardMaterial = new Material3D({ baseColor: 0x000000, roughness: 0.55, metallic: 0.1 });
+    // Blended meshes draw far to near by their origin. The board's origin sits far below its
+    // surface, so it always draws first and the stones' halos always land on top of it,
+    // however the board leans.
     this.boardPlane = new Mesh3D({
-      geometry: new PlaneGeometry({ width: 1, height: 1, flipV: true }),
+      geometry: sunkenQuad(BOARD_SINK),
       material: this.boardMaterial,
-      rotation: { x: -Math.PI / 2, y: 0, z: 0 },
+      position: { x: 0, y: -BOARD_SINK, z: 0 },
       castShadow: false,
       receiveShadow: true,
       parent: this.tilt,
@@ -178,7 +187,7 @@ export class Board3D {
     });
     this.boardPlane.material = this.boardMaterial;
     old.destroy();
-    this.boardPlane.scale.set(span, span, 1);
+    this.boardPlane.scale.set(span, 1, span);
     this.boardTexture?.destroy(true);
     this.boardTexture = texture;
   }
@@ -238,7 +247,7 @@ export class Board3D {
       }
     const drop = animate && filled.length <= MAX_DROPS;
     filled.forEach((stone, i) => {
-      stone.age = drop ? -i * 0.035 : Infinity;
+      stone.age = drop ? -i * 0.01 : Infinity;
       this.pose(stone);
     });
   }
@@ -277,29 +286,30 @@ export class Board3D {
     if (glow) stone.glow.material = glow;
   }
 
-  /** Drop-in: falls from above, lands with a squash and a small damped bounce. */
+  /** Drop-in: a short fall into the socket, then a quick squash and a tiny bounce. */
   private pose(stone: Stone): void {
     const t = stone.age;
-    if (t >= DROP_TIME + 0.4 || t === Infinity) {
+    if (t >= DROP_TIME + SETTLE_TIME || t === Infinity) {
       stone.age = Infinity;
       stone.group.position.y = 0;
       stone.group.scale.set(1, 1, 1);
       return;
     }
     if (t < 0) {
-      stone.group.position.y = 1.2;
+      stone.group.position.y = DROP_HEIGHT;
       stone.group.scale.set(1, 1, 1);
       return;
     }
     if (t < DROP_TIME) {
       const k = t / DROP_TIME;
-      stone.group.position.y = 1.2 * (1 - k * k);
+      stone.group.position.y = DROP_HEIGHT * (1 - k * k);
       stone.group.scale.set(1, 1, 1);
       return;
     }
     const s = t - DROP_TIME;
-    const wobble = Math.exp(-s * 10) * Math.cos(s * 24);
-    stone.group.position.y = Math.max(0, Math.exp(-s * 10) * Math.sin(s * 24) * 0.08);
+    // Damped hard enough to be gone by the end of SETTLE_TIME, so nothing snaps.
+    const wobble = Math.exp(-s * 30) * Math.cos(s * 45);
+    stone.group.position.y = Math.max(0, Math.exp(-s * 30) * Math.sin(s * 45) * 0.04);
     stone.group.scale.set(1 + wobble * 0.06, 1 - wobble * 0.14, 1 + wobble * 0.06);
   }
 }
@@ -327,4 +337,15 @@ function glowTexture(color: string): Texture {
     ctx.fill();
   }
   return new Texture({ source: new CanvasSource({ resource: canvas, autoGenerateMipmaps: true }) });
+}
+
+/** A unit quad facing up at height `height`, its texture's top edge toward -z (screen up). */
+function sunkenQuad(height: number): Geometry3D {
+  const h = height;
+  return new Geometry3D({
+    positions: new Float32Array([-0.5, h, -0.5, 0.5, h, -0.5, 0.5, h, 0.5, -0.5, h, 0.5]),
+    normals: new Float32Array([0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0]),
+    uvs: new Float32Array([0, 0, 1, 0, 1, 1, 0, 1]),
+    indices: new Uint16Array([0, 2, 1, 0, 3, 2]),
+  });
 }
