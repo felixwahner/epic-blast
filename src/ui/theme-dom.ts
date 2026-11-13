@@ -17,6 +17,8 @@ export function applyTheme(theme: Theme, container: HTMLElement, worldLabel: HTM
   root.setProperty('--world-primary', theme.primary);
   root.setProperty('--world-secondary', theme.secondary);
   root.setProperty('--world-intensity', String(0.45 + theme.stage * 0.2));
+  const scene = sceneURL(theme.slug);
+  root.setProperty('--world-scene', scene ? `url("${scene}")` : 'none');
   worldLabel.textContent = theme.name;
 }
 

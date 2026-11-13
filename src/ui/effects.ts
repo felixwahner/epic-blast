@@ -4,6 +4,7 @@ import { lineCells, type FullLines } from '../core/board.ts';
 import { t } from '../i18n/index.ts';
 import { cellsCentroid, type Layout } from '../render/layout.ts';
 import { STORAGE_KEYS, safeStorage, type KeyValueStore } from '../platform/storage.ts';
+import { setTile } from './menu-tile.ts';
 
 export type ComboMood = 'calm' | 'warm' | 'hot' | 'legend';
 
@@ -52,12 +53,11 @@ export class VisualEffects {
     this.reduced = saved ? saved === 'reduced' : prefersReducedMotion;
   }
 
-  /** Binds the options toggle and applies the current preference to <body>. */
+  /** Binds the menu's effects tile (pressed means full effects) and applies the current preference to <body>. */
   bindToggle(button: HTMLElement): void {
     document.body.classList.toggle('reduced-effects', this.reduced);
     const sync = () => {
-      button.textContent = this.reduced ? t('options.effectsReduced') : t('options.effectsFull');
-      button.setAttribute('aria-pressed', String(this.reduced));
+      setTile(button, !this.reduced, this.reduced ? t('options.effectsReduced') : t('options.effectsFull'));
     };
     sync();
     button.addEventListener('click', () => {

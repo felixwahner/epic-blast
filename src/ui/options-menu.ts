@@ -1,6 +1,14 @@
-// The options dialog: sound, sound world, music, vibration, effects and fullscreen.
-import { t } from '../i18n/index.ts';
+// The pause menu: the current run at a glance, resume, new game, worlds and the
+// settings tiles (sound, music, vibration, effects, fullscreen, sound world).
+import { formatNumber, t } from '../i18n/index.ts';
 import { byId } from './hud.ts';
+import { setTile } from './menu-tile.ts';
+
+export interface RunStatus {
+  score: number;
+  best: number;
+  level: number;
+}
 
 export interface OptionsHandlers {
   toggleSound(): boolean;
@@ -12,13 +20,14 @@ export interface OptionsHandlers {
   toggleVibration(): boolean;
   vibrationEnabled(): boolean;
   soundMuted(): boolean;
+  /** The run shown in the menu header each time it opens. */
+  status(): RunStatus;
   /** Called after fullscreen changes so the canvas can re-measure. */
   resized(): void;
 }
 
 export class OptionsMenu {
   readonly dialog = byId<HTMLDialogElement>('options-menu');
-  readonly effectsButton = byId('btn-effects');
   private readonly soundButton = byId('btn-sound');
   private readonly soundWorldButton = byId('btn-sound-world');
   private readonly musicButton = byId('btn-music');
@@ -28,8 +37,12 @@ export class OptionsMenu {
 
   constructor(handlers: OptionsHandlers) {
     this.handlers = handlers;
-    byId('btn-options').addEventListener('click', () => this.dialog.showModal());
+    byId('btn-options').addEventListener('click', () => {
+      this.syncHeader();
+      this.dialog.showModal();
+    });
     byId('btn-close-options').addEventListener('click', () => this.dialog.close());
+    byId('btn-resume').addEventListener('click', () => this.dialog.close());
     // Close when clicking the backdrop outside the dialog box.
     this.dialog.addEventListener('click', event => {
       if (event.target !== this.dialog) return;
@@ -49,9 +62,9 @@ export class OptionsMenu {
       this.syncSound();
     });
 
-    this.soundWorldButton.textContent = handlers.soundWorldLabel();
+    this.soundWorldButton.querySelector('.tile-state')!.textContent = handlers.soundWorldLabel();
     this.soundWorldButton.addEventListener('click', () => {
-      this.soundWorldButton.textContent = handlers.cycleSoundWorld();
+      this.soundWorldButton.querySelector('.tile-state')!.textContent = handlers.cycleSoundWorld();
     });
 
     this.syncMusic();
@@ -69,34 +82,43 @@ export class OptionsMenu {
     this.bindFullscreen();
   }
 
+  /** World name, collection progress and the run's numbers, read when the menu opens. */
+  private syncHeader(): void {
+    const { score, best, level } = this.handlers.status();
+    byId('menu-world-name').textContent = byId('world-name').textContent;
+    byId('menu-world-progress').textContent = t('options.worldProgress', {
+      progress: byId('world-count').textContent ?? '',
+    });
+    byId('menu-score').textContent = formatNumber(score);
+    byId('menu-level').textContent = formatNumber(level);
+    byId('menu-best').textContent = formatNumber(Math.max(best, score));
+  }
+
   private syncSound(): void {
-    this.soundButton.textContent = this.handlers.soundMuted() ? '🔇' : '🔊';
+    const on = !this.handlers.soundMuted();
+    setTile(this.soundButton, on, on ? t('options.on') : t('options.off'));
   }
 
   private syncMusic(): void {
-    const enabled = this.handlers.musicEnabled();
-    this.musicButton.textContent = enabled ? t('options.on') : t('options.off');
-    this.musicButton.setAttribute('aria-pressed', String(enabled));
+    const on = this.handlers.musicEnabled();
+    setTile(this.musicButton, on, on ? t('options.on') : t('options.off'));
   }
 
   private syncVibration(): void {
-    const enabled = this.handlers.vibrationEnabled();
-    const label = enabled ? t('options.vibrationOff') : t('options.vibrationOn');
-    this.vibrationButton.setAttribute('aria-pressed', String(enabled));
-    this.vibrationButton.setAttribute('aria-label', label);
-    this.vibrationButton.title = label;
-    this.vibrationButton.classList.toggle('vibration-off', !enabled);
+    const on = this.handlers.vibrationEnabled();
+    setTile(this.vibrationButton, on, on ? t('options.on') : t('options.off'));
   }
 
   private bindFullscreen(): void {
     const button = this.fullscreenButton;
-    byId('fullscreen-option').hidden = !document.fullscreenEnabled;
-    document.addEventListener('fullscreenchange', () => {
+    button.hidden = !document.fullscreenEnabled;
+    const sync = () => {
       const active = Boolean(document.fullscreenElement);
-      const label = active ? t('options.fullscreenExit') : t('options.fullscreenEnter');
-      button.title = label;
-      button.setAttribute('aria-label', label);
-      button.setAttribute('aria-pressed', String(active));
+      setTile(button, active, active ? t('options.on') : t('options.off'));
+    };
+    sync();
+    document.addEventListener('fullscreenchange', () => {
+      sync();
       requestAnimationFrame(() => this.handlers.resized());
     });
     button.addEventListener('click', async () => {

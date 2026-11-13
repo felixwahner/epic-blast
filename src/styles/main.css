@@ -3,6 +3,19 @@
   src: url('../assets/fonts/PressStart2P.ttf') format('truetype');
   font-display: swap;
 }
+@font-face {
+  font-family: 'Exo 2';
+  font-style: italic;
+  font-weight: 800;
+  src: url('../assets/fonts/Exo2-ExtraBoldItalic-latin.woff2') format('woff2');
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Inter';
+  font-weight: 100 900;
+  src: url('../assets/fonts/Inter-latin.woff2') format('woff2');
+  font-display: swap;
+}
 
 :root {
   --top-protection: 0px;
@@ -79,10 +92,6 @@ body {
 .header-controls {
   display: flex;
   gap: 8px;
-}
-
-#btn-fullscreen svg {
-  display: block;
 }
 
 .pixel-btn:focus-visible {
@@ -514,18 +523,6 @@ body {
   }
 }
 
-#btn-vibration svg {
-  display: block;
-}
-.vibration-slash {
-  display: none;
-}
-.vibration-off .vibration-slash {
-  display: block;
-}
-#btn-vibration.vibration-off {
-  color: #9196ab;
-}
 @media (max-width: 440px) {
   .game-title {
     font-size: 12px;
@@ -541,16 +538,6 @@ body {
 
 #pixi-view {
   position: relative;
-}
-#btn-effects {
-  color: #b4b8cc;
-  background: transparent;
-  border: 1px solid #3d4263;
-  padding: 5px;
-  font: inherit;
-  font-size: 7px;
-  cursor: pointer;
-  margin-right: 8px;
 }
 #canvas-wrapper {
   transition: box-shadow 0.3s;
@@ -843,11 +830,6 @@ body::before {
 #level-progress::-moz-progress-bar {
   background: linear-gradient(90deg, #00f5ff, #ff36d9);
 }
-#btn-effects {
-  background: #150d29;
-  border-color: #643486;
-  color: #d9b8ed;
-}
 .clear-beam {
   box-shadow:
     0 0 18px #00f5ff,
@@ -945,29 +927,6 @@ body::before {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-}
-.options-subtitle {
-  font-size: 8px;
-  color: #00f5ff;
-  letter-spacing: 2px;
-  margin: 12px 0 24px;
-}
-.option-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  min-height: 65px;
-  font-size: 10px;
-  border-top: 1px solid #8545a366;
-}
-.option-row .pixel-btn {
-  flex-shrink: 0;
-}
-.options-menu #btn-effects {
-  margin: 0;
-  padding: 10px 6px;
-  font-size: 7px;
 }
 @keyframes options-enter {
   from {
@@ -1321,9 +1280,6 @@ body {
   font-size: 10px;
   letter-spacing: 0.6px;
 }
-.option-row {
-  font-size: 13px;
-}
 .celebration-title {
   font-family: Arial, sans-serif;
   font-style: italic;
@@ -1586,21 +1542,6 @@ body::after {
   padding: 0;
 }
 
-/* New game: the top-left counterpart of the options gear, confirmed on the board. */
-#btn-new-game {
-  display: grid;
-  place-items: center;
-  width: 44px;
-  height: 44px;
-  padding: 0;
-  color: #fff;
-  border-color: #ff36d9;
-  text-shadow: 0 0 8px #ff36d9;
-}
-#fullscreen-option[hidden] {
-  display: none;
-}
-
 /* A clear's award leaves the board and is collected by the score above it. */
 .score-flight-layer {
   position: absolute;
@@ -1841,9 +1782,6 @@ body::after {
   overflow: auto;
   font-family: inherit;
 }
-.overlay-dialog.options-menu {
-  width: min(90vw, 410px);
-}
 .overlay-dialog[open] {
   animation: options-enter 0.25s ease-out;
 }
@@ -1875,9 +1813,6 @@ body::after {
 }
 .options-heading .pixel-btn:active {
   transform: translateY(calc(-50% + 2px));
-}
-.options-subtitle {
-  text-align: center;
 }
 .recovery-dialog .overlay-text {
   margin: 18px 0;
@@ -2079,25 +2014,6 @@ body::after {
 }
 #btn-close-app[hidden] {
   display: none;
-}
-/* New game leads the menu. */
-#btn-new-game {
-  width: auto;
-  height: auto;
-  padding: 8px 12px;
-  font-size: 12px;
-  letter-spacing: 1px;
-  background: linear-gradient(180deg, #ff4cbd, #a01a86);
-  border-color: #ffb9ec;
-  color: #fff;
-  text-shadow: 0 1px 2px #4a0638;
-  box-shadow: 0 3px 0 #4a0638;
-}
-#btn-new-game:hover {
-  border-color: #fff;
-  box-shadow:
-    0 3px 0 #4a0638,
-    0 0 14px #ff36d9aa;
 }
 
 /* Combo fuse: one pip per piece left to keep the combo; green once the round has a clear. */
@@ -2434,4 +2350,310 @@ body::after {
 }
 #best-score-display {
   font-size: 11px;
+}
+
+/* Pause menu. Two typefaces: Exo 2 for the title and the one call to action,
+   Inter for everything else. The world colors appear in exactly two places:
+   --world-secondary on the call to action, --world-primary on settings that are on. */
+.overlay-dialog.options-menu {
+  --menu-accent: var(--world-secondary, #ff36d9);
+  --menu-on: var(--world-primary, #00f5ff);
+  --menu-surface: #150b2b;
+  --menu-surface-raised: #1d1238;
+  --menu-line: #ffffff1f;
+  --menu-text: #f4f0ff;
+  --menu-muted: #a99cc8;
+  --menu-off: #6f6490;
+  --menu-display: 'Exo 2', Arial, sans-serif;
+  --menu-pad: 24px;
+  width: min(calc(100vw - 32px), 400px);
+  max-height: calc(100dvh - 32px);
+  padding: 0;
+  overflow: hidden auto;
+  color: var(--menu-text);
+  font:
+    500 15px/1.3 Inter,
+    Arial,
+    sans-serif;
+  background: linear-gradient(180deg, var(--menu-surface-raised), var(--menu-surface) 55%, #0d0720);
+  border: 1px solid #ffffff2e;
+  border-radius: 24px;
+  box-shadow:
+    0 0 0 1px #00000080,
+    0 24px 60px #000000b0,
+    0 0 48px color-mix(in srgb, var(--menu-accent) 28%, transparent),
+    inset 0 1px 0 #ffffff1c;
+}
+.options-menu::backdrop {
+  background: #05021099;
+  backdrop-filter: blur(10px) saturate(1.2);
+}
+:where(.options-menu button) {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.options-menu button:focus-visible {
+  outline: 2px solid var(--menu-on);
+  outline-offset: 2px;
+}
+.menu-hero {
+  position: relative;
+  isolation: isolate;
+  padding: var(--menu-pad) var(--menu-pad) 20px;
+  text-align: center;
+}
+/* The current world's scene fades into the panel behind the title. */
+.menu-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(180deg, #0d072040, var(--menu-surface-raised) 92%),
+    var(--world-scene, none) center 35% / cover;
+  mask: linear-gradient(#000, #0009 45%, transparent);
+}
+.menu-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  background: #0b061899;
+  border: 1px solid #ffffff33;
+  border-radius: 50%;
+  backdrop-filter: blur(6px);
+}
+.menu-close svg {
+  width: 16px;
+  height: 16px;
+}
+.menu-eyebrow {
+  margin: 8px 44px 0;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #ffffffd9;
+}
+.menu-eyebrow-dot {
+  margin: 0 0.4em;
+  color: var(--menu-accent);
+}
+.menu-title {
+  margin: 8px 0 20px;
+  font: italic 800 56px/0.95 var(--menu-display);
+  letter-spacing: 0.02em;
+  color: transparent;
+  background: linear-gradient(180deg, #fff 30%, #ffe9b0 62%, #ffb547);
+  background-clip: text;
+  filter: drop-shadow(0 2px 0 #00000080) drop-shadow(0 0 22px color-mix(in srgb, var(--menu-accent) 55%, transparent));
+}
+.menu-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  margin: 0;
+  background: #0b0618b3;
+  border: 1px solid var(--menu-line);
+  border-radius: 16px;
+  backdrop-filter: blur(8px);
+}
+.menu-stats div {
+  padding: 12px 4px;
+}
+.menu-stats div + div {
+  border-left: 1px solid var(--menu-line);
+}
+.menu-stats dt {
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--menu-muted);
+}
+.menu-stats dd {
+  margin: 6px 0 0;
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: #ffd970;
+}
+.menu-body {
+  display: grid;
+  gap: 12px;
+  padding: 0 var(--menu-pad) var(--menu-pad);
+}
+.menu-cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  height: 60px;
+  border: 0;
+  border-radius: 16px;
+  font: italic 800 21px/1 var(--menu-display);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #fff;
+  text-shadow: 0 1px 2px #0005;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--menu-accent) 82%, #fff),
+    var(--menu-accent) 45%,
+    color-mix(in srgb, var(--menu-accent) 70%, #3a0030)
+  );
+  box-shadow:
+    inset 0 1px 0 #ffffff80,
+    inset 0 -2px 0 #00000033,
+    0 8px 24px color-mix(in srgb, var(--menu-accent) 45%, transparent),
+    0 2px 0 #00000066;
+  transition:
+    filter 0.15s,
+    transform 0.1s;
+}
+.menu-cta svg {
+  width: 20px;
+  height: 20px;
+}
+.menu-cta:hover {
+  filter: brightness(1.08);
+}
+.menu-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.menu-secondary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 8px;
+  font-size: 14px;
+  font-weight: 700;
+  background: #ffffff0d;
+  border: 1px solid #ffffff26;
+  border-radius: 14px;
+  box-shadow: inset 0 1px 0 #ffffff14;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+.menu-secondary:hover {
+  background: #ffffff17;
+  border-color: #ffffff40;
+}
+.menu-secondary svg {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  color: var(--menu-muted);
+}
+.menu-cta:active,
+.menu-secondary:active,
+.menu-tile:active {
+  transform: translateY(1px);
+}
+.menu-section {
+  margin: 12px 0 0;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--menu-muted);
+}
+.menu-tiles {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.menu-tile {
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 8px;
+  min-width: 0;
+  padding: 16px 4px 12px;
+  background: #ffffff08;
+  border: 1px solid #ffffff17;
+  border-radius: 14px;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+.menu-tile[hidden] {
+  display: none;
+}
+.menu-tile .tile-icon {
+  width: 24px;
+  height: 24px;
+  color: var(--menu-off);
+}
+.tile-label {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.15;
+  color: var(--menu-muted);
+}
+.tile-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.4;
+  letter-spacing: 0.08em;
+  color: var(--menu-off);
+}
+.tile-state::before {
+  content: '';
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #4a3f66;
+}
+.menu-tile[aria-pressed='true'],
+.menu-tile--cycle {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--menu-on) 12%, #ffffff06), #ffffff05);
+  border-color: color-mix(in srgb, var(--menu-on) 40%, #ffffff17);
+}
+:is(.menu-tile[aria-pressed='true'], .menu-tile--cycle) .tile-icon {
+  color: var(--menu-on);
+  filter: drop-shadow(0 0 8px color-mix(in srgb, var(--menu-on) 60%, transparent));
+}
+:is(.menu-tile[aria-pressed='true'], .menu-tile--cycle) .tile-label {
+  color: var(--menu-text);
+}
+:is(.menu-tile[aria-pressed='true'], .menu-tile--cycle) .tile-state {
+  color: color-mix(in srgb, var(--menu-on) 70%, #fff);
+}
+:is(.menu-tile[aria-pressed='true'], .menu-tile--cycle) .tile-state::before {
+  background: var(--menu-on);
+  box-shadow: 0 0 6px var(--menu-on);
+}
+/* The sound world cycles through its options instead of switching on and off. */
+.menu-tile--cycle .tile-state::after {
+  content: '›';
+  font-size: 13px;
+  line-height: 0.8;
+}
+@media (max-width: 360px) {
+  .overlay-dialog.options-menu {
+    --menu-pad: 16px;
+  }
+  .menu-title {
+    font-size: 46px;
+  }
 }
