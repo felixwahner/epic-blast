@@ -31,6 +31,7 @@ import { BoardView } from '../render/board-view.ts';
 import { CHARGE_TIME } from '../render/clear-animation.ts';
 import { dragLift, dragPlacement, hitTestTray, type Point } from '../render/drag.ts';
 import { FloatingTexts } from '../render/floating-text.ts';
+import { Logo3D } from '../render/logo-3d.ts';
 import { cellCenter, cellsCentroid, computeLayout, emptyLayout, slotCenter, type Layout } from '../render/layout.ts';
 import { ParticleSystem } from '../render/particles.ts';
 import { ScreenShake } from '../render/screen-shake.ts';
@@ -102,6 +103,8 @@ export class Game {
   /** The board's 2D art, kept off stage and baked into the 3D board's texture. */
   private readonly boardArt = new Container();
   private leanCss = '';
+  /** The header logo as a 3D badge that leans with the board; null until loaded or without WebGL. */
+  private logo3d: Logo3D | null = null;
   private readonly tray: TrayView;
   private readonly particles: ParticleSystem;
   private readonly texts: FloatingTexts;
@@ -190,6 +193,8 @@ export class Game {
   }
 
   start(): void {
+    const logo = document.querySelector<HTMLImageElement>('.game-logo');
+    if (logo) void Logo3D.mount(logo).then(view => (this.logo3d = view));
     this.loadAssets();
     this.bindControls();
     this.resize();
@@ -969,6 +974,7 @@ export class Game {
       this.leanCss = lean;
       this.hud.container.style.setProperty('--lean-x', x.toFixed(3));
       this.hud.container.style.setProperty('--lean-y', y.toFixed(3));
+      this.logo3d?.lean(x, y);
     }
     this.tray.update(dt, this.layout);
     this.particles.update(dt);
