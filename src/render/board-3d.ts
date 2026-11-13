@@ -37,7 +37,7 @@ const BOARD_SINK = 20;
 /** Glow quad size, in cells: the halo reaches half a cell past the stone. */
 const GLOW_SPAN = 2;
 /** Strength of the additive halo around each stone. */
-const GLOW_ALPHA = 1;
+const GLOW_ALPHA = 0.45;
 
 interface Stone {
   group: Container3D;
@@ -125,10 +125,11 @@ export class Board3D {
         const glow = new Mesh3D({
           geometry: faceGeometry,
           rotation: { x: -Math.PI / 2, y: 0, z: 0 },
-          // Just under the stone's top: blended meshes draw far to near, and up here every halo
-          // is nearer the camera than the board plane, so it lands on the board, not under it.
-          // Neighbouring stones still hide it, as the 2D glow sat behind them.
-          position: { x: 0, y: STONE_HEIGHT - 0.02, z: 0 },
+          // Flat on the board, under the stones, so their bodies hide it as the 2D glow sat
+          // behind them. Higher up it cut through the neighbours' rounded edges, and as the
+          // board leaned the cut moved, which flickered. The sunken board origin keeps it on top
+          // of the board in the draw order.
+          position: { x: 0, y: 0.004, z: 0 },
           scale: { x: GLOW_SPAN, y: GLOW_SPAN, z: 1 },
           castShadow: false,
           receiveShadow: false,
@@ -221,7 +222,9 @@ export class Board3D {
         }),
     );
     this.bodyMaterials = palettes.map(p => new Material3D({ baseColor: p.sh, roughness: 0.4, metallic: 0 }));
-    for (const row of this.stones) for (const stone of row) if (stone.color !== null) this.paint(stone, stone.color);
+    // Every stone, hidden ones too: the renderer still batches hidden meshes, and one left on
+    // a destroyed material crashes the frame, which blanked the board after a world change.
+    for (const row of this.stones) for (const stone of row) this.paint(stone, stone.color ?? 0);
     oldFaces.forEach(m => m.destroy());
     oldBodies.forEach(m => m.destroy());
     oldGlows.forEach(m => m.destroy());
@@ -332,8 +335,6 @@ function glowTexture(color: string): Texture {
     ctx.shadowBlur = size * 0.14;
     ctx.beginPath();
     ctx.roundRect(at, at, stone, stone, stone * 0.14);
-    // Twice, for a halo that still reads on the brighter worlds.
-    ctx.fill();
     ctx.fill();
   }
   return new Texture({ source: new CanvasSource({ resource: canvas, autoGenerateMipmaps: true }) });

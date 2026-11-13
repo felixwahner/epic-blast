@@ -12,19 +12,29 @@ export interface GalleryHandlers {
   choose(index: number): boolean;
   /** Called once the gallery is open, so fresh unlocks count as seen. */
   opened(): void;
+  /** Reopens the pause menu; the back button shows when the gallery came from there. */
+  backToMenu(): void;
 }
 
 export class WorldGallery {
   readonly dialog = byId<HTMLDialogElement>('world-gallery');
   private readonly grid = byId('world-grid');
   private readonly summary = byId('gallery-summary');
+  private readonly progress = byId('gallery-progress');
+  private readonly backButton = byId('btn-gallery-back');
   private readonly handlers: GalleryHandlers;
   private note = '';
 
-  constructor(handlers: GalleryHandlers, triggers: readonly HTMLElement[]) {
+  /** `menuTrigger` opens the gallery from the pause menu, which the back button returns to. */
+  constructor(handlers: GalleryHandlers, triggers: readonly HTMLElement[], menuTrigger?: HTMLElement) {
     this.handlers = handlers;
     for (const trigger of triggers) trigger.addEventListener('click', () => this.open());
+    menuTrigger?.addEventListener('click', () => this.open(true));
     byId('btn-close-gallery').addEventListener('click', () => this.dialog.close());
+    this.backButton.addEventListener('click', () => {
+      this.dialog.close();
+      this.handlers.backToMenu();
+    });
     this.dialog.addEventListener('click', event => {
       if (event.target !== this.dialog) return;
       const rect = this.dialog.getBoundingClientRect();
@@ -47,8 +57,9 @@ export class WorldGallery {
     });
   }
 
-  open(): void {
+  open(fromMenu = false): void {
     this.note = '';
+    this.backButton.hidden = !fromMenu;
     this.render();
     // Another overlay (options, game over) may still be on screen.
     for (const dialog of document.querySelectorAll<HTMLDialogElement>('dialog[open]'))
@@ -62,6 +73,8 @@ export class WorldGallery {
     const unlocked = unlockedWorlds(collection, WORLDS.length).length;
     this.summary.textContent =
       this.note || t('gallery.summary', { unlocked, total: WORLDS.length, lines: collection.lines });
+    this.summary.classList.toggle('is-note', Boolean(this.note));
+    this.progress.style.setProperty('--progress', `${(unlocked / WORLDS.length) * 100}%`);
     this.grid.replaceChildren(
       ...WORLDS.map(([name, primary], index) => {
         const open = isUnlocked(collection, index);
@@ -72,6 +85,7 @@ export class WorldGallery {
         card.style.setProperty('--card-color', primary);
         card.classList.toggle('locked', !open);
         card.classList.toggle('start', collection.start === index);
+        card.classList.toggle('fresh', open && collection.start !== index && collection.fresh.includes(index));
         const url = sceneURL(worldSlug(index));
         const art = document.createElement('span');
         art.className = 'world-card__art';

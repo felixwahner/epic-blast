@@ -201,7 +201,7 @@
       </div>
     </div>
 
-    <dialog id="options-menu" class="overlay-dialog options-menu" aria-labelledby="options-title">
+    <dialog id="options-menu" class="overlay-dialog menu-sheet options-menu" aria-labelledby="options-title">
       <header class="menu-hero">
         <button
           id="btn-close-options"
@@ -398,19 +398,58 @@
         </div>
       </div>
     </dialog>
-    <dialog id="world-gallery" class="overlay-dialog overlay-panel world-gallery" aria-labelledby="gallery-title">
-      <div class="options-heading">
-        <h2 id="gallery-title" class="overlay-title" data-i18n="gallery.title">WORLDS</h2>
-        <button id="btn-close-gallery" class="pixel-btn" aria-label="Close worlds" data-i18n-aria-label="gallery.close">
-          ✕
+    <dialog id="world-gallery" class="overlay-dialog menu-sheet world-gallery" aria-labelledby="gallery-title">
+      <header class="menu-hero menu-hero--compact">
+        <button
+          id="btn-gallery-back"
+          class="menu-close menu-back"
+          type="button"
+          aria-label="Back to menu"
+          data-i18n-aria-label="gallery.back"
+          hidden
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M15 6l-6 6 6 6" />
+          </svg>
         </button>
+        <button
+          id="btn-close-gallery"
+          class="menu-close"
+          type="button"
+          aria-label="Close worlds"
+          data-i18n-aria-label="gallery.close"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.2"
+            stroke-linecap="round"
+            aria-hidden="true"
+          >
+            <path d="M6 6l12 12M18 6 6 18" />
+          </svg>
+        </button>
+        <p class="menu-eyebrow" data-i18n="gallery.eyebrow">Collection</p>
+        <h2 id="gallery-title" class="menu-title" data-i18n="gallery.title">WORLDS</h2>
+        <p id="gallery-summary" class="gallery-summary" aria-live="polite"></p>
+        <div class="gallery-progress" aria-hidden="true"><i id="gallery-progress"></i></div>
+      </header>
+      <div class="menu-body">
+        <div id="world-grid" class="world-grid"></div>
+        <p class="gallery-hint" data-i18n="gallery.hint">
+          Unlock new worlds by reaching them in a game or by clearing enough lines in total. Tap an unlocked world to
+          start with it from now on.
+        </p>
       </div>
-      <p id="gallery-summary" class="gallery-summary"></p>
-      <div id="world-grid" class="world-grid"></div>
-      <p class="gallery-hint" data-i18n="gallery.hint">
-        Unlock new worlds by reaching them in a game or by clearing enough lines in total. Tap an unlocked world to
-        start with it from now on.
-      </p>
     </dialog>
     <dialog id="streak-recovery" class="overlay-dialog overlay-panel recovery-dialog" aria-labelledby="recovery-title">
       <h2 id="recovery-title" class="overlay-title" data-i18n="recovery.title">SAVE COMBO</h2>

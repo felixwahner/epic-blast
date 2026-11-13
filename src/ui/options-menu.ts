@@ -37,10 +37,7 @@ export class OptionsMenu {
 
   constructor(handlers: OptionsHandlers) {
     this.handlers = handlers;
-    byId('btn-options').addEventListener('click', () => {
-      this.syncHeader();
-      this.dialog.showModal();
-    });
+    byId('btn-options').addEventListener('click', () => this.open());
     byId('btn-close-options').addEventListener('click', () => this.dialog.close());
     byId('btn-resume').addEventListener('click', () => this.dialog.close());
     // Close when clicking the backdrop outside the dialog box.
@@ -80,6 +77,11 @@ export class OptionsMenu {
     });
 
     this.bindFullscreen();
+  }
+
+  open(): void {
+    this.syncHeader();
+    if (!this.dialog.open) this.dialog.showModal();
   }
 
   /** World name, collection progress and the run's numbers, read when the menu opens. */

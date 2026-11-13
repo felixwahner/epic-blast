@@ -43,6 +43,35 @@ test('the pause menu shows the run and resumes', async ({ page }) => {
   await expect(menu).not.toBeVisible();
 });
 
+test('the world gallery opens from the menu, scrolls by touch and leads back', async ({ page }, info) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Open menu' }).click();
+  await page.locator('#btn-options-worlds').click();
+  const gallery = page.locator('#world-gallery');
+  await expect(gallery).toBeVisible();
+  await expect(page.locator('#options-menu')).not.toBeVisible();
+
+  if (info.project.name === 'mobile') {
+    // The page blocks touch panning for board drags; the gallery must still scroll.
+    const box = (await gallery.boundingBox())!;
+    const x = box.x + box.width / 2;
+    const from = box.y + box.height * 0.8;
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y: from }] });
+    for (let step = 1; step <= 12; step++)
+      await cdp.send('Input.dispatchTouchEvent', {
+        type: 'touchMove',
+        touchPoints: [{ x, y: from - (box.height * 0.5 * step) / 12 }],
+      });
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await expect.poll(() => gallery.evaluate(dialog => dialog.scrollTop)).toBeGreaterThan(50);
+  }
+
+  await page.getByRole('button', { name: 'Back to menu' }).click();
+  await expect(gallery).not.toBeVisible();
+  await expect(page.locator('#options-menu')).toBeVisible();
+});
+
 test('remembers option toggles across reloads', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: 'Open menu' }).click();
