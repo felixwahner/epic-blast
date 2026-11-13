@@ -1,4 +1,4 @@
-import { BLEND_MODES, Graphics } from 'pixi.js';
+import { Graphics } from 'pixi.js';
 import type { Layout } from './layout.ts';
 
 /**
@@ -15,15 +15,13 @@ export class BoardFlash {
   private rise = 0.4;
 
   constructor() {
-    this.graphics.blendMode = BLEND_MODES.ADD;
+    this.graphics.blendMode = 'add';
     this.graphics.visible = false;
   }
 
   relayout(layout: Layout): void {
     this.graphics.clear();
-    this.graphics.beginFill(0xffffff);
-    this.graphics.drawRect(layout.gridX, layout.gridY, layout.gridWidth, layout.gridWidth);
-    this.graphics.endFill();
+    this.graphics.rect(layout.gridX, layout.gridY, layout.gridWidth, layout.gridWidth).fill(0xffffff);
   }
 
   flash(peak: number, duration: number, rise = 0.4): void {

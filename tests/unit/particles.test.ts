@@ -20,16 +20,13 @@ class FakeGraphics {
       this.y = y;
     },
   };
-  beginFill() {
+  rect() {
     return this;
   }
-  drawRect() {
+  poly() {
     return this;
   }
-  drawPolygon() {
-    return this;
-  }
-  endFill() {
+  fill() {
     return this;
   }
   clear() {

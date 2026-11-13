@@ -1,9 +1,9 @@
-import type { Container, DisplayObject, Graphics } from 'pixi.js';
+import type { Container, Graphics } from 'pixi.js';
 import type { Palette } from '../theme/themes.ts';
 import { detonationTime, fragmentProjection } from './clear-animation.ts';
 
 export interface Particle {
-  displayObject: DisplayObject;
+  displayObject: Container;
   vx: number;
   vy: number;
   gravity: number;
@@ -62,7 +62,7 @@ export class ParticleSystem {
     return g;
   }
 
-  private release(object: DisplayObject): void {
+  private release(object: Container): void {
     object.visible = false;
     this.pool.push(object as Graphics);
   }
@@ -73,9 +73,8 @@ export class ParticleSystem {
     for (let i = 0; i < count; i++) {
       const g = this.acquire(cx, cy);
       const s = Math.floor(rnd() * 3 + 3);
-      g.beginFill(color);
       if (i % 3 === 0)
-        g.drawPolygon([
+        g.poly([
           0,
           -s * 1.8,
           s * 0.35,
@@ -93,8 +92,8 @@ export class ParticleSystem {
           -s * 0.35,
           -s * 0.35,
         ]);
-      else g.drawRect(-s / 2, -s / 2, s, s);
-      g.endFill();
+      else g.rect(-s / 2, -s / 2, s, s);
+      g.fill(color);
       const angle = rnd() * Math.PI * 2;
       const speed = rnd() * 80 + 30;
       this.particles.push({
@@ -122,33 +121,19 @@ export class ParticleSystem {
     const delay = detonationTime(cx, cy, epicenter);
     const charge = this.acquire(cx, cy);
     const size = cellSize - 4;
-    charge.beginFill(palette.base);
-    charge.drawRect(-size / 2, -size / 2, size, size);
-    charge.endFill();
-    charge.beginFill(palette.hi);
-    charge.drawRect(-size / 2, -size / 2, size, 3);
-    charge.endFill();
-    charge.beginFill(palette.sh);
-    charge.drawRect(-size / 2, size / 2 - 3, size, 3);
-    charge.endFill();
+    charge.rect(-size / 2, -size / 2, size, size).fill(palette.base);
+    charge.rect(-size / 2, -size / 2, size, 3).fill(palette.hi);
+    charge.rect(-size / 2, size / 2 - 3, size, 3).fill(palette.sh);
     this.particles.push({ displayObject: charge, vx: 0, vy: 0, gravity: 0, life: 0, maxLife: delay, charge: true });
     const colors = [palette.base, palette.base, palette.hi];
     for (let i = 0; i < fragmentCount; i++) {
       const g = this.acquire(cx, cy);
       const depthSpeed = (rnd() - 0.35) * 1.2;
       const s = cellSize * (0.12 + rnd() * 0.12);
-      g.beginFill(colors[i % colors.length]);
-      g.drawRect(-s / 2, -s / 2, s, s);
-      g.endFill();
-      g.beginFill(palette.hi);
-      g.drawRect(-s / 2, -s / 2, s, 2);
-      g.endFill();
-      g.beginFill(palette.sh);
-      g.drawPolygon([s / 2, -s / 2, s * 0.8, -s * 0.8, s * 0.8, s * 0.2, s / 2, s / 2]);
-      g.endFill();
-      g.beginFill(palette.hi);
-      g.drawPolygon([-s / 2, -s / 2, -s * 0.2, -s * 0.8, s * 0.8, -s * 0.8, s / 2, -s / 2]);
-      g.endFill();
+      g.rect(-s / 2, -s / 2, s, s).fill(colors[i % colors.length]);
+      g.rect(-s / 2, -s / 2, s, 2).fill(palette.hi);
+      g.poly([s / 2, -s / 2, s * 0.8, -s * 0.8, s * 0.8, s * 0.2, s / 2, s / 2]).fill(palette.sh);
+      g.poly([-s / 2, -s / 2, -s * 0.2, -s * 0.8, s * 0.8, -s * 0.8, s / 2, -s / 2]).fill(palette.hi);
       const angle = (epicenter ? Math.atan2(cy - epicenter.y, cx - epicenter.x) : 0) + (rnd() - 0.5) * 3;
       const speed = 90 + rnd() * 160;
       g.visible = false;

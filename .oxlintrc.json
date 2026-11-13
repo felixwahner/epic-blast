@@ -27,6 +27,11 @@
     {
       "files": ["tools/**"],
       "rules": { "no-console": "off" }
+    },
+    {
+      // Pixi 8 Graphics.fill({ color, alpha }) and canvas ctx.fill(path) are not Array.fill, which this rule assumes.
+      "files": ["src/render/**", "src/game/**"],
+      "rules": { "unicorn/no-array-fill-with-reference-type": "off" }
     }
   ],
   "ignorePatterns": ["dist/", "design/", "marketing/", "public/"],

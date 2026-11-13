@@ -90,7 +90,7 @@ export class Game {
   private readonly flash = new BoardFlash();
   private readonly reduced = () => this.effects.reduced;
 
-  private readonly app: Application<HTMLCanvasElement>;
+  private readonly app: Application;
   private readonly root = new Container();
   private readonly trayBackdrop = new Graphics();
   private readonly dragLayer = new Container();
@@ -120,7 +120,23 @@ export class Game {
   private canvasRect: DOMRect | null = null;
   private resizeFrame = 0;
 
-  constructor({ audio, storage = safeStorage }: GameOptions) {
+  /** Pixi 8 initialises its renderer asynchronously, so a game is built through this factory. */
+  static async create(options: GameOptions): Promise<Game> {
+    const app = new Application();
+    await app.init({
+      width: 300,
+      height: 400,
+      backgroundAlpha: 0,
+      resolution: canvasResolution(),
+      autoDensity: true,
+      antialias: false,
+      // Keep the WebGL renderer the game was tuned on; WebGPU stays opt-in.
+      preference: 'webgl',
+    });
+    return new Game(options, app);
+  }
+
+  private constructor({ audio, storage = safeStorage }: GameOptions, app: Application) {
     this.audio = audio;
     this.storage = storage;
     this.effects = new VisualEffects(storage);
@@ -133,15 +149,9 @@ export class Game {
     this.hud.setBest(this.session.bestScore);
 
     const rect = this.hud.pixiMount.getBoundingClientRect();
-    this.app = new Application<HTMLCanvasElement>({
-      width: Math.max(300, Math.floor(rect.width)),
-      height: Math.max(400, Math.floor(rect.height)),
-      backgroundAlpha: 0,
-      resolution: canvasResolution(),
-      autoDensity: true,
-      antialias: false,
-    });
-    this.hud.pixiMount.appendChild(this.app.view);
+    this.app = app;
+    this.app.renderer.resize(Math.max(300, Math.floor(rect.width)), Math.max(400, Math.floor(rect.height)));
+    this.hud.pixiMount.appendChild(this.app.canvas);
 
     this.textures = new BlockTextures(this.app.renderer);
     this.textures.rebuild(this.theme.palettes, this.theme.material, null);
@@ -179,7 +189,7 @@ export class Game {
       if (!this.resizeFrame) this.resizeFrame = requestAnimationFrame(() => this.resize());
     });
     if (!this.resumeSavedGame()) this.startNewGame();
-    this.app.ticker.add(delta => this.update(delta / 60));
+    this.app.ticker.add(ticker => this.update(ticker.deltaTime / 60));
   }
 
   // --- Assets & theme -------------------------------------------------------
@@ -205,15 +215,15 @@ export class Game {
         for (let row = 0; row < 7; row++)
           for (let col = 0; col < 7; col++) {
             variants.push(
-              new Texture(
-                sheet.baseTexture,
-                new Rectangle(
+              new Texture({
+                source: sheet.source,
+                frame: new Rectangle(
                   Math.floor(width * (0.015 + col * 0.135)),
                   Math.floor(height * (0.015 + row * 0.135)),
                   Math.floor(width * 0.135),
                   Math.floor(height * 0.135),
                 ),
-              ),
+              }),
             );
           }
         this.boardMaterials.set(slug, variants);
@@ -284,21 +294,20 @@ export class Game {
     const rect = this.hud.pixiMount.getBoundingClientRect();
     if (rect.width === 0 || rect.height === 0) return;
     // Browser zoom and moving between monitors change the pixel ratio at runtime.
-    this.app.renderer.resolution = canvasResolution();
-    this.app.renderer.resize(Math.floor(rect.width), Math.floor(rect.height));
+    this.app.renderer.resize(Math.floor(rect.width), Math.floor(rect.height), canvasResolution());
     const layout = (this.layout = computeLayout(rect.width, rect.height));
     this.hud.positionComboBox(layout);
     this.hud.alignHeader(layout);
     this.trayBackdrop.clear();
-    this.trayBackdrop.beginFill(0x080714, 0.78);
-    this.trayBackdrop.drawRoundedRect(
-      layout.gridX,
-      layout.trayY - 4,
-      layout.gridWidth,
-      Math.min(layout.trayHeight + 8, layout.viewHeight - layout.trayY),
-      12,
-    );
-    this.trayBackdrop.endFill();
+    this.trayBackdrop
+      .roundRect(
+        layout.gridX,
+        layout.trayY - 4,
+        layout.gridWidth,
+        Math.min(layout.trayHeight + 8, layout.viewHeight - layout.trayY),
+        12,
+      )
+      .fill({ color: 0x080714, alpha: 0.78 });
     this.renderBoardBackground();
     this.flash.relayout(layout);
     if (Math.round(layout.cellSize * this.app.renderer.resolution) !== this.textures.pixelSize)
@@ -746,7 +755,7 @@ export class Game {
   }
 
   private toClient(point: Point): Point {
-    const rect = (this.canvasRect ??= this.app.view.getBoundingClientRect());
+    const rect = (this.canvasRect ??= this.app.canvas.getBoundingClientRect());
     return {
       x: rect.left + (point.x * rect.width) / this.layout.viewWidth,
       y: rect.top + (point.y * rect.height) / this.layout.viewHeight,

@@ -127,7 +127,7 @@ export class TrayView {
     for (const view of this.views) {
       if (!view) continue;
       for (const child of view.container.children) {
-        if (!(child instanceof Sprite) || child.name === GLOW_NAME) continue;
+        if (!(child instanceof Sprite) || child.label === GLOW_NAME) continue;
         child.texture = this.textures.blocks[view.piece.colorIdx];
         this.textures.syncGlow(child, view.piece.colorIdx);
       }
