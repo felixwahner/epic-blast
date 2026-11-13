@@ -790,7 +790,7 @@ export class Game {
       if (event.key === STORAGE_KEYS.bestScore) this.saveBestScore();
     });
 
-    new OptionsMenu({
+    const optionsMenu = new OptionsMenu({
       soundMuted: () => audio.isMuted,
       toggleSound: () => {
         const muted = audio.toggleMute();
@@ -840,12 +840,10 @@ export class Game {
           this.collection.fresh = [];
           this.saveCollection();
         },
+        backToMenu: () => optionsMenu.open(),
       },
-      [
-        this.hud.worldButton,
-        document.getElementById('btn-options-worlds')!,
-        document.getElementById('btn-over-worlds')!,
-      ],
+      [this.hud.worldButton, document.getElementById('btn-over-worlds')!],
+      document.getElementById('btn-options-worlds')!,
     );
     new RestartConfirm(() => {
       audio.init();
