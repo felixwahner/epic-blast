@@ -15,17 +15,20 @@ describe('Parallax', () => {
     assert.ok(Math.abs(p.y + 0.5) < 0.05);
   });
 
-  it('drifts gently on its own once the pointer rests', () => {
+  it('eases back to flat once the pointer rests, and never moves on its own', () => {
     const p = new Parallax();
-    p.point(0, 0);
-    run(p, IDLE_DELAY + 6);
-    const seen = [] as number[];
-    for (let i = 0; i < 300; i++) {
-      p.update(1 / 60);
-      seen.push(Math.hypot(p.x, p.y));
-    }
-    assert.ok(Math.max(...seen) > 0.05, 'should move while idle');
-    assert.ok(Math.max(...seen) < 0.7, 'idle drift stays subtle');
+    p.point(1, -1);
+    run(p, 0.5);
+    assert.ok(p.x > 0.5);
+    run(p, IDLE_DELAY + 3);
+    assert.ok(Math.hypot(p.x, p.y) < 0.01);
+    const before = [p.x, p.y];
+    run(p, 5);
+    assert.deepEqual(
+      [p.x, p.y].map(v => Math.abs(v) < 0.01),
+      [true, true],
+    );
+    assert.ok(Math.abs(p.x - before[0]) < 0.01);
   });
 
   it('settles flat when motion is reduced', () => {
