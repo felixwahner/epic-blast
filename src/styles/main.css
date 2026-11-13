@@ -922,12 +922,6 @@ body::before {
   animation: none;
 }
 
-.options-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
 @keyframes options-enter {
   from {
     opacity: 0;
@@ -1790,6 +1784,12 @@ body::after {
 .overlay-dialog[open] {
   animation: options-enter 0.25s ease-out;
 }
+/* The page turns off touch panning everywhere so drags stay on the board;
+   dialogs that scroll must pan vertically again, on themselves and every child. */
+.overlay-dialog,
+.overlay-dialog * {
+  touch-action: pan-y;
+}
 /* Custom properties do not reach ::backdrop in every browser, so the scrim is spelled out. */
 .overlay-dialog::backdrop {
   background: #070318cc;
@@ -1803,21 +1803,6 @@ body::after {
 }
 .recovery-dialog {
   text-align: center;
-}
-/* Every headline is centred; the options close button sits in the corner instead of beside it. */
-.options-heading {
-  position: relative;
-  justify-content: center;
-  text-align: center;
-}
-.options-heading .pixel-btn {
-  position: absolute;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
-}
-.options-heading .pixel-btn:active {
-  transform: translateY(calc(-50% + 2px));
 }
 .recovery-dialog .overlay-text {
   margin: 18px 0;
@@ -2156,110 +2141,6 @@ body::after {
   color: #fff;
 }
 
-/* World collection */
-.overlay-dialog.world-gallery {
-  width: min(94vw, 520px);
-}
-.gallery-summary {
-  margin: 10px 0 12px;
-  text-align: center;
-  font-size: 9px;
-  line-height: 1.6;
-  color: #ffecad;
-  min-height: 1.6em;
-}
-.gallery-hint {
-  margin: 14px 0 0;
-  font-family: Arial, sans-serif;
-  font-size: 12px;
-  line-height: 1.5;
-  color: #c9b4e6;
-  text-align: center;
-}
-.world-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-}
-@media (min-width: 601px) {
-  .world-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 10px;
-  }
-}
-.world-card {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  gap: 4px;
-  aspect-ratio: 3 / 4;
-  padding: 5px;
-  overflow: hidden;
-  text-align: left;
-  cursor: pointer;
-  font-family: inherit;
-  color: #fff;
-  background: #0e0924;
-  border: 2px solid color-mix(in srgb, var(--card-color) 55%, transparent);
-  border-radius: 6px;
-}
-.world-card__art {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(160deg, var(--card-color), #0e0924) center / cover no-repeat;
-}
-.world-card::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, transparent 45%, #070318ee);
-}
-.world-card__name,
-.world-card__status {
-  position: relative;
-  z-index: 1;
-}
-.world-card__name {
-  font-size: 7px;
-  line-height: 1.5;
-  text-shadow: 0 1px 2px #000;
-}
-.world-card__status {
-  font-size: 6px;
-  color: #ffecad;
-  min-height: 1em;
-}
-.world-card.start {
-  border-color: #ffd23f;
-  box-shadow: 0 0 10px #ffd23f88;
-}
-.world-card.start .world-card__status {
-  color: #ffd23f;
-}
-.world-card.locked {
-  cursor: default;
-  border-color: #3a2a50;
-}
-.world-card.locked .world-card__art {
-  filter: grayscale(1) brightness(0.3) blur(2px);
-  transform: scale(1.08);
-}
-.world-card.locked .world-card__name {
-  color: #a99abf;
-}
-.world-card:not(.locked):hover {
-  border-color: var(--card-color);
-}
-@media (min-width: 601px) {
-  .world-card__name {
-    font-size: 8px;
-  }
-  .world-card__status {
-    font-size: 7px;
-  }
-}
-
 /* Tutorial hand: drags from the first tray piece to its spot on the board. */
 .tutorial-hand {
   position: absolute;
@@ -2357,10 +2238,11 @@ body::after {
   font-size: 11px;
 }
 
-/* Pause menu. Two typefaces: Exo 2 for the title and the one call to action,
-   Inter for everything else. The world colors appear in exactly two places:
-   --world-secondary on the call to action, --world-primary on settings that are on. */
-.overlay-dialog.options-menu {
+/* Menu sheets: the pause menu and the world gallery. Two typefaces: Exo 2 for
+   titles and the one call to action, Inter for everything else. The world colors
+   appear in exactly two roles: --world-secondary as the accent, --world-primary
+   for whatever is on or chosen. */
+.overlay-dialog.menu-sheet {
   --menu-accent: var(--world-secondary, #ff36d9);
   --menu-on: var(--world-primary, #00f5ff);
   --menu-surface: #150b2b;
@@ -2375,6 +2257,7 @@ body::after {
   max-height: calc(100dvh - 32px);
   padding: 0;
   overflow: hidden auto;
+  overscroll-behavior: contain;
   color: var(--menu-text);
   font:
     500 15px/1.3 Inter,
@@ -2389,17 +2272,17 @@ body::after {
     0 0 48px color-mix(in srgb, var(--menu-accent) 28%, transparent),
     inset 0 1px 0 #ffffff1c;
 }
-.options-menu::backdrop {
+.menu-sheet::backdrop {
   background: #05021099;
   backdrop-filter: blur(10px) saturate(1.2);
 }
-:where(.options-menu button) {
+:where(.menu-sheet button) {
   font: inherit;
   color: inherit;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
-.options-menu button:focus-visible {
+.menu-sheet button:focus-visible {
   outline: 2px solid var(--menu-on);
   outline-offset: 2px;
 }
@@ -2655,10 +2538,188 @@ body::after {
   line-height: 0.8;
 }
 @media (max-width: 360px) {
-  .overlay-dialog.options-menu {
+  .overlay-dialog.menu-sheet {
     --menu-pad: 16px;
   }
   .menu-title {
     font-size: 46px;
   }
+}
+
+/* Back to the menu, in the corner opposite the close button. */
+.menu-close.menu-back {
+  right: auto;
+  left: 12px;
+}
+.menu-close[hidden] {
+  display: none;
+}
+
+/* World gallery: the same sheet as the pause menu, wider for the cards. */
+.overlay-dialog.world-gallery {
+  width: min(calc(100vw - 32px), 560px);
+}
+.menu-hero--compact {
+  padding-bottom: 16px;
+}
+.menu-hero--compact .menu-title {
+  margin-bottom: 12px;
+  font-size: 44px;
+}
+.gallery-summary {
+  min-height: 1.4em;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--menu-text);
+}
+.gallery-summary.is-note {
+  color: color-mix(in srgb, var(--menu-on) 70%, #fff);
+}
+.gallery-progress {
+  height: 4px;
+  margin: 12px auto 0;
+  max-width: 240px;
+  overflow: hidden;
+  background: #ffffff17;
+  border-radius: 99px;
+}
+.gallery-progress i {
+  display: block;
+  height: 100%;
+  width: var(--progress, 0%);
+  background: linear-gradient(90deg, var(--menu-on), var(--menu-accent));
+  border-radius: inherit;
+  box-shadow: 0 0 8px color-mix(in srgb, var(--menu-accent) 60%, transparent);
+}
+.world-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+@media (min-width: 601px) {
+  .world-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .world-grid .world-card__name {
+    font-size: 12px;
+  }
+}
+.world-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 4px;
+  aspect-ratio: 3 / 4;
+  padding: 10px 8px;
+  overflow: hidden;
+  text-align: left;
+  background: var(--menu-surface);
+  border: 1px solid #ffffff1f;
+  border-radius: 14px;
+  box-shadow: inset 0 1px 0 #ffffff14;
+  transition:
+    border-color 0.15s,
+    transform 0.15s;
+}
+.world-card__art {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(160deg, var(--card-color), #0e0924) center / cover no-repeat;
+  transition: transform 0.3s;
+}
+.world-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 40%, #0b0618f2);
+}
+.world-card__name,
+.world-card__status {
+  position: relative;
+  z-index: 1;
+}
+.world-card__name {
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-shadow: 0 1px 3px #000;
+}
+.world-card__status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 1.4em;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.4;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  color: var(--menu-muted);
+}
+.world-card__status:empty {
+  display: none;
+}
+.world-card__status::before {
+  content: '';
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.world-card:not(.locked):hover {
+  border-color: #ffffff4d;
+}
+.world-card:not(.locked):hover .world-card__art {
+  transform: scale(1.04);
+}
+.world-card.fresh .world-card__status {
+  color: color-mix(in srgb, var(--menu-accent) 70%, #fff);
+}
+.world-card.fresh .world-card__status::before {
+  box-shadow: 0 0 6px var(--menu-accent);
+}
+/* The starting world is the one chosen item, so it takes the "on" color. */
+.world-card.start {
+  border-color: var(--menu-on);
+  box-shadow:
+    0 0 0 1px var(--menu-on),
+    0 0 16px color-mix(in srgb, var(--menu-on) 45%, transparent);
+}
+.world-card.start .world-card__status {
+  color: color-mix(in srgb, var(--menu-on) 70%, #fff);
+}
+.world-card.start .world-card__status::before {
+  box-shadow: 0 0 6px var(--menu-on);
+}
+.world-card.locked {
+  cursor: default;
+  border-color: #ffffff0f;
+}
+.world-card.locked .world-card__art {
+  filter: grayscale(1) brightness(0.3) blur(2px);
+  transform: scale(1.08);
+}
+.world-card.locked .world-card__name {
+  color: var(--menu-muted);
+}
+.world-card.locked .world-card__status {
+  color: var(--menu-off);
+}
+.world-card.locked .world-card__status::before {
+  width: 10px;
+  height: 12px;
+  border-radius: 0;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 24'%3E%3Cpath d='M4 10V7a6 6 0 0 1 12 0v3h1a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2zm3 0h6V7a3 3 0 0 0-6 0z'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+}
+.gallery-hint {
+  margin-top: 4px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--menu-muted);
+  text-align: center;
 }
