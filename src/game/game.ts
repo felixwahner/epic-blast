@@ -135,7 +135,8 @@ export class Game {
       backgroundAlpha: 0,
       resolution: canvasResolution(),
       autoDensity: true,
-      antialias: false,
+      // Multisampling keeps the 3D stones' edges from shimmering while the board leans.
+      antialias: true,
       // Keep the WebGL renderer the game was tuned on; WebGPU stays opt-in.
       preference: 'webgl',
     });

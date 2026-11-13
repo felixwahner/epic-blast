@@ -2,8 +2,17 @@
 // placed block as a rounded stone carrying the game's own block texture on top.
 // The camera looks straight down (orthographic), so at rest the board lines up with the
 // 2D layout pixel for pixel; parallax leans the whole board a few degrees.
-import { Container3D, DirectionalLight, Geometry3D, Material3D, Mesh3D, PlaneGeometry, View3D } from '@pixi/3d';
-import { type Container, Rectangle, type Renderer, type Texture } from 'pixi.js';
+import {
+  Container3D,
+  DirectionalLight,
+  FlatMaterial,
+  Geometry3D,
+  Material3D,
+  Mesh3D,
+  PlaneGeometry,
+  View3D,
+} from '@pixi/3d';
+import { CanvasSource, type Container, Rectangle, type Renderer, Texture } from 'pixi.js';
 import { GRID_SIZE, type Grid } from '../core/board.ts';
 import type { Palette } from '../theme/themes.ts';
 import type { Layout } from './layout.ts';
@@ -19,11 +28,16 @@ const STONE_HEIGHT = 0.36;
 /** A sync that fills more cells than this at once is a new or resumed game: no drop-in. */
 const MAX_DROPS = 9;
 const DROP_TIME = 0.32;
+/** Glow quad size, in cells: the halo reaches half a cell past the stone. */
+const GLOW_SPAN = 2;
+/** Strength of the additive halo around each stone. */
+const GLOW_ALPHA = 1;
 
 interface Stone {
   group: Container3D;
   body: Mesh3D;
   face: Mesh3D;
+  glow: Mesh3D;
   color: number | null;
   /** Seconds since the stone was placed; negative while it waits its turn in the drop. */
   age: number;
@@ -40,6 +54,8 @@ export class Board3D {
   private readonly sun: DirectionalLight;
   private bodyMaterials: Material3D[] = [];
   private faceMaterials: Material3D[] = [];
+  private glowMaterials: FlatMaterial[] = [];
+  private glowTextures: Texture[] = [];
   private boardTexture: Texture | null = null;
   private layout: Layout | null = null;
   private shadows = true;
@@ -96,7 +112,20 @@ export class Board3D {
           castShadow: false,
           parent: group,
         });
-        return { group, body, face, color: null, age: Infinity };
+        // The world's additive halo around the stone, as in the 2D board.
+        const glow = new Mesh3D({
+          geometry: faceGeometry,
+          rotation: { x: -Math.PI / 2, y: 0, z: 0 },
+          // Just under the stone's top: blended meshes draw far to near, and up here every halo
+          // is nearer the camera than the board plane, so it lands on the board, not under it.
+          // Neighbouring stones still hide it, as the 2D glow sat behind them.
+          position: { x: 0, y: STONE_HEIGHT - 0.02, z: 0 },
+          scale: { x: GLOW_SPAN, y: GLOW_SPAN, z: 1 },
+          castShadow: false,
+          receiveShadow: false,
+          parent: group,
+        });
+        return { group, body, face, glow, color: null, age: Infinity };
       }),
     );
 
@@ -158,11 +187,24 @@ export class Board3D {
   retexture(blocks: readonly Texture[], palettes: readonly Palette[]): void {
     const oldFaces = this.faceMaterials;
     const oldBodies = this.bodyMaterials;
+    const oldGlows = this.glowMaterials;
+    const oldGlowTextures = this.glowTextures;
+    this.glowTextures = palettes.map(p => glowTexture(p.hex));
+    this.glowMaterials = this.glowTextures.map(texture => {
+      const material = new FlatMaterial({
+        baseColorTexture: texture,
+        alphaMode: 'blend',
+        alpha: GLOW_ALPHA,
+      });
+      material.state.blendMode = 'add';
+      return material;
+    });
     this.faceMaterials = blocks.map(
       texture =>
         new Material3D({
           baseColorTexture: texture,
-          alphaMode: 'mask',
+          // Blended, not alpha-tested: a cut-out edge stair-steps and shimmers as the board leans.
+          alphaMode: 'blend',
           roughness: 0.32,
           metallic: 0,
           // A weak reflection only: the texture already has its own baked highlights.
@@ -173,6 +215,8 @@ export class Board3D {
     for (const row of this.stones) for (const stone of row) if (stone.color !== null) this.paint(stone, stone.color);
     oldFaces.forEach(m => m.destroy());
     oldBodies.forEach(m => m.destroy());
+    oldGlows.forEach(m => m.destroy());
+    oldGlowTextures.forEach(t => t.destroy(true));
   }
 
   /** Mirrors the grid. Freshly filled cells drop in when a single piece was placed. */
@@ -229,6 +273,8 @@ export class Board3D {
     const body = this.bodyMaterials[color];
     if (face) stone.face.material = face;
     if (body) stone.body.material = body;
+    const glow = this.glowMaterials[color];
+    if (glow) stone.glow.material = glow;
   }
 
   /** Drop-in: falls from above, lands with a squash and a small damped bounce. */
@@ -260,4 +306,25 @@ export class Board3D {
 
 function cellCenter(r: number, c: number): { x: number; y: number; z: number } {
   return { x: c - GRID_SIZE / 2 + 0.5, y: 0, z: r - GRID_SIZE / 2 + 0.5 };
+}
+
+/** A soft halo in the stone's colour around a stone-sized square, on a quad `GLOW_SPAN` cells wide. */
+function glowTexture(color: string): Texture {
+  const size = 128;
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  if (ctx) {
+    const stone = (size / GLOW_SPAN) * 0.9;
+    const at = (size - stone) / 2;
+    ctx.fillStyle = color;
+    ctx.shadowColor = color;
+    ctx.shadowBlur = size * 0.14;
+    ctx.beginPath();
+    ctx.roundRect(at, at, stone, stone, stone * 0.14);
+    // Twice, for a halo that still reads on the brighter worlds.
+    ctx.fill();
+    ctx.fill();
+  }
+  return new Texture({ source: new CanvasSource({ resource: canvas, autoGenerateMipmaps: true }) });
 }

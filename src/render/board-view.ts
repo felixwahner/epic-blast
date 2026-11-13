@@ -59,7 +59,7 @@ export class BoardView {
   ): void {
     const bg = this.background;
     bg.clear();
-    for (const child of this.materialLayer.removeChildren()) child.destroy();
+    for (const child of this.materialLayer.removeChildren()) child.destroy({ children: true });
     if (materialVariants?.length) {
       this.renderMaterialBoard(layout, palettes, materialVariants);
       return;
@@ -134,8 +134,14 @@ export class BoardView {
 
   private renderMaterialBoard(layout: Layout, palettes: readonly Palette[], variants: readonly Texture[]): void {
     const { gridX: x, gridY: y, gridWidth: size } = layout;
+    // Soft corners on the board and its rim; the corner sockets are clipped to match.
+    const radius = Math.max(5, Math.round(layout.cellSize * 0.22));
     // One dark board plane; empty sockets must never compete with playable blocks.
-    this.background.roundRect(x, y, size, size, 5).fill({ color: 0x080e20, alpha: 0.97 });
+    this.background.roundRect(x, y, size, size, radius).fill({ color: 0x080e20, alpha: 0.97 });
+    const tiles = new Container();
+    const clip = new Graphics().roundRect(x, y, size, size, radius).fill(0xffffff);
+    tiles.mask = clip;
+    this.materialLayer.addChild(tiles, clip);
     for (const tile of boardMaterialTiles(layout, variants.length)) {
       const sprite = new Sprite(variants[tile.variant]);
       sprite.position.set(tile.x, tile.y);
@@ -143,27 +149,29 @@ export class BoardView {
       sprite.height = tile.size;
       sprite.alpha = 0.8;
       // Whole sockets carry their own sculpted rims, so no drawn seams are needed.
-      this.materialLayer.addChild(sprite);
+      tiles.addChild(sprite);
     }
     const rim = new Graphics();
     // Dark chassis under the fine illuminated lip.
-    rim.roundRect(x - 3, y - 3, size + 6, size + 6, 6).stroke({ width: 6, color: 0x070b17, alpha: 0.95 });
+    rim.roundRect(x - 3, y - 3, size + 6, size + 6, radius + 3).stroke({ width: 6, color: 0x070b17, alpha: 0.95 });
     for (let spread = 10; spread >= 2; spread -= 2) {
       rim
-        .roundRect(x - 2, y - 2, size + 4, size + 4, 5)
+        .roundRect(x - 2, y - 2, size + 4, size + 4, radius + 2)
         .stroke({ width: spread, color: palettes[0].base, alpha: 0.025 });
     }
-    rim.roundRect(x - 2, y - 2, size + 4, size + 4, 4).stroke({ width: 1.5, color: palettes[0].hi, alpha: 0.65 });
+    rim
+      .roundRect(x - 2, y - 2, size + 4, size + 4, radius + 2)
+      .stroke({ width: 1.5, color: palettes[0].hi, alpha: 0.65 });
     for (let spread = 9; spread >= 1; spread -= 2) {
       rim
-        .moveTo(x + 8, y - 2)
+        .moveTo(x + radius + 4, y - 2)
         .lineTo(x + size * 0.32, y - 2)
-        .moveTo(x - 2, y + 8)
+        .moveTo(x - 2, y + radius + 4)
         .lineTo(x - 2, y + size * 0.22)
         .stroke({ width: spread, color: 0xccfaff, alpha: 0.055 });
       rim
         .moveTo(x + size * 0.75, y + size + 2)
-        .lineTo(x + size - 6, y + size + 2)
+        .lineTo(x + size - radius - 4, y + size + 2)
         .stroke({ width: spread, color: palettes[1].hi, alpha: 0.045 });
     }
     this.materialLayer.addChild(rim);
