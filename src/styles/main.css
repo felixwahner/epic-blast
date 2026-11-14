@@ -2723,3 +2723,15 @@ body::after {
   color: var(--menu-muted);
   text-align: center;
 }
+
+/* The 3D logo draws on a canvas laid over the <img>, which keeps the layout and is the fallback. */
+.game-title {
+  position: relative;
+}
+.logo-3d {
+  position: absolute;
+  pointer-events: none;
+}
+.has-logo-3d .game-logo {
+  visibility: hidden;
+}
